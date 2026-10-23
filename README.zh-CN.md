@@ -14,7 +14,7 @@
 
 ## 核心特性
 
-- **多平台智能体适配**：原生支持 **Codex**、**Claude Code**、**DeepSeek**、**OpenCode**、**WorkBuddy** 以及常见智能体（**Cursor**、**Windsurf**、**Cline**、**Aider**、**Antigravity**、**ZCode**）。
+- **多平台智能体适配**：原生支持 Codex、Claude Code、DeepSeek、OpenCode、WorkBuddy 以及常见智能体（Cursor、Windsurf、Cline、Aider、Antigravity、Harness²、ZCode）。
 - **场景锚定与体裁定制（`--genre general|academic|plain`）**：
   - `academic`：严格去防御化、因果逻辑与科学问题导向、APA/JARS 规范统计量、严禁 `如表所示` 套话引表。
   - `plain`：受控白话层（中文单句 $\le 30$ 字，英文 $\le 25$ 词，杜绝“若干/一些/等等”模糊量词）。

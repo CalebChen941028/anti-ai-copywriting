@@ -9,13 +9,13 @@ Welcome to the documentation for **anti-ai-copywriting**, the bilingual natural 
 ## Documentation Structure
 
 - **[Agent Adapters & Integration Matrix](adapters/README.md)** ([中文](adapters/README.zh-CN.md)): Platform-specific setup guides for:
-  - **[Codex Adapter](adapters/codex.md)** ([中文](adapters/codex.zh-CN.md))
-  - **[Claude Code Adapter](adapters/claude-code.md)** ([中文](adapters/claude-code.zh-CN.md))
-  - **[DeepSeek Adapter](adapters/deepseek.md)** ([中文](adapters/deepseek.zh-CN.md))
-  - **[OpenCode Adapter](adapters/opencode.md)** ([中文](adapters/opencode.zh-CN.md))
-  - **[WorkBuddy Adapter](adapters/workbuddy.md)** ([中文](adapters/workbuddy.zh-CN.md))
-  - **[Generic & Common Agents (Cursor, Windsurf, Cline, Aider, Antigravity)](adapters/generic.md)** ([中文](adapters/generic.zh-CN.md))
-  - **[ZCode Adapter](adapters/zcode.md)** ([中文](adapters/zcode.zh-CN.md))
+  - [Codex Adapter](adapters/codex.md) ([中文](adapters/codex.zh-CN.md))
+  - [Claude Code Adapter](adapters/claude-code.md) ([中文](adapters/claude-code.zh-CN.md))
+  - [DeepSeek Adapter](adapters/deepseek.md) ([中文](adapters/deepseek.zh-CN.md))
+  - [OpenCode Adapter](adapters/opencode.md) ([中文](adapters/opencode.zh-CN.md))
+  - [WorkBuddy Adapter](adapters/workbuddy.md) ([中文](adapters/workbuddy.zh-CN.md))
+  - [Generic & Common Agents (Cursor, Windsurf, Cline, Aider, Antigravity)](adapters/generic.md) ([中文](adapters/generic.zh-CN.md))
+  - [ZCode Adapter](adapters/zcode.md) ([中文](adapters/zcode.zh-CN.md))
 
 ---
 

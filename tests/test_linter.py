@@ -438,6 +438,96 @@ class TestAntiAiLinter(unittest.TestCase):
         data = json.loads(output)
         self.assertEqual(data["failed_files"], 0)
 
+    def test_math_block_multiline_start_and_end_with_prose(self):
+        doc = (
+            "公式如下：$$\n"
+            "E = mc^2\n"
+            "$$ 我们需要赋能业务。\n"
+            "后续依然包含闭环。"
+        )
+        report = analyze_text(doc)
+        words = [v.context for v in report.violations]
+        self.assertTrue(any("赋能" in w for w in words), f"Failed to detect 赋能 on closing math line: {words}")
+        self.assertTrue(any("闭环" in w for w in words), f"Failed to detect 闭环 on subsequent line: {words}")
+
+    def test_html_comments_multiline_closing_with_prose(self):
+        doc = (
+            "<!-- comment starts\n"
+            "still comment --> 这里也需要赋能。\n"
+        )
+        report = analyze_text(doc)
+        words = [v.context for v in report.violations]
+        self.assertTrue(any("赋能" in w for w in words), f"Failed to detect 赋能 after closing comment: {words}")
+
+    def test_latex_math_environments_masked(self):
+        doc = (
+            "Here is an equation environment:\n"
+            "\\begin{equation}\n"
+            "\\text{utilize} + x = 1\n"
+            "\\end{equation}\n"
+            "And an align block:\n"
+            "\\begin{align*}\n"
+            "\\text{leverage} &= 2\n"
+            "\\end{align*}\n"
+            "And bracket math: \\[ \\text{delve into} \\] and inline: \\( \\text{matrix} \\).\n"
+            "Normal clean prose follows."
+        )
+        report = analyze_text(doc)
+        self.assertEqual(len(report.violations), 0, f"Math environment leaked violations: {report.violations}")
+
+    def test_markdown_link_url_and_raw_url_masking(self):
+        doc = (
+            "Check [documentation](https://github.com/foo/bar/releases/tag/v1.0.0-matrix-utilize).\n"
+            "Local file: [architecture](docs/matrix-pipeline.md).\n"
+            "Raw URL: https://example.com/api/utilize/foster.\n"
+            "[1]: https://example.com/matrix-pipeline\n"
+            "Prose itself is completely clean."
+        )
+        report = analyze_text(doc)
+        self.assertEqual(len(report.violations), 0, f"URL path leaked violations: {report.violations}")
+
+    def test_plain_genre_thematic_breaks_and_symbols_not_exceeding_length(self):
+        doc = (
+            "短句陈述事实。\n"
+            "--------------------------------------------------------\n"
+            "********************************************************\n"
+            "另外一个短句。"
+        )
+        report = analyze_text(doc, genre="plain")
+        categories = [v.category for v in report.violations]
+        self.assertNotIn("sentence_length_plain", categories)
+
+    def test_terminal_abbreviation_sentence_splitting(self):
+        text = "We brought apples, oranges, etc. In today's fast-paced world, this is a beacon of hope."
+        sentences = split_sentences_spans(text)
+        self.assertEqual(len(sentences), 2)
+        self.assertTrue(sentences[0][0].endswith("etc."))
+        self.assertTrue(sentences[1][0].startswith("In today's"))
+
+    def test_cli_genre_case_insensitivity(self):
+        old_stdin = sys.stdin
+        old_stdout = sys.stdout
+        sys.stdin = StringIO("Clean prose for academic testing.")
+        sys.stdout = StringIO()
+        try:
+            code = main(["--genre", "ACADEMIC", "--format", "json"])
+            output = sys.stdout.getvalue()
+        finally:
+            sys.stdin = old_stdin
+            sys.stdout = old_stdout
+        self.assertEqual(code, 0)
+        data = json.loads(output)
+        self.assertEqual(data["genre"], "academic")
+
+    def test_table_and_definition_list_bold_not_counted_as_prose_bold_abuse(self):
+        rows = ["| Platform | Status |", "|---|---|"]
+        for i in range(15):
+            rows.append(f"| **Target {i}** | Supported |")
+        table_doc = "\n".join(rows) + "\n\n- **Item 1**: Definition\n- **Item 2**: Definition\n"
+        report = analyze_text(table_doc)
+        categories = [v.category for v in report.violations]
+        self.assertNotIn("formatting_abuse", categories)
+
 
 if __name__ == "__main__":
     unittest.main()

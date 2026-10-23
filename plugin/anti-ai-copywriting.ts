@@ -89,10 +89,25 @@ export async function runAntiAiLint(
   }
 }
 
+const WRITE_TOOLS = new Set([
+  "write_to_file",
+  "replace_file_content",
+  "apply_diff",
+  "edit_file",
+  "write_file",
+  "create_file",
+  "append_to_file",
+  "patch_file",
+]);
+
 /**
  * OpenCode postToolExecution hook listener.
  */
 export async function postToolExecution(event: ToolExecutionEvent): Promise<string | null> {
+  if (event.toolName && !WRITE_TOOLS.has(event.toolName.toLowerCase())) {
+    return null;
+  }
+
   const fileTarget =
     event.args?.TargetFile ||
     event.args?.filePath ||

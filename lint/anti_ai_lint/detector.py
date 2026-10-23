@@ -247,6 +247,11 @@ ABBREVIATIONS = {
     "ph.d.", "m.sc.", "b.sc.", "d.phil."
 }
 
+TITLE_ABBREVIATIONS = {
+    "dr.", "mr.", "mrs.", "ms.", "prof.", "dept.", "sr.", "jr.",
+    "vs.", "fig.", "tab.", "vol.", "no.", "pp.", "ed.", "eds.", "ca.", "viz."
+}
+
 QUOTE_CLOSERS = "\"'’”)])》」』"
 
 
@@ -303,7 +308,19 @@ def split_sentences_spans(text: str) -> List[Tuple[str, int]]:
                         start_idx = i + 1 - len(abbr)
                         if text[start_idx : i + 1].lower() == abbr:
                             if start_idx == 0 or not text[start_idx - 1].isalnum():
-                                is_abbr = True
+                                if abbr in TITLE_ABBREVIATIONS:
+                                    is_abbr = True
+                                else:
+                                    # Non-title abbreviation (e.g. etc., al.): ends sentence if followed by space + uppercase letter or end of text
+                                    next_after_ws = i + 1
+                                    while next_after_ws < n and text[next_after_ws] in " \t":
+                                        next_after_ws += 1
+                                    if next_after_ws < n and text[next_after_ws].isupper():
+                                        is_abbr = False
+                                    elif next_after_ws == n or text[next_after_ws] in "\r\n":
+                                        is_abbr = False
+                                    else:
+                                        is_abbr = True
                                 break
                 # Single uppercase letter initial (e.g. "A. Smith" or "J. K.")
                 if not is_abbr and i > 0 and text[i - 1].isupper():
@@ -348,116 +365,129 @@ def split_sentences_spans(text: str) -> List[Tuple[str, int]]:
 
 def sanitize_text_and_mask(text: str) -> Tuple[str, List[str]]:
     """
-    Construct a masked version of text where fenced code blocks, LaTeX math blocks,
-    HTML comments, HTML tags, inline code, inline math, headings, and table separators
-    are replaced with spaces of identical length.
+    Construct a masked version of text where fenced code blocks, LaTeX math blocks/environments,
+    HTML comments, script/style blocks, HTML tags, inline code, inline math, headings,
+    horizontal rules, table separators, URLs, and link destinations are replaced with spaces
+    of identical length.
     Preserves exact character offsets and newline positions across LF and CRLF.
     """
-    lines = text.splitlines(keepends=True)
-    sanitized_lines: List[str] = []
+    buf = list(text)
+
+    def mask_span(start: int, end: int):
+        for idx in range(start, end):
+            if buf[idx] not in ("\r", "\n"):
+                buf[idx] = " "
+
+    # 1. Fenced code blocks (3+ backticks or tildes at line start with optional blockquote)
+    lines_raw = text.splitlines(keepends=True)
     in_code_block = False
     fence_char = ""
     fence_len = 0
-    in_math_block = False
-    in_html_comment = False
+    curr_off = 0
 
-    for line in lines:
-        newline_char = "\r\n" if line.endswith("\r\n") else ("\n" if line.endswith("\n") else "")
-        line_len_without_nl = len(line) - len(newline_char)
-        content_line = line[:line_len_without_nl]
-
-        # 1. Inside fenced code block
+    for line in lines_raw:
+        nl_len = 2 if line.endswith("\r\n") else (1 if line.endswith("\n") else 0)
+        content_len = len(line) - nl_len
+        content_line = line[:content_len]
         if in_code_block:
             pat = r"^[ \t>]*" + re.escape(fence_char) + r"{" + str(fence_len) + r",}[ \t]*$"
             if re.match(pat, content_line):
                 in_code_block = False
                 fence_char = ""
                 fence_len = 0
-            sanitized_lines.append(" " * line_len_without_nl + newline_char)
-            continue
+            mask_span(curr_off, curr_off + content_len)
+        else:
+            m_fence = re.match(r"^[ \t>]*(?P<fence>`{3,}|~{3,})", content_line)
+            if m_fence:
+                fence = m_fence.group("fence")
+                in_code_block = True
+                fence_char = fence[0]
+                fence_len = len(fence)
+                mask_span(curr_off, curr_off + content_len)
+        curr_off += len(line)
 
-        # 2. Inside multiline LaTeX math block ($$)
-        if in_math_block:
-            if "$$" in content_line:
-                in_math_block = False
-            sanitized_lines.append(" " * line_len_without_nl + newline_char)
-            continue
+    cur_text = "".join(buf)
 
-        # 3. Inside multiline HTML comment (<!-- ... -->)
-        if in_html_comment:
-            if "-->" in content_line:
-                in_html_comment = False
-            sanitized_lines.append(" " * line_len_without_nl + newline_char)
-            continue
+    # 2. HTML comments <!-- ... -->
+    for m in re.finditer(r"<!--.*?-->", cur_text, re.DOTALL):
+        mask_span(m.start(), m.end())
 
-        # Check for start of code fence: 3+ backticks or tildes
-        m_fence = re.match(r"^[ \t>]*(?P<fence>`{3,}|~{3,})", content_line)
-        if m_fence:
-            fence = m_fence.group("fence")
-            in_code_block = True
-            fence_char = fence[0]
-            fence_len = len(fence)
-            sanitized_lines.append(" " * line_len_without_nl + newline_char)
-            continue
+    # 3. HTML script and style blocks
+    cur_text = "".join(buf)
+    for m in re.finditer(r"<(script|style)\b[^>]*>.*?</\1>", cur_text, re.DOTALL | re.IGNORECASE):
+        mask_span(m.start(), m.end())
 
-        # Check for display math block ($$)
-        m_math = re.match(r"^[ \t>]*\$\$", content_line)
-        if m_math:
-            rest = content_line[m_math.end():]
-            if "$$" in rest:
-                sanitized_lines.append(" " * line_len_without_nl + newline_char)
-            else:
-                in_math_block = True
-                sanitized_lines.append(" " * line_len_without_nl + newline_char)
-            continue
+    # 4. LaTeX display math $$...$$
+    cur_text = "".join(buf)
+    for m in re.finditer(r"\$\$.*?\$\$", cur_text, re.DOTALL):
+        mask_span(m.start(), m.end())
 
-        # Check for HTML comment opening
-        m_comm = re.search(r"<!--", content_line)
-        if m_comm:
-            if "-->" in content_line[m_comm.end():]:
-                pass  # Handled below by regex replacement
-            else:
-                in_html_comment = True
-                masked_part = content_line[:m_comm.start()] + (" " * (len(content_line) - m_comm.start()))
-                sanitized_lines.append(masked_part + newline_char)
-                continue
+    # 5. LaTeX standard math environments \begin{env}...\end{env}
+    math_envs = r"(?:equation|align|alignat|gather|multline|flalign|matrix|pmatrix|bmatrix|Bmatrix|vmatrix|Vmatrix|cases|split|array|math|displaymath)\*?"
+    cur_text = "".join(buf)
+    for m in re.finditer(rf"\\begin\{{({math_envs})\}}.*?\\end\{{\1\}}", cur_text, re.DOTALL):
+        mask_span(m.start(), m.end())
 
-        # Markdown heading line: optional blockquote '>' or spaces, then #
+    # 6. LaTeX bracket math \[...\] and \(...\)
+    cur_text = "".join(buf)
+    for m in re.finditer(r"\\\[.*?\\\]", cur_text, re.DOTALL):
+        mask_span(m.start(), m.end())
+    cur_text = "".join(buf)
+    for m in re.finditer(r"\\\(.*?\\\)", cur_text, re.DOTALL):
+        mask_span(m.start(), m.end())
+
+    # 7. HTML tags: <tag ...>
+    cur_text = "".join(buf)
+    for m in re.finditer(r"<[a-zA-Z/][^>]*>", cur_text, re.DOTALL):
+        mask_span(m.start(), m.end())
+
+    # 8. Markdown headings (# Heading), table separators (|---|), thematic breaks (---, ***, ___), and footnote/ref definitions
+    lines_masked = cur_text.splitlines(keepends=True)
+    curr_off = 0
+    for line in lines_masked:
+        nl_len = 2 if line.endswith("\r\n") else (1 if line.endswith("\n") else 0)
+        content_len = len(line) - nl_len
+        content_line = line[:content_len]
+
+        # Markdown headings
         if re.match(r"^[ \t>]*#", content_line):
-            sanitized_lines.append(" " * line_len_without_nl + newline_char)
-            continue
-
+            mask_span(curr_off, curr_off + content_len)
         # Markdown table separator row (|---|---|)
-        if re.match(r"^[ \t>]*\|?[ \t]*:?-+:?[ \t]*(?:\|[ \t]*:?-+:?[ \t]*)+\|?[ \t]*$", content_line):
-            sanitized_lines.append(" " * line_len_without_nl + newline_char)
-            continue
+        elif re.match(r"^[ \t>]*\|?[ \t]*:?-+:?[ \t]*(?:\|[ \t]*:?-+:?[ \t]*)+\|?[ \t]*$", content_line):
+            mask_span(curr_off, curr_off + content_len)
+        # Thematic break / horizontal rule (---, ***, ___)
+        elif re.match(r"^[ \t>]*([-*_])[ \t]*(?:\1[ \t]*){2,}$", content_line):
+            mask_span(curr_off, curr_off + content_len)
+        # Footnote definition or reference link definition prefix: [^1]: or [ref]:
+        else:
+            m_fn = re.match(r"^[ \t>]*\[\^?[^\]]+\]:[ \t]*", content_line)
+            if m_fn:
+                mask_span(curr_off, curr_off + m_fn.end())
 
-        # Regular prose line: apply masks while strictly preserving length
-        masked = content_line
+        curr_off += len(line)
 
-        # Mask footnote definition prefix [^1]:
-        m_fn = re.match(r"^[ \t>]*\[\^[^\]]+\]:[ \t]*", masked)
-        if m_fn:
-            masked = (" " * m_fn.end()) + masked[m_fn.end():]
+    # 9. Markdown link & image destinations: ](...)
+    cur_text = "".join(buf)
+    for m in re.finditer(r"\]\(\s*<?\S+?>?(?:\s+[\"'].*?[\"'])?\s*\)", cur_text):
+        mask_span(m.start() + 1, m.end())
 
-        # Mask HTML comments: <!-- ... -->
-        masked = re.sub(r"<!--.*?-->", lambda m: " " * len(m.group(0)), masked)
+    # 10. Raw URLs
+    cur_text = "".join(buf)
+    for m in re.finditer(r"https?://[^\s)\]>\"']+", cur_text):
+        mask_span(m.start(), m.end())
 
-        # Mask HTML tags: <tag ...> or </tag>
-        masked = re.sub(r"<[a-zA-Z/][^>\r\n]*>", lambda m: " " * len(m.group(0)), masked)
+    # 11. Inline code: `...` or ``...``
+    cur_text = "".join(buf)
+    for m in re.finditer(r"(`+)(.+?)\1", cur_text):
+        mask_span(m.start(), m.end())
 
-        # Mask single-line display math: $$...$$
-        masked = re.sub(r"\$\$.*?\$\$", lambda m: " " * len(m.group(0)), masked)
+    # 12. Inline math: $...$
+    cur_text = "".join(buf)
+    for m in re.finditer(r"(?<!\\)\$(?!\s)([^$\r\n]+?)(?<!\s)(?<!\\)\$", cur_text):
+        mask_span(m.start(), m.end())
 
-        # Mask inline code: `...` or ``...``
-        masked = re.sub(r"(`+)(.+?)\1", lambda m: " " * len(m.group(0)), masked)
-
-        # Mask inline math: $...$ where opening $ not followed by space, closing $ not preceded by space
-        masked = re.sub(r"(?<!\\)\$(?!\s)([^$\r\n]+?)(?<!\s)(?<!\\)\$", lambda m: " " * len(m.group(0)), masked)
-
-        sanitized_lines.append(masked + newline_char)
-
-    sanitized_text = "".join(sanitized_lines)
+    sanitized_text = "".join(buf)
+    sanitized_lines = sanitized_text.splitlines(keepends=True)
     return sanitized_text, sanitized_lines
 
 
@@ -554,7 +584,14 @@ def analyze_text(
     single_dashes = sanitized_text.replace("——", "").count("—")
     dash_count = double_dashes + single_dashes
 
-    bold_count = len(re.findall(r"\*\*[^*]+\*\*", sanitized_text))
+    # Count bold formatting only in prose body (exclude table rows and leading list item keys)
+    prose_bold_lines = []
+    for l in sanitized_lines:
+        if re.match(r"^[ \t>]*\|.*\|[ \t]*$", l):
+            continue
+        l_sub = re.sub(r"^[ \t>]*[-*+][ \t]+\*\*[^*]+\*\*[:：]\s*", "", l)
+        prose_bold_lines.append(l_sub)
+    bold_count = len(re.findall(r"\*\*[^*]+\*\*", "\n".join(prose_bold_lines)))
     exclamation_count = sanitized_text.count("!") + sanitized_text.count("！")
 
     sentences = split_sentences_spans(sanitized_text)
@@ -763,6 +800,8 @@ def analyze_text(
             # Length constraints: Chinese <= 30 chars, English <= 25 words
             s_cjk = len(re.findall(r"[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af\u1100-\u11ff\u3130-\u318f\uff66-\uff9f]", s_text))
             s_latin = len(re.findall(r"[a-zA-Z0-9]+(?:[-'][a-zA-Z0-9]+)*", s_text))
+            if s_cjk == 0 and s_latin == 0:
+                continue
             if s_cjk >= s_latin and len(s_text) > 30:
                 p = 2.5
                 raw_violations.append((

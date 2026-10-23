@@ -9,13 +9,13 @@
 ## 核心文档目录
 
 - **[智能体适配器支持总览与安装](adapters/README.zh-CN.md)** ([English](adapters/README.md))：针对主流平台的专用集成指南：
-  - **[Codex 适配指南](adapters/codex.zh-CN.md)** ([English](adapters/codex.md))
-  - **[Claude Code 适配指南](adapters/claude-code.zh-CN.md)** ([English](adapters/claude-code.md))
-  - **[DeepSeek 适配指南](adapters/deepseek.zh-CN.md)** ([English](adapters/deepseek.md))
-  - **[OpenCode 适配指南](adapters/opencode.zh-CN.md)** ([English](adapters/opencode.md))
-  - **[WorkBuddy 适配指南](adapters/workbuddy.zh-CN.md)** ([English](adapters/workbuddy.md))
-  - **[通用与常见智能体（Cursor、Windsurf、Cline、Aider、Antigravity）适配指南](adapters/generic.zh-CN.md)** ([English](adapters/generic.md))
-  - **[ZCode 适配指南](adapters/zcode.zh-CN.md)** ([English](adapters/zcode.md))
+  - [Codex 适配指南](adapters/codex.zh-CN.md) ([English](adapters/codex.md))
+  - [Claude Code 适配指南](adapters/claude-code.zh-CN.md) ([English](adapters/claude-code.md))
+  - [DeepSeek 适配指南](adapters/deepseek.zh-CN.md) ([English](adapters/deepseek.md))
+  - [OpenCode 适配指南](adapters/opencode.zh-CN.md) ([English](adapters/opencode.md))
+  - [WorkBuddy 适配指南](adapters/workbuddy.zh-CN.md) ([English](adapters/workbuddy.md))
+  - [通用与常见智能体（Cursor、Windsurf、Cline、Aider、Antigravity）适配指南](adapters/generic.zh-CN.md) ([English](adapters/generic.md))
+  - [ZCode 适配指南](adapters/zcode.zh-CN.md) ([English](adapters/zcode.md))
 
 ---
 

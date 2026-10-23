@@ -111,6 +111,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--max-normalized-score", type=float, default=None, help="Maximum allowed penalty score per 1,000 units (default: None).")
     parser.add_argument(
         "--genre",
+        type=str.lower,
         choices=["general", "academic", "plain"],
         default="general",
         help="Target genre conventions: 'general' (default), 'academic' (strict de-hedging and data reporting), or 'plain' (controlled plain layer with strict length limits).",

@@ -14,7 +14,7 @@ Eliminates translationese, AI clichés, pseudo-academic buzzwords, formulaic emo
 
 ## Key Features
 
-- **Cross-Platform Compatibility**: Full, first-class adapter support for **Codex**, **Claude Code**, **DeepSeek**, **OpenCode**, **WorkBuddy**, and common agents (**Cursor**, **Windsurf**, **Cline**, **Aider**, **Antigravity**, **ZCode**).
+- **Cross-Platform Compatibility**: Full, first-class adapter support for Codex, Claude Code, DeepSeek, OpenCode, WorkBuddy, and common agents (Cursor, Windsurf, Cline, Aider, Antigravity, Harness², ZCode).
 - **Genre-Specific Tone Shaping (`--genre general|academic|plain`)**:
   - `academic`: Strict de-hedging, given-new flow, APA/JARS compliant statistics, and zero table formulas.
   - `plain`: Controlled plain layer inspired by simplified technical English (Chinese $\le 30$ chars/sentence, English $\le 25$ words/sentence, zero vague quantifiers).

@@ -212,7 +212,7 @@ case "$TARGET" in
         SKILL_DEST="$(dirname "$DEST")/skills/anti-ai-copywriting"
         RULE_FILE="$DEST"
       else
-        SKILL_DEST="$DEST/.codex/skills/anti-ai-copywriting"
+        SKILL_DEST="$DEST/.harness2/skills/anti-ai-copywriting"
         RULE_FILE="$DEST/AGENTS.md"
       fi
     fi

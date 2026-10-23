@@ -465,6 +465,32 @@ class TestInstaller(unittest.TestCase):
         self.assertIn("# Header", content)
         self.assertIn("# Footer", content)
 
+    def test_harness2_dest_installs_to_harness2_dir(self):
+        proj = self.fake_home / "proj_harness2_custom"
+        res = subprocess.run(
+            [self.install_sh, "--target", "harness2", "--dest", str(proj), "--lang", "zh"],
+            cwd=str(repo_root),
+            env=self.env,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(res.returncode, 0)
+        harness2_skill = proj / ".harness2" / "skills" / "anti-ai-copywriting" / "SKILL.md"
+        codex_skill = proj / ".codex" / "skills" / "anti-ai-copywriting" / "SKILL.md"
+        self.assertTrue(harness2_skill.is_file(), "harness2 skill was not installed in .harness2 directory")
+        self.assertFalse(codex_skill.exists(), "harness2 skill erroneously installed in .codex directory")
+
+        # Uninstall and verify cleanup
+        res_un = subprocess.run(
+            [self.uninstall_sh, "--target", "harness2", "--dest", str(proj)],
+            cwd=str(repo_root),
+            env=self.env,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(res_un.returncode, 0)
+        self.assertFalse(harness2_skill.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

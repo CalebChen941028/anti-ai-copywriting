@@ -9,3 +9,8 @@ dist/
 .coverage
 htmlcov/
 models.local.json
+*.bak-*
+.local/
+*.log
+.tmp/
+tmp/

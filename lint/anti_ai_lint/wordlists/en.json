@@ -5,27 +5,40 @@
     "testament to",
     "beacon of",
     "tapestry of",
+    "intricate tapestry",
     "realm of",
+    "realm",
     "navigating the complexities",
+    "navigating complexities",
     "revolutionize",
     "paradigm shift",
     "foster a culture",
-    "intricate tapestry",
+    "foster",
     "myriad of",
+    "myriad",
     "seamless integration",
+    "seamlessness",
+    "seamless",
     "multifaceted approach",
+    "multifaceted",
     "underscores the importance",
+    "underscore the importance",
     "pivotal role",
     "crucial role",
+    "vital role",
+    "plays a pivotal role",
+    "plays a crucial role",
     "plays a vital role",
     "in today's fast-paced world",
     "in conclusion",
     "to summarize",
-    "it is important to note that"
+    "it is important to note that",
+    "utilize",
+    "leverage"
   ],
   "formulaic_patterns": [
     {
-      "pattern": "\\bnot only\\b.*?\\bbut also\\b",
+      "pattern": "\\bnot only\\b[^.!?\\r\\n]*?\\bbut also\\b",
       "name": "Formulaic not only... but also",
       "penalty": 4
     },
@@ -35,15 +48,32 @@
       "penalty": 3
     },
     {
-      "pattern": "\\b(furthermore|moreover|additionally)\\b.*?\\b(furthermore|moreover|additionally)\\b",
+      "pattern": "\\b(furthermore|moreover|additionally)\\b[^.!?\\r\\n]*?\\b(furthermore|moreover|additionally)\\b",
       "name": "Stacked mechanical transitions",
       "penalty": 4
+    },
+    {
+      "pattern": "\\bplays? an? (pivotal|crucial|vital|key|essential) role in\\b",
+      "name": "Cliché 'plays a vital/pivotal role in'",
+      "penalty": 4
+    },
+    {
+      "pattern": "\\b[Ii]n today's (fast-paced|rapidly changing|interconnected|dynamic) world\\b",
+      "name": "Formulaic grand opening 'In today's fast-paced world'",
+      "penalty": 4
+    },
+    {
+      "pattern": "\\b[Aa]s shown in (Table|Figure) \\d+\\b",
+      "name": "Formulaic table/figure presentation",
+      "penalty": 3
     }
   ],
   "hedging_words": [
     "could potentially be suggested",
     "might tend to indicate",
     "seems somewhat likely",
-    "appears to possibly"
+    "appears to possibly",
+    "could potentially indicate",
+    "might perhaps suggest"
   ]
 }

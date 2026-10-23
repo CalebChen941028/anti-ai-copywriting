@@ -4,6 +4,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-10-24
+
+### Added
+- **Multi-Agent Adapters & Bilingual Documentation Matrix**:
+  - Added explicit target support and comprehensive bilingual guides for **Codex**, **Claude Code**, **DeepSeek**, **OpenCode**, **WorkBuddy**, and common coding agents (**Cursor**, **Windsurf**, **Cline**, **Aider**, **Antigravity**, **ZCode**).
+  - Provided bilingual index matrices in `docs/adapters/README.md` and `docs/adapters/README.zh-CN.md`.
+  - Added bilingual documentation hubs in `docs/README.md` and `docs/README.zh-CN.md`.
+- **Harness² Architectural Integrations (c1..c8)**:
+  - **c8 In-Loop Verification Hook**: Added `hooks/hooks.json` and `.codex/hooks.json` for post-tool verification during agent write operations.
+  - **c8 OpenCode Plugin**: Implemented `plugin/anti-ai-copywriting.ts` to intercept agent tool executions and feed prose lint warnings into the agent loop.
+  - **c5 Dedicated Copy-Editing Subagent**: Created `sub_agents/copywriting-editor/AGENT.md` defining specialist role, contracts, and quality-gate workflow.
+  - **c6/c1 Explicit Autotrigger Directives**: Added `<auto_trigger>` contract blocks to `rules/AGENTS.snippet.md`, `rules/AGENTS.snippet.zh.md`, and `rules/AGENTS.snippet.en.md`.
+- **Linter Engine & CLI Capabilities**:
+  - Added `--genre {general,academic,plain}` supporting strict academic hedging checks and controlled plain layer constraints (Chinese $\le 30$ chars, English $\le 25$ words, zero vague quantifiers).
+  - Added `--format hook` for compact CI/pre-commit feedback and `--format agent` for structured LLM reflection.
+  - Added normalized scoring (`normalized_score` per 1,000 text units) and `--max-normalized-score` filtering.
+  - Added actionable remediation suggestions to every violation across all categories.
+- **Installer & Uninstaller Upgrades**:
+  - Expanded installer targets in `install.sh` to include `deepseek`, `cursor`, `windsurf`, `cline`, `aider`, `antigravity`, `generic`, `workbuddy`, `opencode`, `codex`, `claude`, and `zcode`.
+  - Implemented multi-target manifest tracking in `install-manifest.json` preserving distinct records across targets.
+  - Added functional `--lang zh|en` support deploying language-tailored snippets.
+  - Enhanced `uninstall.sh` supporting `--target <name>`, `--all`, and safe cleanup of empty directories and pre-existing user rules.
+  - Added integration test suite `tests/test_installer.py`.
+- **Open Source Compliance & Attribution**:
+  - Added SPDX license headers and copyright statements across bash, Python, and TypeScript modules.
+  - Included formal Trademark & Non-Affiliation disclaimers covering Anthropic, OpenAI, DeepSeek, Google, Anysphere (Cursor), Codeium (Windsurf), Cline, Aider, and WorkBuddy.
+  - Added formal citations and copyright statements for ASD-STE100 and Google Research Harness².
+
+### Fixed
+- **Code Block State Machine**: Fixed bug in `detector.py` where lines inside multi-line fenced code blocks (` ``` ` / ` ~~~ `) and inline code (`` `...` ``) were falsely flagged as prose violations.
+- **Bilingual Sentence Splitting**: Replaced naive regex split with robust tokenization that protects decimal numbers (e.g. `28.6%`) and abbreviations (e.g. `e.g.`, `i.e.`, `et al.`).
+- **Word Counting**: Implemented true bilingual token counting combining CJK characters and Latin words.
+- **Template Phrase Matching**: Fixed unescaped ellipsis matching in Chinese phrase patterns (e.g. `随着...的飞速发展` converted to dynamic regex pattern).
+- **Wordlist Synchronization**: Synchronized root `wordlists/` with package `lint/anti_ai_lint/wordlists/` and in-code defaults.
+
 ## [0.2.0] - 2026-10-23
 
 ### Added

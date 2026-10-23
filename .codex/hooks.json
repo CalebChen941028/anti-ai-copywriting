@@ -1,0 +1,25 @@
+{
+  "$schema": "https://raw.githubusercontent.com/google-research/harness2/main/schemas/hooks.json",
+  "version": "1.0.0",
+  "name": "anti-ai-copywriting-hook",
+  "description": "Codex in-loop verification hook: runs anti-ai-lint after write operations.",
+  "hooks": [
+    {
+      "id": "anti-ai-prose-verifier",
+      "event": "post_tool_execution",
+      "tools": [
+        "write_to_file",
+        "replace_file_content",
+        "apply_diff"
+      ],
+      "file_patterns": [
+        "*.md",
+        "*.txt",
+        "*.markdown"
+      ],
+      "command": "python3 -m anti_ai_lint.cli \"${file_path}\" --format hook --max-score 10.0",
+      "on_failure": "block_and_feedback",
+      "feedback_format": "agent"
+    }
+  ]
+}

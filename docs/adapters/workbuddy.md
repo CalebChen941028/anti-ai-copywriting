@@ -1,16 +1,18 @@
 # WorkBuddy Adapter Guide
 
+[English](workbuddy.md) | [简体中文](workbuddy.zh-CN.md)
+
 ## Overview
 
-WorkBuddy is an enterprise AI assistant / workspace platform. Because WorkBuddy does not offer a publicly documented custom skill SDK or proprietary extension manifest format, `anti-ai-copywriting` integrates with WorkBuddy via the **Generic Rule Adapter**.
+WorkBuddy is an enterprise AI assistant and digital workspace platform. `anti-ai-copywriting` integrates with WorkBuddy through prompt configuration, CLI automation, and external webhook quality gates.
 
-## Integration Approach
+---
 
-WorkBuddy bots and workspace assistants allow configuring custom instructions, system prompts, or agent personas.
+## Integration Approaches
 
 ### Option 1: Direct Prompt Rule Injection (Recommended)
 
-Copy the concise rules from `rules/AGENTS.snippet.md` directly into your WorkBuddy agent's system prompt or global instructions:
+Copy the concise rules from `rules/AGENTS.snippet.md` (or `rules/AGENTS.snippet.en.md`) directly into your WorkBuddy assistant's system instructions or persona settings:
 
 ```markdown
 # Anti-AI Copywriting & Natural Voice Rules (Mandatory & Silent)
@@ -21,19 +23,42 @@ All written or rewritten prose across Chinese and English—including academic m
 3. No Fluff Openings / Closings: Begin directly with empirical facts, concrete problems, or immediate actions. Conclude on operational implications rather than repetitive philosophical summaries.
 ```
 
+---
+
 ### Option 2: Automated Installation via CLI
 
-You can install the rules file into a specific directory monitored by WorkBuddy or export it to a chosen file:
+Install the rules file directly into your WorkBuddy configuration directory:
 
 ```bash
-./install.sh --target generic --dest /path/to/workbuddy/prompts/anti-ai-rules.md
+# Global user prompt directory
+./install.sh --target workbuddy --lang en
+
+# Custom prompt path
+./install.sh --target workbuddy --dest /path/to/workbuddy/prompts/anti-ai-rules.md --lang en
 ```
 
-### Option 3: Automated Quality Gate (CI / Post-Processing)
+---
 
-If your WorkBuddy workflow invokes external tools or webhooks, you can run the zero-dependency linter `anti-ai-lint` as a deterministic verification gate:
+### Option 3: Automated Quality Gate (CI / Post-Processing / Webhooks)
+
+If your WorkBuddy workflow invokes external tools or webhooks, run the zero-dependency linter `anti-ai-lint` as a deterministic verification gate:
 
 ```bash
 anti-ai-lint /path/to/generated_output.md --max-score 8.0
 ```
-If the output contains forbidden buzzwords, stacked hedges, or excessive punctuation, the command exits with code `1`, preventing flawed text from being sent.
+
+If the generated prose contains forbidden buzzwords, stacked hedges, or excessive punctuation, the command exits with code `1`, preventing flawed text from reaching users.
+
+---
+
+## Uninstallation
+
+```bash
+./uninstall.sh --target workbuddy
+```
+
+---
+
+## Trademark & Non-Affiliation Disclaimer
+
+WorkBuddy is an enterprise workspace product. `anti-ai-copywriting` is an independent open-source project and is not affiliated with, endorsed by, or sponsored by WorkBuddy or its parent entities.

@@ -20,6 +20,7 @@
 | **Cline** | `cline` | `~/.cline/skills/anti-ai-copywriting/` | `.clinerules` | 任务初始提示词注入 | [通用 / Cline](generic.zh-CN.md#cline) |
 | **Aider** | `aider` | `~/.aider/skills/anti-ai-copywriting/` | `CONVENTIONS.md` | Aider `--read` 约定文件参数 | [通用 / Aider](generic.zh-CN.md#aider) |
 | **Antigravity** | `antigravity` | `~/.antigravity/skills/anti-ai-copywriting/` | `AGENTS.md` | 智能体系统规则与工具执行验证 | [通用 / Antigravity](generic.zh-CN.md#antigravity) |
+| **Harness²** | `harness2` | `~/.harness2/skills/anti-ai-copywriting/` | `~/.harness2/AGENTS.md` | Harness² c8 环内钩子与子智能体联动 | [Codex / Harness²](codex.zh-CN.md) |
 | **通用 / 自定义** | `generic` | 通过 `--dest` 自定义路径 | 通过 `--dest` 自定义路径 | 纯 Python 零依赖命令行门禁（`anti-ai-lint`） | [通用适配指南](generic.zh-CN.md) |
 | **ZCode** | `zcode` | `~/.zcode/skills/anti-ai-copywriting/` | `~/.zcode/AGENTS.md` | 全局技能引擎直接集成 | [ZCode 指南](zcode.zh-CN.md) |
 

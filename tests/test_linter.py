@@ -4,6 +4,7 @@
 
 import json
 import os
+import re
 import sys
 import unittest
 from io import StringIO
@@ -321,6 +322,121 @@ class TestAntiAiLinter(unittest.TestCase):
     def test_cli_non_existent_file_exits_with_error(self):
         exit_code = main(["non_existent_document_12345.md"])
         self.assertEqual(exit_code, 1)
+
+    def test_latex_math_blocks_masked(self):
+        text = (
+            "Here is normal introduction prose.\n"
+            "$$\n"
+            "\\text{utilize} = \\int_{0}^{\\infty} f(x) dx + \\text{delve into}\n"
+            "$$\n"
+            "The model optimizes $x = \\text{realm}$ without error. Clean prose continues."
+        )
+        report = analyze_text(text)
+        self.assertTrue(report.passed)
+        self.assertEqual(len(report.violations), 0)
+
+    def test_html_comments_and_tags_masked(self):
+        text = (
+            "Prose before comment.\n"
+            "<!-- This is an internal comment mentioning 赋能 and delve into -->\n"
+            "<!--\n"
+            "Multiline comment containing 闭环 and 底层逻辑\n"
+            "-->\n"
+            '<span class="badge" title="revolutionize">Verified</span>\n'
+            "Prose after HTML elements is completely clean."
+        )
+        report = analyze_text(text)
+        self.assertTrue(report.passed)
+        self.assertEqual(len(report.violations), 0)
+
+    def test_markdown_table_separator_and_plain_mode(self):
+        table_text = (
+            "| Column A | Column B | Column C | Column D | Column E | Notes |\n"
+            "| :------- | :------- | :------- | :------- | :------- | :---- |\n"
+            "| Val 1    | Val 2    | Val 3    | Val 4    | Val 5    | Ok    |\n"
+        )
+        # In plain mode, table rows must not trigger sentence_length_plain
+        rep = analyze_text(table_text, genre="plain")
+        categories = [v.category for v in rep.violations]
+        self.assertNotIn("sentence_length_plain", categories)
+
+    def test_markdown_footnotes_sentence_splitting(self):
+        text = "This empirical result is confirmed.[^1] In addition, latency remained stable.[^2]"
+        sentences = split_sentences_spans(text)
+        self.assertEqual(len(sentences), 2)
+        self.assertEqual(sentences[0][0], "This empirical result is confirmed.[^1]")
+        self.assertEqual(sentences[1][0], "In addition, latency remained stable.[^2]")
+
+    def test_multilingual_kana_and_hangul_metrics(self):
+        # Japanese Hiragana (5 chars: こんにちは) + Katakana (3 chars: テスト) = 8
+        # Korean Hangul (5 chars: 안녕하세요) = 5
+        # Total East Asian chars = 13
+        # Latin words: Hello (1 word)
+        text = "Hello こんにちは テスト 안녕하세요"
+        report = analyze_text(text)
+        self.assertEqual(report.metrics.latin_words, 1)
+        self.assertEqual(report.metrics.cjk_count, 13)
+        self.assertEqual(report.metrics.total_words, 14)
+
+    def test_pure_punctuation_and_whitespace_edge_cases(self):
+        punct = "!?,.:;——\"'“”《》！？"
+        rep_punct = analyze_text(punct)
+        self.assertTrue(rep_punct.passed)
+        self.assertEqual(rep_punct.score, 0.0)
+
+        whitespace = "   \n\t  \r\n   "
+        rep_ws = analyze_text(whitespace)
+        self.assertTrue(rep_ws.passed)
+        self.assertEqual(rep_ws.score, 0.0)
+
+    def test_genre_case_insensitivity_and_fallback(self):
+        text = "实验表明该模型在各项基准上具有极其重要的现实意义与应用价值。"
+        rep_upper = analyze_text(text, genre="ACADEMIC")
+        self.assertIn("empty_self_praise_academic", [v.category for v in rep_upper.violations])
+
+        rep_invalid = analyze_text(text, genre="non_existent_genre")
+        self.assertEqual(rep_invalid.genre, "general")
+
+    def test_boundary_zero_scores(self):
+        clean_text = "AlphaFold2 predicts protein structures with high accuracy."
+        rep_pass = analyze_text(clean_text, max_score=0.0, max_normalized_score=0.0)
+        self.assertTrue(rep_pass.passed)
+        self.assertEqual(rep_pass.score, 0.0)
+
+    def test_redos_stress_test_long_prose(self):
+        # 10,000 characters of benign repetitive prose without period
+        long_prose = "Furthermore moreover Additionally " * 300
+        # Must execute within fractions of a second without regex backtracking hang
+        report = analyze_text(long_prose)
+        self.assertIsNotNone(report)
+
+    def test_wordlist_regexes_compilation_and_keys(self):
+        zh_data, en_data = json.loads((self.repo_root / "wordlists" / "zh.json").read_text("utf-8")), json.loads((self.repo_root / "wordlists" / "en.json").read_text("utf-8"))
+        for d, name in [(zh_data, "zh.json"), (en_data, "en.json")]:
+            self.assertIn("forbidden_words", d, f"{name} missing forbidden_words")
+            self.assertIn("formulaic_patterns", d, f"{name} missing formulaic_patterns")
+            self.assertIn("hedging_words", d, f"{name} missing hedging_words")
+            for pat_info in d["formulaic_patterns"]:
+                pat = pat_info["pattern"]
+                # Must compile as valid regex
+                compiled = re.compile(pat)
+                self.assertIsNotNone(compiled)
+
+    def test_cli_stdin_pipe_robustness(self):
+        old_stdin = sys.stdin
+        old_stdout = sys.stdout
+        sys.stdin = StringIO("Clean stdin prose without any clichés.")
+        sys.stdout = StringIO()
+        try:
+            exit_code = main(["--format", "json"])
+            output = sys.stdout.getvalue()
+        finally:
+            sys.stdin = old_stdin
+            sys.stdout = old_stdout
+
+        self.assertEqual(exit_code, 0)
+        data = json.loads(output)
+        self.assertEqual(data["failed_files"], 0)
 
 
 if __name__ == "__main__":

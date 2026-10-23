@@ -29,7 +29,7 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     -h|--help)
-      echo "Usage: $0 [--target zcode|claude|codex|opencode|deepseek|workbuddy|cursor|windsurf|cline|aider|antigravity|generic] [--lang zh|en] [--dry-run] [--dest <path>]"
+      echo "Usage: $0 [--target zcode|claude|codex|opencode|deepseek|workbuddy|cursor|windsurf|cline|aider|antigravity|harness2|generic] [--lang zh|en] [--dry-run] [--dest <path>]"
       exit 0
       ;;
     *)
@@ -45,7 +45,7 @@ MANIFEST_DIR="${ANTI_AI_MANIFEST_DIR:-$BASE_HOME/.local/share/anti-ai-copywritin
 MANIFEST_FILE="$MANIFEST_DIR/install-manifest.json"
 
 if [[ -n "$DEST" ]]; then
-  DEST="$(python3 -c 'import os, sys; print(os.path.abspath(sys.argv[1]))' "$DEST")"
+  DEST="$(python3 -c 'import os, sys; print(os.path.abspath(os.path.expanduser(sys.argv[1])))' "$DEST")"
 fi
 
 case "$TARGET" in
@@ -203,6 +203,20 @@ case "$TARGET" in
       fi
     fi
     ;;
+  harness2)
+    if [[ -z "$DEST" ]]; then
+      SKILL_DEST="$BASE_HOME/.harness2/skills/anti-ai-copywriting"
+      RULE_FILE="$BASE_HOME/.harness2/AGENTS.md"
+    else
+      if [[ "$DEST" == *.md ]]; then
+        SKILL_DEST="$(dirname "$DEST")/skills/anti-ai-copywriting"
+        RULE_FILE="$DEST"
+      else
+        SKILL_DEST="$DEST/.codex/skills/anti-ai-copywriting"
+        RULE_FILE="$DEST/AGENTS.md"
+      fi
+    fi
+    ;;
   generic)
     if [[ -z "$DEST" ]]; then
       SKILL_DEST="$BASE_HOME/.anti-ai-copywriting/skill/anti-ai-copywriting"
@@ -271,15 +285,24 @@ rule_path = Path(sys.argv[1])
 snippet_path = Path(sys.argv[2])
 content = rule_path.read_text(encoding="utf-8") if rule_path.exists() else ""
 pattern = r"<!-- BEGIN anti-ai-copywriting.*?<!-- END anti-ai-copywriting -->"
-new_snippet = snippet_path.read_text(encoding="utf-8")
+new_snippet = snippet_path.read_text(encoding="utf-8").strip()
 
 if re.search(pattern, content, flags=re.DOTALL):
-    updated = re.sub(pattern, new_snippet.strip(), content, flags=re.DOTALL)
+    parts = re.split(pattern, content, flags=re.DOTALL)
+    prefix = parts[0].rstrip()
+    remainder = "".join(parts[1:]).strip()
+    if prefix:
+        updated = prefix + "\n\n" + new_snippet
+    else:
+        updated = new_snippet
+    if remainder:
+        updated += "\n\n" + remainder
+    updated += "\n"
 else:
     if content.strip():
-        updated = content.rstrip() + "\n\n" + new_snippet.strip() + "\n"
+        updated = content.rstrip() + "\n\n" + new_snippet + "\n"
     else:
-        updated = new_snippet.strip() + "\n"
+        updated = new_snippet + "\n"
 
 rule_path.write_text(updated, encoding="utf-8")
 EOF

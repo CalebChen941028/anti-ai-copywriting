@@ -20,6 +20,7 @@ This directory provides platform-specific integration guides and adapters for de
 | **Cline** | `cline` | `~/.cline/skills/anti-ai-copywriting/` | `.clinerules` | Task initialization prompt injection | [Generic / Cline](generic.md#cline) |
 | **Aider** | `aider` | `~/.aider/skills/anti-ai-copywriting/` | `CONVENTIONS.md` | Aider `--read` conventions parameter | [Generic / Aider](generic.md#aider) |
 | **Antigravity** | `antigravity` | `~/.antigravity/skills/anti-ai-copywriting/` | `AGENTS.md` | Agent system prompt & tool verification | [Generic / Antigravity](generic.md#antigravity) |
+| **Harness²** | `harness2` | `~/.harness2/skills/anti-ai-copywriting/` | `~/.harness2/AGENTS.md` | Harness² c8 in-loop hooks & subagents | [Codex / Harness²](codex.md) |
 | **Generic / Custom** | `generic` | Custom path via `--dest` | Custom path via `--dest` | Deterministic CLI gate (`anti-ai-lint`) | [Generic Guide](generic.md) |
 | **ZCode** | `zcode` | `~/.zcode/skills/anti-ai-copywriting/` | `~/.zcode/AGENTS.md` | Global skills engine integration | [ZCode Guide](zcode.md) |
 

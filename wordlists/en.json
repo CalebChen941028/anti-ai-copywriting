@@ -38,7 +38,7 @@
   ],
   "formulaic_patterns": [
     {
-      "pattern": "\\bnot only\\b[^.!?\\r\\n]*?\\bbut also\\b",
+      "pattern": "\\bnot only\\b[^.!?\\r\\n]{1,120}?\\bbut also\\b",
       "name": "Formulaic not only... but also",
       "penalty": 4
     },
@@ -48,7 +48,7 @@
       "penalty": 3
     },
     {
-      "pattern": "\\b(furthermore|moreover|additionally)\\b[^.!?\\r\\n]*?\\b(furthermore|moreover|additionally)\\b",
+      "pattern": "\\b(furthermore|moreover|additionally)\\b[^.!?\\r\\n]{1,120}?\\b(furthermore|moreover|additionally)\\b",
       "name": "Stacked mechanical transitions",
       "penalty": 4
     },

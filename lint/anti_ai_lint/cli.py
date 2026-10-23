@@ -130,8 +130,16 @@ def main(argv: Optional[List[str]] = None) -> int:
     had_error = False
 
     if not args.paths:
-        # Read from stdin
-        content = sys.stdin.read()
+        # Read from stdin with UTF-8 fallback
+        try:
+            if hasattr(sys.stdin, "reconfigure"):
+                sys.stdin.reconfigure(encoding="utf-8", errors="replace")
+            content = sys.stdin.read()
+        except Exception:
+            try:
+                content = sys.stdin.buffer.read().decode("utf-8", errors="replace")
+            except Exception:
+                content = ""
         rep = analyze_text(
             content,
             file_path=None,
@@ -142,6 +150,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         )
         reports.append(rep)
     else:
+        ignored_dirs = {".git", ".svn", ".hg", "node_modules", ".venv", "venv", "__pycache__", ".tox", ".pytest_cache"}
         for path_str in args.paths:
             p = Path(path_str)
             if not p.exists():
@@ -151,9 +160,16 @@ def main(argv: Optional[List[str]] = None) -> int:
             if p.is_dir():
                 found_any = False
                 for sub in sorted(p.rglob("*")):
+                    if any(part in ignored_dirs for part in sub.parts):
+                        continue
                     if sub.is_file() and sub.suffix.lower() in [".md", ".txt", ".markdown"]:
                         found_any = True
-                        content = sub.read_text(encoding="utf-8", errors="replace")
+                        try:
+                            content = sub.read_text(encoding="utf-8", errors="replace")
+                        except OSError as e:
+                            sys.stderr.write(f"Error: could not read file {sub}: {e}\n")
+                            had_error = True
+                            continue
                         rep = analyze_text(
                             content,
                             file_path=str(sub),
@@ -166,7 +182,12 @@ def main(argv: Optional[List[str]] = None) -> int:
                 if not found_any:
                     sys.stderr.write(f"Warning: no markdown or text documents found in directory: {path_str}\n")
             else:
-                content = p.read_text(encoding="utf-8", errors="replace")
+                try:
+                    content = p.read_text(encoding="utf-8", errors="replace")
+                except OSError as e:
+                    sys.stderr.write(f"Error: could not read file {p}: {e}\n")
+                    had_error = True
+                    continue
                 rep = analyze_text(
                     content,
                     file_path=str(p),

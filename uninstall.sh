@@ -23,7 +23,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     -h|--help)
-      echo "Usage: $0 [--target <zcode|claude|codex|opencode|deepseek|workbuddy|cursor|windsurf|cline|aider|antigravity|generic>] [--dest <path>] [--all]"
+      echo "Usage: $0 [--target <zcode|claude|codex|opencode|deepseek|workbuddy|cursor|windsurf|cline|aider|antigravity|harness2|generic>] [--dest <path>] [--all]"
       exit 0
       ;;
     *)
@@ -43,7 +43,7 @@ if [[ ! -f "$MANIFEST_FILE" ]]; then
 fi
 
 if [[ -n "$DEST_FILTER" ]]; then
-  DEST_FILTER="$(python3 -c 'import os, sys; print(os.path.abspath(sys.argv[1]))' "$DEST_FILTER")"
+  DEST_FILTER="$(python3 -c 'import os, sys; print(os.path.abspath(os.path.expanduser(sys.argv[1])))' "$DEST_FILTER")"
 fi
 
 echo "Reading manifest from $MANIFEST_FILE..."

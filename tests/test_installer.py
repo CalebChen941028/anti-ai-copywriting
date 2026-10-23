@@ -407,6 +407,64 @@ class TestInstaller(unittest.TestCase):
         self.assertFalse(opencode_skill.exists())
         self.assertFalse(opencode_rule.exists())
 
+    def test_all_supported_targets_install_and_uninstall(self):
+        targets = [
+            "zcode", "claude", "codex", "opencode", "deepseek",
+            "workbuddy", "cursor", "windsurf", "cline", "aider",
+            "antigravity", "harness2", "generic"
+        ]
+        for t in targets:
+            proj = self.fake_home / f"proj_{t}"
+            # Install
+            res = subprocess.run(
+                [self.install_sh, "--target", t, "--dest", str(proj), "--lang", "zh"],
+                cwd=str(repo_root),
+                env=self.env,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(res.returncode, 0, f"Target {t} installation failed: {res.stderr}")
+
+            # Manifest verification
+            manifest_file = Path(self.env["ANTI_AI_MANIFEST_DIR"]) / "install-manifest.json"
+            self.assertTrue(manifest_file.is_file())
+            manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
+            self.assertIn(f"{t}:{proj}", manifest.get("targets", {}))
+
+            # Clean uninstall
+            res_un = subprocess.run(
+                [self.uninstall_sh, "--all"],
+                cwd=str(repo_root),
+                env=self.env,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(res_un.returncode, 0, f"Target {t} uninstallation failed: {res_un.stderr}")
+            self.assertFalse(manifest_file.exists(), f"Target {t} manifest not removed after uninstall --all")
+
+    def test_idempotent_duplicate_markers_injection(self):
+        rule_file = self.fake_home / "duplicate_test.md"
+        snippet = (repo_root / "rules" / "AGENTS.snippet.zh.md").read_text(encoding="utf-8")
+        # Pre-seed with duplicate marker blocks
+        rule_file.write_text(
+            f"# Header\n\n{snippet}\n\n{snippet}\n\n# Footer\n",
+            encoding="utf-8"
+        )
+        self.assertEqual(rule_file.read_text("utf-8").count("<!-- BEGIN anti-ai-copywriting"), 2)
+
+        # Run install on this rule file
+        subprocess.run(
+            [self.install_sh, "--target", "generic", "--dest", str(rule_file), "--lang", "zh"],
+            cwd=str(repo_root),
+            env=self.env,
+            check=True,
+        )
+
+        content = rule_file.read_text("utf-8")
+        self.assertEqual(content.count("<!-- BEGIN anti-ai-copywriting"), 1)
+        self.assertIn("# Header", content)
+        self.assertIn("# Footer", content)
+
 
 if __name__ == "__main__":
     unittest.main()

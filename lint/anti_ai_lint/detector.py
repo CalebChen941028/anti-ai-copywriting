@@ -132,6 +132,9 @@ def get_remediation_suggestion(category: str, match_text: str, context: str = ""
     if match_text.lower() in en_buzz_map:
         return en_buzz_map[match_text.lower()]
 
+    if any(k in match_text for k in ("如表", "表中", "Table", "Figure", "表格")):
+        return "学术呈现规范：数值结果单独成句紧贴解释，避免套话引出表格（如‘如表所示’或‘As shown in Table’）"
+
     cat_map = {
         "forbidden_word_zh": f"消除套话「{match_text}」，改用平实具体的中文词汇或直陈事实",
         "forbidden_word_en": f"Eliminate AI trope '{match_text}', replace with concrete native verbs or direct active voice",
@@ -219,9 +222,9 @@ def _load_default_wordlists() -> tuple[dict[str, Any], dict[str, Any]]:
                 "it is important to note that", "utilize", "leverage"
             ],
             "formulaic_patterns": [
-                {"pattern": r"\bnot only\b[^.!?\r\n]*?\bbut also\b", "name": "Formulaic not only... but also", "penalty": 4},
+                {"pattern": r"\bnot only\b[^.!?\r\n]{1,120}?\bbut also\b", "name": "Formulaic not only... but also", "penalty": 4},
                 {"pattern": r"\bmake an? (investigation|examination|analysis|assessment|evaluation)\b", "name": "Heavy nominalization (make an analysis/investigation)", "penalty": 3},
-                {"pattern": r"\b(furthermore|moreover|additionally)\b[^.!?\r\n]*?\b(furthermore|moreover|additionally)\b", "name": "Stacked mechanical transitions", "penalty": 4},
+                {"pattern": r"\b(furthermore|moreover|additionally)\b[^.!?\r\n]{1,120}?\b(furthermore|moreover|additionally)\b", "name": "Stacked mechanical transitions", "penalty": 4},
                 {"pattern": r"\bplays? an? (pivotal|crucial|vital|key|essential) role in\b", "name": "Cliché 'plays a vital/pivotal role in'", "penalty": 4},
                 {"pattern": r"\b[Ii]n today's (fast-paced|rapidly changing|interconnected|dynamic) world\b", "name": "Formulaic grand opening 'In today's fast-paced world'", "penalty": 4},
                 {"pattern": r"\b[Aa]s shown in (Table|Figure) \d+\b", "name": "Formulaic table/figure presentation", "penalty": 3}
@@ -237,8 +240,11 @@ def _load_default_wordlists() -> tuple[dict[str, Any], dict[str, Any]]:
 
 
 ABBREVIATIONS = {
-    "e.g.", "i.e.", "et al.", "vs.", "fig.", "tab.", "dr.", "mr.", "mrs.", "ms.", "prof.", "dept.",
-    "vol.", "no.", "pp.", "ed.", "eds.", "approx.", "cf.", "eq.", "eqs.", "ref.", "refs.", "u.s.", "u.k.", "e.u."
+    "e.g.", "i.e.", "et al.", "al.", "vs.", "fig.", "tab.", "dr.", "mr.", "mrs.", "ms.", "prof.", "dept.",
+    "vol.", "no.", "pp.", "ed.", "eds.", "approx.", "cf.", "eq.", "eqs.", "ref.", "refs.", "u.s.", "u.k.", "e.u.",
+    "etc.", "ibid.", "id.", "ca.", "viz.", "suppl.", "sec.", "corp.", "inc.", "ltd.", "co.", "jr.", "sr.",
+    "jan.", "feb.", "mar.", "apr.", "jun.", "jul.", "aug.", "sep.", "sept.", "oct.", "nov.", "dec.",
+    "ph.d.", "m.sc.", "b.sc.", "d.phil."
 }
 
 QUOTE_CLOSERS = "\"'’”)])》」』"
@@ -257,6 +263,12 @@ def split_sentences_spans(text: str) -> List[Tuple[str, int]]:
             end_idx = i + 1
             while end_idx < n and text[end_idx] in QUOTE_CLOSERS:
                 end_idx += 1
+            # Check for footnote reference immediately following terminator/quote e.g. [^1] or [1]
+            fn_m = re.match(r"^\[\^?[a-zA-Z0-9_-]+\]", text[end_idx:])
+            if fn_m:
+                end_idx += fn_m.end()
+                while end_idx < n and text[end_idx] in QUOTE_CLOSERS:
+                    end_idx += 1
             raw_span = text[start:end_idx]
             stripped_span = raw_span.strip()
             if stripped_span:
@@ -303,11 +315,17 @@ def split_sentences_spans(text: str) -> List[Tuple[str, int]]:
 
             if not is_decimal and not is_abbr:
                 at_end = (i + 1 == n)
-                next_is_ws = (i + 1 < n and text[i + 1] in (" \t\r\n" + QUOTE_CLOSERS))
+                next_is_ws = (i + 1 < n and text[i + 1] in (" \t\r\n" + QUOTE_CLOSERS + "["))
                 if at_end or next_is_ws:
                     end_idx = i + 1
                     while end_idx < n and text[end_idx] in QUOTE_CLOSERS:
                         end_idx += 1
+                    # Check for footnote reference immediately following terminator/quote e.g. [^1] or [1]
+                    fn_m = re.match(r"^\[\^?[a-zA-Z0-9_-]+\]", text[end_idx:])
+                    if fn_m:
+                        end_idx += fn_m.end()
+                        while end_idx < n and text[end_idx] in QUOTE_CLOSERS:
+                            end_idx += 1
                     raw_span = text[start:end_idx]
                     stripped_span = raw_span.strip()
                     if stripped_span:
@@ -330,8 +348,9 @@ def split_sentences_spans(text: str) -> List[Tuple[str, int]]:
 
 def sanitize_text_and_mask(text: str) -> Tuple[str, List[str]]:
     """
-    Construct a masked version of text where fenced code blocks, inline code,
-    and headings are replaced with spaces of identical length.
+    Construct a masked version of text where fenced code blocks, LaTeX math blocks,
+    HTML comments, HTML tags, inline code, inline math, headings, and table separators
+    are replaced with spaces of identical length.
     Preserves exact character offsets and newline positions across LF and CRLF.
     """
     lines = text.splitlines(keepends=True)
@@ -339,38 +358,104 @@ def sanitize_text_and_mask(text: str) -> Tuple[str, List[str]]:
     in_code_block = False
     fence_char = ""
     fence_len = 0
+    in_math_block = False
+    in_html_comment = False
 
     for line in lines:
         newline_char = "\r\n" if line.endswith("\r\n") else ("\n" if line.endswith("\n") else "")
         line_len_without_nl = len(line) - len(newline_char)
+        content_line = line[:line_len_without_nl]
 
-        if not in_code_block:
-            # Check for opening code fence: optional blockquote '>' or spaces, then 3+ backticks or tildes
-            m_fence = re.match(r"^[ \t>]*(?P<fence>`{3,}|~{3,})", line)
-            if m_fence:
-                fence = m_fence.group("fence")
-                in_code_block = True
-                fence_char = fence[0]
-                fence_len = len(fence)
-                sanitized_lines.append(" " * line_len_without_nl + newline_char)
-                continue
-            
-            # Heading line: optional blockquote '>' or spaces, then #
-            if re.match(r"^[ \t>]*#", line):
-                sanitized_lines.append(" " * line_len_without_nl + newline_char)
-                continue
-
-            # Regular prose line: mask inline code `...` or ``...``
-            masked = re.sub(r"(`+)(.+?)\1", lambda m: " " * len(m.group(0)), line)
-            sanitized_lines.append(masked)
-        else:
-            # Inside code block: check for matching closing fence
+        # 1. Inside fenced code block
+        if in_code_block:
             pat = r"^[ \t>]*" + re.escape(fence_char) + r"{" + str(fence_len) + r",}[ \t]*$"
-            if re.match(pat, line):
+            if re.match(pat, content_line):
                 in_code_block = False
                 fence_char = ""
                 fence_len = 0
             sanitized_lines.append(" " * line_len_without_nl + newline_char)
+            continue
+
+        # 2. Inside multiline LaTeX math block ($$)
+        if in_math_block:
+            if "$$" in content_line:
+                in_math_block = False
+            sanitized_lines.append(" " * line_len_without_nl + newline_char)
+            continue
+
+        # 3. Inside multiline HTML comment (<!-- ... -->)
+        if in_html_comment:
+            if "-->" in content_line:
+                in_html_comment = False
+            sanitized_lines.append(" " * line_len_without_nl + newline_char)
+            continue
+
+        # Check for start of code fence: 3+ backticks or tildes
+        m_fence = re.match(r"^[ \t>]*(?P<fence>`{3,}|~{3,})", content_line)
+        if m_fence:
+            fence = m_fence.group("fence")
+            in_code_block = True
+            fence_char = fence[0]
+            fence_len = len(fence)
+            sanitized_lines.append(" " * line_len_without_nl + newline_char)
+            continue
+
+        # Check for display math block ($$)
+        m_math = re.match(r"^[ \t>]*\$\$", content_line)
+        if m_math:
+            rest = content_line[m_math.end():]
+            if "$$" in rest:
+                sanitized_lines.append(" " * line_len_without_nl + newline_char)
+            else:
+                in_math_block = True
+                sanitized_lines.append(" " * line_len_without_nl + newline_char)
+            continue
+
+        # Check for HTML comment opening
+        m_comm = re.search(r"<!--", content_line)
+        if m_comm:
+            if "-->" in content_line[m_comm.end():]:
+                pass  # Handled below by regex replacement
+            else:
+                in_html_comment = True
+                masked_part = content_line[:m_comm.start()] + (" " * (len(content_line) - m_comm.start()))
+                sanitized_lines.append(masked_part + newline_char)
+                continue
+
+        # Markdown heading line: optional blockquote '>' or spaces, then #
+        if re.match(r"^[ \t>]*#", content_line):
+            sanitized_lines.append(" " * line_len_without_nl + newline_char)
+            continue
+
+        # Markdown table separator row (|---|---|)
+        if re.match(r"^[ \t>]*\|?[ \t]*:?-+:?[ \t]*(?:\|[ \t]*:?-+:?[ \t]*)+\|?[ \t]*$", content_line):
+            sanitized_lines.append(" " * line_len_without_nl + newline_char)
+            continue
+
+        # Regular prose line: apply masks while strictly preserving length
+        masked = content_line
+
+        # Mask footnote definition prefix [^1]:
+        m_fn = re.match(r"^[ \t>]*\[\^[^\]]+\]:[ \t]*", masked)
+        if m_fn:
+            masked = (" " * m_fn.end()) + masked[m_fn.end():]
+
+        # Mask HTML comments: <!-- ... -->
+        masked = re.sub(r"<!--.*?-->", lambda m: " " * len(m.group(0)), masked)
+
+        # Mask HTML tags: <tag ...> or </tag>
+        masked = re.sub(r"<[a-zA-Z/][^>\r\n]*>", lambda m: " " * len(m.group(0)), masked)
+
+        # Mask single-line display math: $$...$$
+        masked = re.sub(r"\$\$.*?\$\$", lambda m: " " * len(m.group(0)), masked)
+
+        # Mask inline code: `...` or ``...``
+        masked = re.sub(r"(`+)(.+?)\1", lambda m: " " * len(m.group(0)), masked)
+
+        # Mask inline math: $...$ where opening $ not followed by space, closing $ not preceded by space
+        masked = re.sub(r"(?<!\\)\$(?!\s)([^$\r\n]+?)(?<!\s)(?<!\\)\$", lambda m: " " * len(m.group(0)), masked)
+
+        sanitized_lines.append(masked + newline_char)
 
     sanitized_text = "".join(sanitized_lines)
     return sanitized_text, sanitized_lines
@@ -438,6 +523,10 @@ def analyze_text(
     Supports code block masking, bilingual sentence splitting, genre-specific rules,
     span deduplication, and normalized score per 1,000 words/characters.
     """
+    genre = (genre or "general").strip().lower()
+    if genre not in ("general", "academic", "plain"):
+        genre = "general"
+
     if wordlists_dir and os.path.isdir(wordlists_dir):
         zh_p = Path(wordlists_dir) / "zh.json"
         en_p = Path(wordlists_dir) / "en.json"
@@ -453,7 +542,8 @@ def analyze_text(
 
     # Metrics calculation based on sanitized prose text
     total_chars = len(text)
-    cjk_count = len(re.findall(r"[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]", sanitized_text))
+    # Broaden East Asian characters (CJK Unified, Extensions, Hiragana, Katakana, Hangul)
+    cjk_count = len(re.findall(r"[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af\u1100-\u11ff\u3130-\u318f\uff66-\uff9f]", sanitized_text))
     latin_words = len(re.findall(r"[a-zA-Z0-9]+(?:[-'][a-zA-Z0-9]+)*", sanitized_text))
     total_words = cjk_count + latin_words
 
@@ -666,8 +756,12 @@ def analyze_text(
 
         # Genre: Controlled Plain Layer (受控白话层)
         if genre == "plain":
+            # Skip Markdown table rows
+            if re.match(r"^[ \t>]*\|.*\|[ \t]*$", s_text):
+                continue
+
             # Length constraints: Chinese <= 30 chars, English <= 25 words
-            s_cjk = len(re.findall(r"[\u4e00-\u9fff]", s_text))
+            s_cjk = len(re.findall(r"[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af\u1100-\u11ff\u3130-\u318f\uff66-\uff9f]", s_text))
             s_latin = len(re.findall(r"[a-zA-Z0-9]+(?:[-'][a-zA-Z0-9]+)*", s_text))
             if s_cjk >= s_latin and len(s_text) > 30:
                 p = 2.5
@@ -759,8 +853,9 @@ def analyze_text(
     violations = deduplicate_violations(raw_violations)
 
     # 5. Global metrics penalties
-    # Excessive dashes: > 2 per 500 characters
-    if cjk_count > 200 and dash_count > (cjk_count / 300):
+    # Excessive dashes: > 2 per 500 characters / words
+    word_basis = cjk_count if cjk_count > 0 else total_words
+    if word_basis > 200 and dash_count > (word_basis / 300):
         p = 3.0
         violations.append(
             LintViolation(

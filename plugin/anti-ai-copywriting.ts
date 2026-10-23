@@ -70,8 +70,8 @@ export async function runAntiAiLint(
       output: stdout,
     };
   } catch (error: any) {
-    const stdout = (error.stdout || "").trim();
-    const stderr = (error.stderr || "").trim();
+    const stdout = (error?.stdout ?? "").toString().trim();
+    const stderr = (error?.stderr ?? error?.message ?? "").toString().trim();
     if (stdout.includes("<anti-ai-lint-feedback")) {
       return {
         passed: false,

@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "anti-ai-lint"
+version = "0.2.0"
+description = "Deterministic zero-dependency linter for Anti-AI natural copywriting."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+authors = [{ name = "Chen Liangliang" }]
+keywords = ["writing", "linter", "anti-ai", "copywriting", "academic"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Text Processing :: Linguistic",
+]
+
+[project.scripts]
+anti-ai-lint = "anti_ai_lint.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["anti_ai_lint*"]
+
+[tool.setuptools.package-data]
+anti_ai_lint = ["wordlists/*.json"]
+

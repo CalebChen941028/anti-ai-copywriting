@@ -120,10 +120,10 @@ anti-ai-lint docs/ --max-normalized-score 25.0 --format json
 支持针对单一目标或全部目标安全卸载，保留用户既有规则并清理空目录：
 
 ```bash
-# 仅卸载指定目标
+# 卸载指定目标（全局或特定项目）
 ./uninstall.sh --target codex
-./uninstall.sh --target deepseek
-./uninstall.sh --target claude
+./uninstall.sh --target cursor --dest /path/to/project
+./uninstall.sh --dest /path/to/project
 
 # 卸载全部已安装目标
 ./uninstall.sh --all

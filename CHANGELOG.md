@@ -25,15 +25,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Expanded installer targets in `install.sh` to include `deepseek`, `cursor`, `windsurf`, `cline`, `aider`, `antigravity`, `generic`, `workbuddy`, `opencode`, `codex`, `claude`, and `zcode`.
   - Implemented multi-target manifest tracking in `install-manifest.json` preserving distinct records across targets.
   - Added functional `--lang zh|en` support deploying language-tailored snippets.
-  - Enhanced `uninstall.sh` supporting `--target <name>`, `--all`, and safe cleanup of empty directories and pre-existing user rules.
-  - Added integration test suite `tests/test_installer.py`.
+  - Enhanced `uninstall.sh` supporting `--target <name>`, `--dest <path>`, `--all`, and safe disambiguation prompts preventing unintended bulk project deletion.
+  - Added integration test suite `tests/test_installer.py` covering selective project removal, paths with spaces, and multi-target isolation.
 - **Open Source Compliance & Attribution**:
   - Added SPDX license headers and copyright statements across bash, Python, and TypeScript modules.
+  - Standardized author format in `pyproject.toml` and verified entrypoint licensing.
   - Included formal Trademark & Non-Affiliation disclaimers covering Anthropic, OpenAI, DeepSeek, Google, Anysphere (Cursor), Codeium (Windsurf), Cline, Aider, and WorkBuddy.
   - Added formal citations and copyright statements for ASD-STE100 and Google Research Harness².
 
 ### Fixed
 - **Code Block State Machine**: Fixed bug in `detector.py` where lines inside multi-line fenced code blocks (` ``` ` / ` ~~~ `) and inline code (`` `...` ``) were falsely flagged as prose violations.
+- **Uninstaller Project Targeting**: Fixed issue where `uninstall.sh` lacked `--dest` support and indiscriminately deleted all matching targets across multiple project paths.
 - **Bilingual Sentence Splitting**: Replaced naive regex split with robust tokenization that protects decimal numbers (e.g. `28.6%`) and abbreviations (e.g. `e.g.`, `i.e.`, `et al.`).
 - **Word Counting**: Implemented true bilingual token counting combining CJK characters and Latin words.
 - **Template Phrase Matching**: Fixed unescaped ellipsis matching in Chinese phrase patterns (e.g. `随着...的飞速发展` converted to dynamic regex pattern).

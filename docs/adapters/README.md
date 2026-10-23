@@ -57,6 +57,24 @@ Run the unified installer and specify your target platform and preferred languag
 
 ---
 
+## Clean Uninstallation
+
+Cleanly remove installed skills and restore marker blocks without touching other configurations:
+
+```bash
+# Uninstall a global target
+./uninstall.sh --target codex
+
+# Uninstall a specific repository or project target
+./uninstall.sh --target cursor --dest /path/to/repo
+./uninstall.sh --dest /path/to/repo
+
+# Uninstall all registered targets
+./uninstall.sh --all
+```
+
+---
+
 ## Trademark & Non-Affiliation Notice
 
 All product names, logos, brands, trademarks, and registered trademarks (including Anthropic, Claude, Claude Code, OpenAI, Codex, DeepSeek, Google, Cursor, Windsurf, Codeium, Cline, Aider, WorkBuddy, and others) are the property of their respective owners. Their use in this documentation is solely for identification and compatibility purposes. anti-ai-copywriting is an independent open-source project and is not affiliated with, endorsed by, or sponsored by any of these entities.

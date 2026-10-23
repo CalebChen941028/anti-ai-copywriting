@@ -57,6 +57,24 @@
 
 ---
 
+## 安全卸载
+
+安全清理已部署的技能与限定规则块并还原备份：
+
+```bash
+# 卸载指定全局智能体配置
+./uninstall.sh --target codex
+
+# 卸载指定项目或工作区中的配置
+./uninstall.sh --target cursor --dest /path/to/repo
+./uninstall.sh --dest /path/to/repo
+
+# 卸载所有已登记的目标
+./uninstall.sh --all
+```
+
+---
+
 ## 商标与非关联声明
 
 文档中提及的所有产品名称、商标、品牌与注册商标（包括 Anthropic、Claude、Claude Code、OpenAI、Codex、DeepSeek、Google、Cursor、Windsurf、Codeium、Cline、Aider、WorkBuddy 等）均归其各自所有者拥有。在本文档中引用这些名称仅为便于标识和说明兼容性。本项目为独立开源项目，与上述实体无任何官方关联、赞助或背书关系。

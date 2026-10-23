@@ -120,10 +120,10 @@ anti-ai-lint docs/ --max-normalized-score 25.0 --format json
 Cleanly restore backups and remove marker blocks without touching other user configurations:
 
 ```bash
-# Uninstall a specific target
+# Uninstall a specific target (global or project-specific)
 ./uninstall.sh --target codex
-./uninstall.sh --target deepseek
-./uninstall.sh --target claude
+./uninstall.sh --target cursor --dest /path/to/project
+./uninstall.sh --dest /path/to/project
 
 # Uninstall all registered targets
 ./uninstall.sh --all

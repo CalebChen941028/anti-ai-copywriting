@@ -271,7 +271,144 @@ class TestInstaller(unittest.TestCase):
         self.assertFalse(workbuddy_rule.exists())
         self.assertFalse(manifest_file.exists())
 
+    def test_uninstall_with_dest_selective(self):
+        proj1 = self.fake_home / "cursor_proj1"
+        proj2 = self.fake_home / "cursor_proj2"
+
+        subprocess.run(
+            [self.install_sh, "--target", "cursor", "--dest", str(proj1), "--lang", "en"],
+            cwd=str(repo_root),
+            env=self.env,
+            check=True,
+        )
+        subprocess.run(
+            [self.install_sh, "--target", "cursor", "--dest", str(proj2), "--lang", "en"],
+            cwd=str(repo_root),
+            env=self.env,
+            check=True,
+        )
+
+        rule1 = proj1 / ".cursorrules"
+        rule2 = proj2 / ".cursorrules"
+        self.assertTrue(rule1.is_file())
+        self.assertTrue(rule2.is_file())
+
+        # Selectively uninstall proj1 using --dest
+        subprocess.run(
+            [self.uninstall_sh, "--target", "cursor", "--dest", str(proj1)],
+            cwd=str(repo_root),
+            env=self.env,
+            check=True,
+        )
+        self.assertFalse(rule1.exists())
+        self.assertTrue(rule2.is_file())
+
+        # Selectively uninstall proj2 using only --dest
+        subprocess.run(
+            [self.uninstall_sh, "--dest", str(proj2)],
+            cwd=str(repo_root),
+            env=self.env,
+            check=True,
+        )
+        self.assertFalse(rule2.exists())
+
+        manifest_file = Path(self.env["ANTI_AI_MANIFEST_DIR"]) / "install-manifest.json"
+        self.assertFalse(manifest_file.exists())
+
+    def test_uninstall_disambiguation_when_multiple_targets_exist(self):
+        proj1 = self.fake_home / "proj_a"
+        proj2 = self.fake_home / "proj_b"
+
+        subprocess.run(
+            [self.install_sh, "--target", "cline", "--dest", str(proj1), "--lang", "zh"],
+            cwd=str(repo_root),
+            env=self.env,
+            check=True,
+        )
+        subprocess.run(
+            [self.install_sh, "--target", "cline", "--dest", str(proj2), "--lang", "zh"],
+            cwd=str(repo_root),
+            env=self.env,
+            check=True,
+        )
+
+        # Calling uninstall without --dest or --all when multiple destinations exist must safely fail
+        res = subprocess.run(
+            [self.uninstall_sh, "--target", "cline"],
+            cwd=str(repo_root),
+            env=self.env,
+            capture_output=True,
+            text=True,
+        )
+        self.assertNotEqual(res.returncode, 0)
+        self.assertIn("Multiple installations found", res.stderr)
+        self.assertTrue((proj1 / ".clinerules").is_file())
+        self.assertTrue((proj2 / ".clinerules").is_file())
+
+    def test_install_and_uninstall_with_spaces_in_path(self):
+        space_proj = self.fake_home / "folder with spaces" / "project with spaces"
+        subprocess.run(
+            [self.install_sh, "--target", "generic", "--dest", str(space_proj), "--lang", "en"],
+            cwd=str(repo_root),
+            env=self.env,
+            check=True,
+        )
+
+        skill_file = space_proj / "skill" / "anti-ai-copywriting" / "SKILL.md"
+        rule_file = space_proj / "AGENTS.md"
+        self.assertTrue(skill_file.is_file())
+        self.assertTrue(rule_file.is_file())
+        self.assertIn("Anti-AI Copywriting & Natural English Voice Rules", rule_file.read_text("utf-8"))
+
+        subprocess.run(
+            [self.uninstall_sh, "--dest", str(space_proj)],
+            cwd=str(repo_root),
+            env=self.env,
+            check=True,
+        )
+        self.assertFalse(skill_file.exists())
+        self.assertFalse(rule_file.exists())
+
+    def test_codex_and_opencode_installation(self):
+        # Codex global install
+        subprocess.run(
+            [self.install_sh, "--target", "codex", "--lang", "en"],
+            cwd=str(repo_root),
+            env=self.env,
+            check=True,
+        )
+        codex_skill = self.fake_home / ".codex" / "skills" / "anti-ai-copywriting" / "SKILL.md"
+        codex_rule = self.fake_home / ".codex" / "AGENTS.md"
+        self.assertTrue(codex_skill.is_file())
+        self.assertTrue(codex_rule.is_file())
+
+        # OpenCode workspace install
+        opencode_proj = self.fake_home / "opencode_workspace"
+        subprocess.run(
+            [self.install_sh, "--target", "opencode", "--dest", str(opencode_proj), "--lang", "zh"],
+            cwd=str(repo_root),
+            env=self.env,
+            check=True,
+        )
+        opencode_skill = opencode_proj / ".opencode" / "skills" / "anti-ai-copywriting" / "SKILL.md"
+        opencode_rule = opencode_proj / "AGENTS.md"
+        self.assertTrue(opencode_skill.is_file())
+        self.assertTrue(opencode_rule.is_file())
+
+        # Clean all
+        subprocess.run(
+            [self.uninstall_sh, "--all"],
+            cwd=str(repo_root),
+            env=self.env,
+            check=True,
+        )
+        self.assertFalse(codex_skill.exists())
+        self.assertFalse(codex_rule.exists())
+        self.assertFalse(opencode_skill.exists())
+        self.assertFalse(opencode_rule.exists())
+
 
 if __name__ == "__main__":
     unittest.main()
+
 

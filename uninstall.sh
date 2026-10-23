@@ -5,6 +5,7 @@
 set -euo pipefail
 
 TARGET_FILTER=""
+DEST_FILTER=""
 UNINSTALL_ALL=false
 
 while [[ $# -gt 0 ]]; do
@@ -13,12 +14,16 @@ while [[ $# -gt 0 ]]; do
       TARGET_FILTER="$2"
       shift 2
       ;;
+    --dest)
+      DEST_FILTER="$2"
+      shift 2
+      ;;
     --all)
       UNINSTALL_ALL=true
       shift
       ;;
     -h|--help)
-      echo "Usage: $0 [--target <zcode|claude|codex|opencode|deepseek|workbuddy|cursor|windsurf|cline|aider|antigravity|generic>] [--all]"
+      echo "Usage: $0 [--target <zcode|claude|codex|opencode|deepseek|workbuddy|cursor|windsurf|cline|aider|antigravity|generic>] [--dest <path>] [--all]"
       exit 0
       ;;
     *)
@@ -37,9 +42,13 @@ if [[ ! -f "$MANIFEST_FILE" ]]; then
   exit 0
 fi
 
+if [[ -n "$DEST_FILTER" ]]; then
+  DEST_FILTER="$(python3 -c 'import os, sys; print(os.path.abspath(sys.argv[1]))' "$DEST_FILTER")"
+fi
+
 echo "Reading manifest from $MANIFEST_FILE..."
 
-python3 - "$MANIFEST_FILE" "$TARGET_FILTER" "$UNINSTALL_ALL" <<'EOF'
+python3 - "$MANIFEST_FILE" "$TARGET_FILTER" "$DEST_FILTER" "$UNINSTALL_ALL" <<'EOF'
 import json
 import os
 import re
@@ -48,7 +57,8 @@ from pathlib import Path
 
 manifest_path = Path(sys.argv[1])
 target_filter = sys.argv[2].strip()
-uninstall_all = sys.argv[3].lower() == "true"
+dest_filter = sys.argv[3].strip()
+uninstall_all = sys.argv[4].lower() == "true"
 
 try:
     data = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -70,17 +80,56 @@ if not targets:
 
 # Determine which targets to uninstall
 to_uninstall = []
-if target_filter:
-    matched = [k for k in targets if k == target_filter or targets[k].get("target") == target_filter]
+if uninstall_all:
+    to_uninstall = list(targets.keys())
+elif target_filter and dest_filter:
+    target_key = f"{target_filter}:{dest_filter}"
+    if target_key in targets:
+        to_uninstall = [target_key]
+    else:
+        matched = [
+            k for k in targets
+            if targets[k].get("target") == target_filter
+            and (k.endswith(f":{dest_filter}") or dest_filter in k or any(dest_filter in f for f in targets[k].get("files", [])) or (targets[k].get("rule_file") and dest_filter in targets[k]["rule_file"]))
+        ]
+        if not matched:
+            print(f"Target '{target_filter}' at destination '{dest_filter}' not found in manifest. Registered targets: {list(targets.keys())}", file=sys.stderr)
+            sys.exit(1)
+        to_uninstall = matched
+elif dest_filter:
+    matched = [
+        k for k in targets
+        if k.endswith(f":{dest_filter}") or dest_filter in k or any(dest_filter in f for f in targets[k].get("files", [])) or (targets[k].get("rule_file") and dest_filter in targets[k]["rule_file"])
+    ]
     if not matched:
-        print(f"Target '{target_filter}' not found in manifest. Registered targets: {list(targets.keys())}")
+        print(f"No targets found matching destination '{dest_filter}'. Registered targets: {list(targets.keys())}", file=sys.stderr)
         sys.exit(1)
     to_uninstall = matched
-elif uninstall_all or len(targets) == 1:
+elif target_filter:
+    if target_filter in targets:
+        to_uninstall = [target_filter]
+    else:
+        matched = [k for k in targets if targets[k].get("target") == target_filter]
+        if not matched:
+            print(f"Target '{target_filter}' not found in manifest. Registered targets: {list(targets.keys())}", file=sys.stderr)
+            sys.exit(1)
+        if len(matched) > 1:
+            print(
+                f"Multiple installations found for target '{target_filter}': {matched}.\n"
+                f"Please specify --dest <path> to uninstall a specific project, or use --all to uninstall all.",
+                file=sys.stderr
+            )
+            sys.exit(1)
+        to_uninstall = matched
+elif len(targets) == 1:
     to_uninstall = list(targets.keys())
 else:
-    # Multiple targets and neither --target nor --all specified: default to uninstalling all
-    to_uninstall = list(targets.keys())
+    print(
+        f"Multiple targets installed: {list(targets.keys())}.\n"
+        f"Please specify --target <name>, --dest <path>, or --all to uninstall all.",
+        file=sys.stderr
+    )
+    sys.exit(1)
 
 for t_key in to_uninstall:
     info = targets[t_key]

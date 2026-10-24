@@ -39,12 +39,6 @@ MODEL = "deepseek-v4.1-flash"
 SESSION_ID = "session-deepseek-advanced-benchmark-2026"
 MAX_TOKENS = 6000
 
-# API key resolution order:
-#   1. OPENCODE_API_KEY env var
-#   2. active key from ~/.zcode/v2/provider_config.json
-#   3. project verified backup key
-_BACKUP_KEY = "REDACTED_API_KEY"
-
 
 def _key_from_provider_config() -> Optional[str]:
     cfg_path = Path.home() / ".zcode" / "v2" / "provider_config.json"
@@ -64,11 +58,10 @@ def resolve_api_key() -> str:
     for candidate in (
         os.environ.get("OPENCODE_API_KEY"),
         _key_from_provider_config(),
-        _BACKUP_KEY,
     ):
         if candidate:
             return candidate
-    raise RuntimeError("No API key available (env/provider_config/fallbacks all empty).")
+    raise RuntimeError("No API key available (please set OPENCODE_API_KEY or configure ~/.zcode/v2/provider_config.json).")
 
 
 API_KEY = resolve_api_key()

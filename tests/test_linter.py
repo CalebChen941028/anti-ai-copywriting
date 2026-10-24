@@ -644,6 +644,81 @@ class TestAntiAiLinter(unittest.TestCase):
         rep_adv = analyze_text(text_adv)
         self.assertIn("english_sentence_head_stacking", [v.category for v in rep_adv.violations])
 
+    def test_paragraph_cadence_variance(self):
+        # Monotonous paragraph length: 3 paragraphs of exactly equal length (total >= 500 chars)
+        block = "这是用于测试段落长度完全均等的段落正文文本，每个段落都包含完全一致的字数以模拟大语言模型生成的机械对称砖墙。" * 3  # ~180 chars
+        p1 = block + "一。"
+        p2 = block + "二。"
+        p3 = block + "三。"
+        mono_text = f"{p1}\n\n{p2}\n\n{p3}"
+        rep_mono = analyze_text(mono_text)
+        self.assertLess(rep_mono.metrics.para_cv, 0.15)
+        self.assertIn("paragraph_cadence_variance", [v.category for v in rep_mono.violations])
+
+        # Varied paragraph cadence: short topic paragraph, long substantive body, short conclusion (total >= 500 chars)
+        vp1 = "分布式共识系统在网络分区下的可用性保证是现代分布式存储的核心挑战。"
+        vp2 = (
+            "为解决该问题，我们提出了一种基于自适应心跳检测的轻量级租约管理机制。"
+            "当网络链路发生抖动或单侧拥塞时，节点动态拉长租约协商窗口，避免频繁发生非必要的主从切换。"
+            "同时，在数据同步通道中引入零拷贝内存映射与批处理管道，将单次状态同步的平均耗时由原本的42毫秒压缩至11毫秒以内。"
+            "此外，通过分离控制信令与数据流，集群在遭遇高并发流量洪峰时依然能够保持99.99%的写入成功率。"
+        ) * 2
+        vp3 = "这一权衡为跨机房容灾部署提供了务实的工程路径。"
+        varied_text = f"{vp1}\n\n{vp2}\n\n{vp3}"
+        rep_var = analyze_text(varied_text)
+        self.assertGreater(rep_var.metrics.para_cv, 0.25)
+        self.assertNotIn("paragraph_cadence_variance", [v.category for v in rep_var.violations])
+
+    def test_repetitive_sentence_starter(self):
+        # Chinese: 3 consecutive prose sentences starting with "通过"
+        zh_repetitive = (
+            "通过对底层网络协议进行用户态驱动旁路改造，系统单核心吞吐显著提升。"
+            "通过引入双缓冲环形消息队列，核心态与用户态的上下文切换开销降至零。"
+            "通过启用巨页内存寻址模式，TLB缓存未命中所导致的长尾时延得以彻底收敛。"
+        )
+        rep_zh = analyze_text(zh_repetitive)
+        self.assertIn("repetitive_sentence_starter", [v.category for v in rep_zh.violations])
+
+        # English: 3 consecutive prose sentences starting with "The architecture"
+        en_repetitive = (
+            "The architecture separates control plane state from data forwarding pipelines. "
+            "The architecture offloads packet parsing directly to hardware network interfaces. "
+            "The architecture eliminates locking contention across parallel worker threads."
+        )
+        rep_en = analyze_text(en_repetitive)
+        self.assertIn("repetitive_sentence_starter", [v.category for v in rep_en.violations])
+
+        # Varied starters: diverse syntactic openings
+        varied_starters = (
+            "通过对底层网络协议进行用户态驱动旁路改造，系统单核心吞吐显著提升。"
+            "我们引入了双缓冲环形消息队列，将核心态与用户态的上下文切换开销降至零。"
+            "这一设计彻底消除了TLB缓存未命中所导致的长尾时延。"
+        )
+        rep_clean = analyze_text(varied_starters)
+        self.assertNotIn("repetitive_sentence_starter", [v.category for v in rep_clean.violations])
+
+        # Markdown lists should not trigger (parallelism in lists is legitimate)
+        list_text = (
+            "- 通过模块A提升计算效率\n"
+            "- 通过模块B降低显存占用\n"
+            "- 通过模块C保障系统可用性\n"
+        )
+        rep_list = analyze_text(list_text)
+        self.assertNotIn("repetitive_sentence_starter", [v.category for v in rep_list.violations])
+
+    def test_human_gold_standards(self):
+        gold_dir = self.repo_root / "tests" / "fixtures_human_gold"
+        self.assertTrue(gold_dir.is_dir())
+        md_files = list(gold_dir.glob("*.md"))
+        self.assertGreaterEqual(len(md_files), 4)
+
+        for fpath in md_files:
+            content = fpath.read_text(encoding="utf-8")
+            rep = analyze_text(content)
+            self.assertTrue(rep.passed, f"Human gold standard {fpath.name} failed gate: score={rep.score}")
+            self.assertEqual(rep.score, 0.0, f"Human gold standard {fpath.name} incurred false positive penalties: {[v.category for v in rep.violations]}")
+            self.assertGreaterEqual(rep.metrics.burstiness_cv, 0.28, f"Human gold standard {fpath.name} sentence CV too low: {rep.metrics.burstiness_cv}")
+
     def test_mattr_lexical_richness_metric(self):
         # Empty text
         rep_empty = analyze_text("")

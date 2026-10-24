@@ -39,14 +39,6 @@ MODEL = "mimo-v2.6-flash"
 SESSION_ID = "session-mimo-benchmark-2026"
 MAX_TOKENS = 6000  # reasoning tokens share the completion budget; keep headroom
 
-# API key resolution order (first hit wins):
-#   1. OPENCODE_API_KEY env var
-#   2. active key from ~/.zcode/v2/provider_config.json (opencode-go-chat provider)
-#   3. temporary test key issued for this benchmark run
-#   4. documented backup key
-_TEMP_TEST_KEY = "REDACTED_API_KEY"
-_BACKUP_KEY = "REDACTED_API_KEY"
-
 
 def _key_from_provider_config() -> Optional[str]:
     cfg_path = Path.home() / ".zcode" / "v2" / "provider_config.json"
@@ -66,12 +58,10 @@ def resolve_api_key() -> str:
     for candidate in (
         os.environ.get("OPENCODE_API_KEY"),
         _key_from_provider_config(),
-        _TEMP_TEST_KEY,
-        _BACKUP_KEY,
     ):
         if candidate:
             return candidate
-    raise RuntimeError("No API key available (env/provider_config/fallbacks all empty).")
+    raise RuntimeError("No API key available (please set OPENCODE_API_KEY or configure ~/.zcode/v2/provider_config.json).")
 
 
 API_KEY = resolve_api_key()

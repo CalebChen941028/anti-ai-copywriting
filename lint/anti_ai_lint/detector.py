@@ -42,6 +42,7 @@ class TextMetrics:
     bold_count: int = 0
     exclamation_count: int = 0
     burstiness_cv: float = 0.0
+    para_cv: float = 0.0
     mattr: float = 0.0
 
 
@@ -179,6 +180,8 @@ def get_remediation_suggestion(category: str, match_text: str, context: str = ""
         "staccato_overfragmentation": "纠治过碎断气句：检测到连续3句以上超短碎片句，切勿为机械拉大句长方差而刻意切碎句子，保持论述连贯与自然呼吸",
         "english_participial_fronting": f"Eliminate repetitive fronted participial clauses ('{match_text}'): rephrase using direct subject-verb constructions",
         "english_sentence_head_stacking": f"Eliminate repetitive fronted discourse markers ('{match_text}'): vary sentence openings and integrate transitions smoothly",
+        "paragraph_cadence_variance": "打破宏观段落块状对称（Paragraph Cadence）：大幅调整段落长短起伏（穿插单句成段的论述锚点与详实展开的长段落），消除AI特有的各段均匀等长方块感",
+        "repetitive_sentence_starter": f"打破句首结构固化（Sentence Starter）：连续多句以「{match_text}」等相同句式开头，建议变换句式结构（如主宾倒装、动词前置、名词主干化或合并长短句）",
         "fidelity_added": "信息守恒：润色与翻译不得新增原文没有的数字、代号或细节；核对原文后删除，或还原原文数值",
         "fidelity_dropped": "信息守恒：核对是否误删原文事实；数字、型号、参数不得在润色或翻译中丢失",
     }
@@ -709,6 +712,30 @@ def analyze_text(
 
         mattr = round((distinct_sum / window_size) / num_windows, 4)
 
+    # Statistical macro paragraph cadence variance (para_cv = sigma / mu)
+    para_pattern = re.compile(r"(?:[ \t]*\n){2,}")
+    all_paras = para_pattern.split(sanitized_text)
+    prose_para_lengths: List[int] = []
+    for p_block in all_paras:
+        p_str = p_block.strip()
+        if not p_str:
+            continue
+        # Skip headings, tables, list blocks
+        if re.search(r"^[ \t>]*(?:[-*+]|\d+[.)、）]|#|\|)", p_str, re.M):
+            continue
+        c = len(re.findall(r"[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af\u1100-\u11ff\u3130-\u318f\uff66-\uff9f]", p_str))
+        l = len(re.findall(r"[a-zA-Z0-9]+(?:[-'][a-zA-Z0-9]+)*", p_str))
+        tot_p = c + l
+        if tot_p >= 10:
+            prose_para_lengths.append(tot_p)
+
+    para_cv = 0.0
+    if len(prose_para_lengths) >= 3:
+        p_mean = sum(prose_para_lengths) / len(prose_para_lengths)
+        if p_mean > 0:
+            p_var = sum((x - p_mean) ** 2 for x in prose_para_lengths) / len(prose_para_lengths)
+            para_cv = round(math.sqrt(p_var) / p_mean, 4)
+
     metrics = TextMetrics(
         total_chars=total_chars,
         total_words=total_words,
@@ -721,6 +748,7 @@ def analyze_text(
         bold_count=bold_count,
         exclamation_count=exclamation_count,
         burstiness_cv=burstiness_cv,
+        para_cv=para_cv,
         mattr=mattr,
     )
 
@@ -1106,7 +1134,7 @@ def analyze_text(
             )
         )
     elif burstiness_cv >= 0.28 and (total_chars >= 600 or total_words >= 400):
-        # Localized paragraph-level rhythmic monotony: in long-form texts (>=600 chars), check each prose paragraph
+        # Localized paragraph-level rhythmic monotony: in long-form texts (>=600 chars or >=400 words), check each prose paragraph
         para_pattern = re.compile(r"(?:[ \t]*\n){2,}")
         para_starts = [0] + [m.end() for m in para_pattern.finditer(sanitized_text)]
         para_blocks = para_pattern.split(sanitized_text)
@@ -1141,6 +1169,22 @@ def analyze_text(
                             )
                         )
                         break
+
+    # Macro Paragraph Cadence Variance: when >= 3 eligible prose paragraphs and >= 300 total words/units
+    if len(prose_para_lengths) >= 3 and total_words >= 300:
+        p_mean = sum(prose_para_lengths) / len(prose_para_lengths)
+        if p_mean >= 25 and para_cv < 0.15:
+            violations.append(
+                LintViolation(
+                    category="paragraph_cadence_variance",
+                    message=f"Macro paragraph cadence monotony detected: paragraph length CV={para_cv:.2f} < 0.15 ({len(prose_para_lengths)} paragraphs, mechanical block symmetry)",
+                    line=1,
+                    column=1,
+                    context=f"paragraph lengths: {prose_para_lengths[:5]} (mean={round(p_mean, 1)}, CV={para_cv:.3f})",
+                    penalty=2.5,
+                    suggestion=get_remediation_suggestion("paragraph_cadence_variance", f"{para_cv:.2f}"),
+                )
+            )
 
     # Staccato over-fragmentation check: >= 3 consecutive micro-sentences (1 to 3 words/chars) in natural prose
     staccato_streak = 0
@@ -1178,6 +1222,137 @@ def analyze_text(
                 break
         else:
             staccato_streak = 0
+
+    # Repetitive Sentence Starter Detection: >= 3 consecutive natural prose sentences starting with identical template/prefix
+    ZH_STARTER_PREFIXES = (
+        "通过", "针对", "基于", "为了", "在", "随着", "根据", "由", "从", "作为", "由于",
+        "不仅", "同时", "此外", "因此", "然而", "该系统", "本项目", "我们", "这意味着"
+    )
+    current_starter: Optional[str] = None
+    starter_streak = 0
+    starter_start_idx = 0
+
+    for s_idx, (s_text, s_pos) in enumerate(sentences):
+        # Ignore markdown lists, headers, tables, links, blockquotes, or math/code
+        raw_s = text[s_pos : s_pos + len(s_text)]
+        if (
+            re.search(r"^[ \t>]*(?:[-*+]|\d+[.)、）]|#|\|)", s_text)
+            or any(ch in raw_s for ch in ("[", "]", "http", "```", "$$"))
+        ):
+            if starter_streak >= 3 and current_starter:
+                s_line = sanitized_text[:sentences[starter_start_idx][1]].count("\n") + 1
+                violations.append(
+                    LintViolation(
+                        category="repetitive_sentence_starter",
+                        message=f"Repetitive sentence starter detected: {starter_streak} consecutive sentences starting with '{current_starter}'",
+                        line=s_line,
+                        column=1,
+                        context=f"{starter_streak} consecutive sentences starting with '{current_starter}'",
+                        penalty=2.5,
+                        suggestion=get_remediation_suggestion("repetitive_sentence_starter", current_starter),
+                    )
+                )
+                break
+            current_starter = None
+            starter_streak = 0
+            continue
+
+        s_clean = s_text.strip(" \t\r\n\"'“”‘’（）()【】[]—–-")
+        if not s_clean:
+            continue
+
+        matched_prefix = None
+        for pfx in ZH_STARTER_PREFIXES:
+            if s_clean.startswith(pfx):
+                matched_prefix = pfx
+                break
+
+        if matched_prefix:
+            s_pattern = matched_prefix
+        else:
+            cjk_lead = re.match(r"^[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]{2,3}", s_clean)
+            if cjk_lead:
+                s_pattern = cjk_lead.group(0)
+            else:
+                en_match = re.match(r"^(The\s+\w+|This\s+\w+|These\s+\w+|Those\s+\w+|It\s+is|There\s+is|There\s+are|In\s+order\s+to|By\s+\w+ing)\b", s_clean, re.I)
+                if en_match:
+                    s_pattern = en_match.group(1).lower()
+                else:
+                    words = re.findall(r"[a-zA-Z0-9]+(?:[-'][a-zA-Z0-9]+)*", s_clean)
+                    if len(words) >= 2:
+                        s_pattern = f"{words[0].lower()} {words[1].lower()}"
+                    elif words:
+                        s_pattern = words[0].lower()
+                    else:
+                        s_pattern = ""
+
+        if not s_pattern:
+            if starter_streak >= 3 and current_starter:
+                s_line = sanitized_text[:sentences[starter_start_idx][1]].count("\n") + 1
+                violations.append(
+                    LintViolation(
+                        category="repetitive_sentence_starter",
+                        message=f"Repetitive sentence starter detected: {starter_streak} consecutive sentences starting with '{current_starter}'",
+                        line=s_line,
+                        column=1,
+                        context=f"{starter_streak} consecutive sentences starting with '{current_starter}'",
+                        penalty=2.5,
+                        suggestion=get_remediation_suggestion("repetitive_sentence_starter", current_starter),
+                    )
+                )
+                break
+            current_starter = None
+            starter_streak = 0
+            continue
+
+        if current_starter == s_pattern:
+            starter_streak += 1
+            if starter_streak >= 3:
+                s_line = sanitized_text[:sentences[starter_start_idx][1]].count("\n") + 1
+                violations.append(
+                    LintViolation(
+                        category="repetitive_sentence_starter",
+                        message=f"Repetitive sentence starter detected: {starter_streak} consecutive sentences starting with '{current_starter}'",
+                        line=s_line,
+                        column=1,
+                        context=f"{starter_streak} consecutive sentences starting with '{current_starter}'",
+                        penalty=2.5,
+                        suggestion=get_remediation_suggestion("repetitive_sentence_starter", current_starter),
+                    )
+                )
+                break
+        else:
+            if starter_streak >= 3 and current_starter:
+                s_line = sanitized_text[:sentences[starter_start_idx][1]].count("\n") + 1
+                violations.append(
+                    LintViolation(
+                        category="repetitive_sentence_starter",
+                        message=f"Repetitive sentence starter detected: {starter_streak} consecutive sentences starting with '{current_starter}'",
+                        line=s_line,
+                        column=1,
+                        context=f"{starter_streak} consecutive sentences starting with '{current_starter}'",
+                        penalty=2.5,
+                        suggestion=get_remediation_suggestion("repetitive_sentence_starter", current_starter),
+                    )
+                )
+                break
+            current_starter = s_pattern
+            starter_streak = 1
+            starter_start_idx = s_idx
+
+    if starter_streak >= 3 and current_starter and not any(v.category == "repetitive_sentence_starter" for v in violations):
+        s_line = sanitized_text[:sentences[starter_start_idx][1]].count("\n") + 1
+        violations.append(
+            LintViolation(
+                category="repetitive_sentence_starter",
+                message=f"Repetitive sentence starter detected: {starter_streak} consecutive sentences starting with '{current_starter}'",
+                line=s_line,
+                column=1,
+                context=f"{starter_streak} consecutive sentences starting with '{current_starter}'",
+                penalty=2.5,
+                suggestion=get_remediation_suggestion("repetitive_sentence_starter", current_starter),
+            )
+        )
 
     # English sentence-head repetitive constructions (participial clauses & discourse adverbs)
     if latin_words >= 20:

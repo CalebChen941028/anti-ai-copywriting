@@ -1,0 +1,360 @@
+{
+  "blind_kernel_architecture": {
+    "title": "高并发用户态旁路架构技术论证（零提示词泄露·纯盲测）",
+    "genre": "academic",
+    "lang": "zh",
+    "solo": {
+      "score": 9.5,
+      "passed": true,
+      "sentence_count": 28,
+      "sent_cv": 0.4555,
+      "para_cv": 0.0,
+      "violations_count": 3,
+      "violations": [
+        {
+          "category": "forbidden_word_zh",
+          "message": "Found forbidden buzzword/cliché: 「矩阵」",
+          "line": 8,
+          "column": 44,
+          "context": "绑核、NUMA及网卡固件/驱动矩阵适配，升级维护成本高；XDP复",
+          "penalty": 4.0,
+          "suggestion": "改用产品组合、业务线或服务体系"
+        },
+        {
+          "category": "punctuation_abuse",
+          "message": "Excessive dashes/em-dashes (3 occurrences)",
+          "line": 1,
+          "column": 1,
+          "context": "Total dashes: 3",
+          "penalty": 3.0,
+          "suggestion": "每千字破折号建议不超过1次，破折号替换为逗号或独立短句"
+        },
+        {
+          "category": "formatting_abuse",
+          "message": "Excessive bold formatting (8 instances)",
+          "line": 1,
+          "column": 1,
+          "context": "Total bold: 8",
+          "penalty": 2.5,
+          "suggestion": "减少正文中的高频粗体强调，依靠段落结构和语义逻辑传达重点"
+        }
+      ],
+      "api_evidence": {
+        "label": "blind_kernel_architecture:solo",
+        "model": "deepseek-v4.1-flash",
+        "http_status": 200,
+        "response_id": "chatcmpl-RREucSGWNDgA4723n2UwbEfc",
+        "created": 1792864476,
+        "finish_reason": "stop",
+        "elapsed_ms": 20368,
+        "usage": {
+          "prompt_tokens": 238,
+          "completion_tokens": 1878,
+          "reasoning_tokens": 1283,
+          "total_tokens": 2116
+        },
+        "timestamp_iso": "2026-10-24T17:54:36.710469+00:00"
+      }
+    },
+    "skill_final": {
+      "score": 0,
+      "passed": true,
+      "sentence_count": 27,
+      "sent_cv": 0.3771,
+      "para_cv": 0.5866,
+      "violations_count": 0,
+      "violations": [],
+      "remediation_rounds": 0
+    }
+  },
+  "blind_executive_board_memo": {
+    "title": "银行核心账务系统下移董事会战略汇报（零提示词泄露·纯盲测）",
+    "genre": "general",
+    "lang": "zh",
+    "solo": {
+      "score": 2.5,
+      "passed": true,
+      "sentence_count": 27,
+      "sent_cv": 0.4417,
+      "para_cv": 0.6797,
+      "violations_count": 1,
+      "violations": [
+        {
+          "category": "localized_rhythmic_monotony",
+          "message": "Localized rhythmic monotony detected in paragraph at line 15: CV=0.17 < 0.20 (5 sentences)",
+          "line": 15,
+          "column": 1,
+          "context": "按已确认的硬件采购与维保支出口径，一期年化直接成本回报额为2400万元。正式投资回报率需以经审计的一期资本化投入及全口径",
+          "penalty": 2.5,
+          "suggestion": "打破段落级局部节奏呆滞：该段落内连续句子长度过匀，建议穿插短促句（5~10字）打破等长单调感"
+        }
+      ],
+      "api_evidence": {
+        "label": "blind_executive_board_memo:solo",
+        "model": "deepseek-v4.1-flash",
+        "http_status": 200,
+        "response_id": "chatcmpl-RxlaxE6LxWbK7EnBD8RbtJ6S",
+        "created": 1792864575,
+        "finish_reason": "stop",
+        "elapsed_ms": 52995,
+        "usage": {
+          "prompt_tokens": 196,
+          "completion_tokens": 2226,
+          "reasoning_tokens": 1667,
+          "total_tokens": 2422
+        },
+        "timestamp_iso": "2026-10-24T17:56:15.660303+00:00"
+      }
+    },
+    "skill_final": {
+      "score": 0,
+      "passed": true,
+      "sentence_count": 23,
+      "sent_cv": 0.4445,
+      "para_cv": 0.0,
+      "violations_count": 0,
+      "violations": [],
+      "remediation_rounds": 0
+    }
+  },
+  "blind_english_research_position": {
+    "title": "Unprompted English Research Position Paper (KV Cache Bottlenecks & Speculative Decoding)",
+    "genre": "academic",
+    "lang": "en",
+    "solo": {
+      "score": 3.0,
+      "passed": true,
+      "sentence_count": 35,
+      "sent_cv": 0.28,
+      "para_cv": 0.0,
+      "violations_count": 1,
+      "violations": [
+        {
+          "category": "punctuation_abuse",
+          "message": "Excessive dashes/em-dashes (5 occurrences)",
+          "line": 1,
+          "column": 1,
+          "context": "Total dashes: 5",
+          "penalty": 3.0,
+          "suggestion": "每千字破折号建议不超过1次，破折号替换为逗号或独立短句"
+        }
+      ],
+      "api_evidence": {
+        "label": "blind_english_research_position:solo",
+        "model": "deepseek-v4.1-flash",
+        "http_status": 200,
+        "response_id": "chatcmpl-RkyQxx2JSiUK6B8JDqGvfFum",
+        "created": 1792864692,
+        "finish_reason": "stop",
+        "elapsed_ms": 70697,
+        "usage": {
+          "prompt_tokens": 186,
+          "completion_tokens": 3848,
+          "reasoning_tokens": 2808,
+          "total_tokens": 4034
+        },
+        "timestamp_iso": "2026-10-24T17:58:12.681107+00:00"
+      }
+    },
+    "skill_final": {
+      "score": 3.0,
+      "passed": true,
+      "sentence_count": 51,
+      "sent_cv": 0.5872,
+      "para_cv": 0.3943,
+      "violations_count": 1,
+      "violations": [
+        {
+          "category": "punctuation_abuse",
+          "message": "Excessive dashes/em-dashes (5 occurrences)",
+          "line": 1,
+          "column": 1,
+          "context": "Total dashes: 5",
+          "penalty": 3.0,
+          "suggestion": "每千字破折号建议不超过1次，破折号替换为逗号或独立短句"
+        }
+      ],
+      "remediation_rounds": 2
+    }
+  },
+  "human_gold_standard": {
+    "human_gold_architecture": {
+      "score": 0,
+      "passed": true,
+      "sentence_count": 15,
+      "sent_cv": 0.5791,
+      "para_cv": 0.1953,
+      "violations_count": 0,
+      "violations": []
+    },
+    "human_gold_board_memo_en": {
+      "score": 0,
+      "passed": true,
+      "sentence_count": 14,
+      "sent_cv": 0.7097,
+      "para_cv": 0.2713,
+      "violations_count": 0,
+      "violations": []
+    },
+    "human_gold_paper": {
+      "score": 0,
+      "passed": true,
+      "sentence_count": 9,
+      "sent_cv": 0.7531,
+      "para_cv": 0.0,
+      "violations_count": 0,
+      "violations": []
+    },
+    "human_gold_tech_essay_zh": {
+      "score": 0,
+      "passed": true,
+      "sentence_count": 9,
+      "sent_cv": 0.2925,
+      "para_cv": 0.2882,
+      "violations_count": 0,
+      "violations": []
+    }
+  },
+  "audit_summary": {
+    "benchmark_name": "Frontier v4 Benchmark (Unprompted Blind Stress + Macro Cadence)",
+    "model": "deepseek-v4.1-flash",
+    "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+    "timestamp_utc": "2026-10-24T18:00:26.442013+00:00",
+    "total_http_calls": 8,
+    "total_prompt_tokens": 6402,
+    "total_completion_tokens": 28366,
+    "total_reasoning_tokens": 22130,
+    "total_tokens": 34768,
+    "average_latency_ms": 46247.1,
+    "telemetry_log": [
+      {
+        "label": "blind_kernel_architecture:solo",
+        "model": "deepseek-v4.1-flash",
+        "http_status": 200,
+        "response_id": "chatcmpl-RREucSGWNDgA4723n2UwbEfc",
+        "created": 1792864476,
+        "finish_reason": "stop",
+        "elapsed_ms": 20368,
+        "usage": {
+          "prompt_tokens": 238,
+          "completion_tokens": 1878,
+          "reasoning_tokens": 1283,
+          "total_tokens": 2116
+        },
+        "timestamp_iso": "2026-10-24T17:54:36.710469+00:00"
+      },
+      {
+        "label": "blind_kernel_architecture:skill_round_1",
+        "model": "deepseek-v4.1-flash",
+        "http_status": 200,
+        "response_id": "chatcmpl-R5rIDn6sLGIda1Fsl8HBJsoG",
+        "created": 1792864522,
+        "finish_reason": "stop",
+        "elapsed_ms": 45928,
+        "usage": {
+          "prompt_tokens": 836,
+          "completion_tokens": 4166,
+          "reasoning_tokens": 3600,
+          "total_tokens": 5002
+        },
+        "timestamp_iso": "2026-10-24T17:55:22.654116+00:00"
+      },
+      {
+        "label": "blind_executive_board_memo:solo",
+        "model": "deepseek-v4.1-flash",
+        "http_status": 200,
+        "response_id": "chatcmpl-RxlaxE6LxWbK7EnBD8RbtJ6S",
+        "created": 1792864575,
+        "finish_reason": "stop",
+        "elapsed_ms": 52995,
+        "usage": {
+          "prompt_tokens": 196,
+          "completion_tokens": 2226,
+          "reasoning_tokens": 1667,
+          "total_tokens": 2422
+        },
+        "timestamp_iso": "2026-10-24T17:56:15.660303+00:00"
+      },
+      {
+        "label": "blind_executive_board_memo:skill_round_1",
+        "model": "deepseek-v4.1-flash",
+        "http_status": 200,
+        "response_id": "chatcmpl-RYoMobItOx0rvEfH4P0cFuLI",
+        "created": 1792864621,
+        "finish_reason": "stop",
+        "elapsed_ms": 46309,
+        "usage": {
+          "prompt_tokens": 794,
+          "completion_tokens": 4023,
+          "reasoning_tokens": 3600,
+          "total_tokens": 4817
+        },
+        "timestamp_iso": "2026-10-24T17:57:01.974789+00:00"
+      },
+      {
+        "label": "blind_english_research_position:solo",
+        "model": "deepseek-v4.1-flash",
+        "http_status": 200,
+        "response_id": "chatcmpl-RkyQxx2JSiUK6B8JDqGvfFum",
+        "created": 1792864692,
+        "finish_reason": "stop",
+        "elapsed_ms": 70697,
+        "usage": {
+          "prompt_tokens": 186,
+          "completion_tokens": 3848,
+          "reasoning_tokens": 2808,
+          "total_tokens": 4034
+        },
+        "timestamp_iso": "2026-10-24T17:58:12.681107+00:00"
+      },
+      {
+        "label": "blind_english_research_position:skill_round_1",
+        "model": "deepseek-v4.1-flash",
+        "http_status": 200,
+        "response_id": "chatcmpl-RKCesBX3WejuzUxFb8cFotLr",
+        "created": 1792864748,
+        "finish_reason": "stop",
+        "elapsed_ms": 56594,
+        "usage": {
+          "prompt_tokens": 685,
+          "completion_tokens": 4635,
+          "reasoning_tokens": 3600,
+          "total_tokens": 5320
+        },
+        "timestamp_iso": "2026-10-24T17:59:09.291277+00:00"
+      },
+      {
+        "label": "blind_english_research_position:remediation_1",
+        "model": "deepseek-v4.1-flash",
+        "http_status": 200,
+        "response_id": "chatcmpl-RpwSdjn6yyxb0DDR4WFtnuCH",
+        "created": 1792864790,
+        "finish_reason": "stop",
+        "elapsed_ms": 41990,
+        "usage": {
+          "prompt_tokens": 1745,
+          "completion_tokens": 2984,
+          "reasoning_tokens": 1972,
+          "total_tokens": 4729
+        },
+        "timestamp_iso": "2026-10-24T17:59:51.298357+00:00"
+      },
+      {
+        "label": "blind_english_research_position:remediation_2",
+        "model": "deepseek-v4.1-flash",
+        "http_status": 200,
+        "response_id": "chatcmpl-RSTkAPHqHEttmw7ZzHiVMjra",
+        "created": 1792864825,
+        "finish_reason": "stop",
+        "elapsed_ms": 35096,
+        "usage": {
+          "prompt_tokens": 1722,
+          "completion_tokens": 4606,
+          "reasoning_tokens": 3600,
+          "total_tokens": 6328
+        },
+        "timestamp_iso": "2026-10-24T18:00:26.413238+00:00"
+      }
+    ]
+  }
+}

@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-10-25
+
+### Added
+- **Macro Paragraph Cadence Variance Engine (`lint/anti_ai_lint/detector.py`)**:
+  - Implemented macro paragraph length Coefficient of Variation ($CV_{para} = \sigma_{para} / \mu_{para}$) across long-form prose ($\ge 3$ eligible paragraphs, $\ge 300$ words/units).
+  - Flags `paragraph_cadence_variance` (penalty 2.5) when paragraph length $CV_{para} < 0.15$, penalizing robotic, equal-length AI paragraph "brick walls" while exempting bullet lists, headers, code, and tables.
+  - Exposed `para_cv` directly in `TextMetrics` dataclass and JSON reports for cadence analysis.
+- **Syntactic Sentence-Starter Repetition Gate (`lint/anti_ai_lint/detector.py`)**:
+  - Pure standard-library syntactic template extractor detecting repetitive consecutive sentence openings ($\ge 3$ consecutive prose sentences sharing identical templates).
+  - Catches prepositional formulaic openers in Chinese (e.g. 「通过……」「针对……」「基于……」「为了……」) and structural patterns in English (e.g. `The [noun]`, `This [noun]`, `In order to`).
+  - Correctly excludes Markdown lists, headers, and code blocks from starter penalty.
+- **Unprompted Blind Stress Benchmark Suite (`scripts/run_frontier_v4_benchmark.py`)**:
+  - Eliminated prompt leaking / negative prompting (zero hints on avoiding buzzwords, light verbs, or sentence patterns), effectively breaking the benchmark floor effect.
+  - Benchmarked `deepseek-v4.1-flash` via OpenCode Go API across 3 unprompted enterprise briefs (kernel architecture, executive board memo, long-form KV-cache position paper).
+  - Full audit telemetry: 8 genuine HTTP 200 calls, 34,768 tokens (78% reasoning tokens), live truncation handling and autonomous self-healing loops recorded in `tests/fixtures_frontier_v4/`.
+- **Authoritative Human Gold-Standard Baseline Suite (`tests/fixtures_human_gold/`)**:
+  - Curated 4 verbatim, publicly verifiable human masterworks:
+    - USENIX ATC '14 Best Paper abstract (*In Search of an Understandable Consensus Algorithm*, Ongaro & Ousterhout).
+    - Linux Kernel official scaling documentation (*Receive Packet Steering*, Tom Herbert).
+    - Chinese veteran systems engineering treatise (*Online*, Dr. Wang Jian, CITIC Press 2016).
+    - 1997 Amazon.com Letter to Shareholders (Jeff Bezos).
+  - Automated regression suite verifies 100% PASS with 0.0 penalty score and zero false positives.
+- **Unit Test Suite Expanded to 109 Tests**:
+  - Added deterministic boundary tests for macro paragraph cadence, sentence starter repetition, and human gold-standard invariance. All 109 tests passing in 3.5s.
+
 ## [0.7.0] - 2026-10-25
 
 ### Added

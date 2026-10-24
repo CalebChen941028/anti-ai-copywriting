@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Liangliang Chen
 """Anti-AI Copywriting Linter (Zero-dependency rule & buzzword checker)."""
 
-__version__ = "0.7.0"
+__version__ = "0.8.0"
 
 from .detector import LintReport, LintViolation, analyze_text
 

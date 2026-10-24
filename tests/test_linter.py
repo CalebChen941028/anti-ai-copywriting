@@ -585,6 +585,31 @@ class TestAntiAiLinter(unittest.TestCase):
         self.assertGreater(rep_short_var.metrics.burstiness_cv, 0.20)
         self.assertNotIn("rhythmic_monotony", [v.category for v in rep_short_var.violations])
 
+    def test_localized_rhythmic_monotony(self):
+        # Paragraph 1 has varied sentences (pulling global CV >= 0.28)
+        # Paragraph 2 has 6 sentences of identical length (CV < 0.20)
+        p1 = (
+            "长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长。\n"
+            "短。\n"
+            "更短。\n"
+            "中等长度的论述过渡句式。\n"
+            "极其漫长且极具张力的另一段长句。\n\n"
+        )
+        p2 = (
+            "这是段落内第一个长度完全相同的句子。\n"
+            "这是段落内第二个长度完全相同的句子。\n"
+            "这是段落内第三个长度完全相同的句子。\n"
+            "这是段落内第四个长度完全相同的句子。\n"
+            "这是段落内第五个长度完全相同的句子。\n"
+            "这是段落内第六个长度完全相同的句子。\n\n"
+        )
+        p3 = "后续长文论述章节，展开详尽的技术分析与实证数据论述。\n短促。\n再次展开一段相对比较充分的技术论述与架构说明分析。\n" * 6
+        text = p1 + p2 + p3
+        rep = analyze_text(text)
+        self.assertGreaterEqual(rep.metrics.burstiness_cv, 0.28)
+        cats = [v.category for v in rep.violations]
+        self.assertIn("localized_rhythmic_monotony", cats)
+
     def test_mattr_lexical_richness_metric(self):
         # Empty text
         rep_empty = analyze_text("")

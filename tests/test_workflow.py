@@ -103,6 +103,19 @@ class TestFidelityCheck(unittest.TestCase):
         self.assertEqual(check_fidelity("", ""), [])
         self.assertEqual([i.kind for i in check_fidelity("", "共 5 例")], ["added"])
 
+    def test_unit_and_magnitude_equivalence(self):
+        src = "峰值时延由850ms降至180ms，节约资金3000万元。"
+        out = "峰值时延由0.85秒降至0.18秒，节约资金3千万元。"
+        self.assertEqual(check_fidelity(src, out), [])
+
+    def test_unit_equivalence_does_not_mask_fabricated_percentages(self):
+        src = "峰值时延由850ms降至180ms，节约资金3000万元。"
+        out = "峰值时延由0.85秒降至0.18秒，降低幅度达78.8%，节约资金3千万元。"
+        issues = check_fidelity(src, out)
+        self.assertEqual(len(issues), 1)
+        self.assertEqual(issues[0].kind, "added")
+        self.assertEqual(issues[0].token, "78.8")
+
 
 class TestFidelityCli(unittest.TestCase):
     def test_cli_source_flag_pass_and_fail(self):

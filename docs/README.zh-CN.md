@@ -8,6 +8,7 @@
 
 ## 核心文档目录
 
+- **[实测效果对比与基准评测报告](BENCHMARK_REPORT.zh-CN.md)** ([English](BENCHMARK_REPORT.md))：涵盖 6 大中英双语核心场景（学术、商业、英文顶会、基金申报、科普与社媒评测）加载前后的量化指标对比、语言学机理诊断与落地实证数据。
 - **[智能体适配器支持总览与安装](adapters/README.zh-CN.md)** ([English](adapters/README.md))：针对主流平台的专用集成指南：
   - [Codex 适配指南](adapters/codex.zh-CN.md) ([English](adapters/codex.md))
   - [Claude Code 适配指南](adapters/claude-code.zh-CN.md) ([English](adapters/claude-code.md))

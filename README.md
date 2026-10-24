@@ -27,7 +27,30 @@ Most existing AI text tools operate as **post-hoc punitive detectors** or **dest
 
 ---
 
-## 2. Key Capabilities & AI Engineering Architecture
+## 2. Empirical Before/After Benchmark & Case Studies
+
+> [!NOTE]
+> For the comprehensive benchmark report, mathematical derivations, in-depth linguistic diagnoses across all 6 scenarios, and CLI reproduction commands, please consult: **[Full Benchmark & Evaluation Report (docs/BENCHMARK_REPORT.md)](docs/BENCHMARK_REPORT.md)**.
+
+Evaluated on the repository's 6 standardized bilingual test scenarios in `tests/fixtures/` (Academic Abstract, Business Memo, English Academic Paper, Research Grant Proposal, PopSci Column, and Consumer Tech Review), the quantitative metrics before and after activating `anti-ai-copywriting` demonstrate decisive optimization:
+
+| Scenario / Corpus | Genre Mode | Penalty (Before) | Penalty (After) | Score Delta | Violations Count | Particle "的" Density | Gate Verdict |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Academic Abstract** (`academic`) | Academic | 61.5 pts | **0.0 pts** | **-100.0%** | 15 -> **0** | 5.85% -> **3.12%** | ❌ FAIL -> **✅ PASS** |
+| **Business Memo** (`business`) | General | 51.5 pts | **0.0 pts** | **-100.0%** | 13 -> **0** | 5.88% -> **1.75%** | ❌ FAIL -> **✅ PASS** |
+| **English Academic Paper** (`en_academic`) | Academic | 55.5 pts | **0.0 pts** | **-100.0%** | 17 -> **0** | (Nature tropes zeroed) | ❌ FAIL -> **✅ PASS** |
+| **Research Grant Proposal** (`grant`) | Academic | 39.5 pts | **0.0 pts** | **-100.0%** | 10 -> **0** | 3.47% -> **0.55%** | ❌ FAIL -> **✅ PASS** |
+| **PopSci Column** (`popsci`) | General | 47.0 pts | **0.0 pts** | **-100.0%** | 12 -> **0** | 6.06% -> **1.97%** | ❌ FAIL -> **✅ PASS** |
+| **Tech Review** (`social`) | General | 41.0 pts | **0.0 pts** | **-100.0%** | 10 -> **0** | 7.09% -> **1.74%** | ❌ FAIL -> **✅ PASS** |
+| **Macro Average** | - | **49.3 pts** | **0.0 pts** | **-100.0%** | **12.8 -> 0** | **5.67% -> 1.83%** | **0% -> 100% Pass** |
+
+- **100% Penalty & Violation Elimination**: Completely purges AI cliches, corporate buzzwords, and hollow marketing hyperbole.
+- **-67.7% Particle Clumping Reduction**: De-nominalizes heavy modifiers to restore active predicate verbs.
+- **Broken Monotone Cadence**: Enforces natural cadence and rhythmic variation ($CV_{len} \ge 0.28$) with sliding-window lexical richness (MATTR $w=50$).
+
+---
+
+## 3. Key Capabilities & AI Engineering Architecture
 
 - **Information-Theoretic Cadence & Rhythm (Burstiness & UID)**:
   - Measures sentence length variation via the Coefficient of Variation ($CV_{len} = \sigma / \mu$).
@@ -54,7 +77,7 @@ Most existing AI text tools operate as **post-hoc punitive detectors** or **dest
 
 ---
 
-## 3. Installation & Deployment
+## 4. Installation & Deployment
 
 ### 3.1 Agent Skill & Rules Integration
 
@@ -174,7 +197,7 @@ repos:
 
 ---
 
-## 4. Linter Usage & Output Modes
+## 5. Linter Usage & Output Modes
 
 ```bash
 # General mode
@@ -200,7 +223,7 @@ anti-ai-lint docs/ --format github
 
 ---
 
-## 5. Academic References & Citations
+## 6. Academic References & Citations
 
 The methodologies and metrics implemented in `anti-ai-copywriting` are grounded in the following academic research:
 
@@ -215,7 +238,7 @@ The methodologies and metrics implemented in `anti-ai-copywriting` are grounded 
 
 ---
 
-## 6. Uninstallation
+## 7. Uninstallation
 
 Cleanly restore backups and remove marker blocks without touching other configurations:
 
@@ -230,12 +253,12 @@ Cleanly restore backups and remove marker blocks without touching other configur
 
 ---
 
-## 7. Trademark & Non-Affiliation Notice
+## 8. Trademark & Non-Affiliation Notice
 
 All product names, logos, brands, trademarks, and registered trademarks mentioned in this repository (including Anthropic, Claude, Claude Code, OpenAI, ChatGPT, Codex, DeepSeek, Google, Gemini, Antigravity, Cursor, Windsurf, Codeium, Cline, Aider, WorkBuddy, and others) are property of their respective owners. Their use in this documentation does not imply any affiliation with, endorsement by, or sponsorship by their respective holders. All integrations and adapter instructions are independent, community-developed open-source compatibility layers.
 
 ---
 
-## 8. License
+## 9. License
 
 [MIT](LICENSE) © 2026 Liangliang Chen

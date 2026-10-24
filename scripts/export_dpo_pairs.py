@@ -190,7 +190,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--fixtures-dir", type=str, default=str(_repo_root / "tests" / "fixtures"), help="Path to fixtures directory.")
     parser.add_argument("--output", "-o", type=str, default=None, help="Output JSONL filepath.")
     parser.add_argument("--format", choices=["dpo", "chatml", "sharegpt"], default="dpo", help="Target preference format.")
-    parser.add_argument("--validate", action="store_true", help="Validate score margin between rejected and chosen.")
+    parser.add_argument("--validate", "--verify", dest="validate", action="store_true", help="Validate score margin between rejected and chosen.")
 
     args = parser.parse_args(argv)
 

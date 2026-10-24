@@ -8,6 +8,7 @@ Welcome to the documentation for **anti-ai-copywriting**, the bilingual natural 
 
 ## Documentation Structure
 
+- **[Empirical Benchmark & Evaluation Report](BENCHMARK_REPORT.md)** ([中文](BENCHMARK_REPORT.zh-CN.md)): Comprehensive before-and-after empirical case studies and quantitative metrics across 6 core bilingual scenarios (Academic, Business, English Academic, Grant, PopSci, Social Reviews).
 - **[Agent Adapters & Integration Matrix](adapters/README.md)** ([中文](adapters/README.zh-CN.md)): Platform-specific setup guides for:
   - [Codex Adapter](adapters/codex.md) ([中文](adapters/codex.zh-CN.md))
   - [Claude Code Adapter](adapters/claude-code.md) ([中文](adapters/claude-code.zh-CN.md))

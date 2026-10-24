@@ -824,6 +824,13 @@ class TestAntiAiLinter(unittest.TestCase):
         self.assertIn("chosen", dpo_records[0])
         self.assertIn("rejected", dpo_records[0])
 
+        # Test DPO CLI entrypoint with --validate and --verify
+        from scripts.export_dpo_pairs import main as dpo_main
+        ret_val = dpo_main(["--validate", "--fixtures-dir", str(self.fixtures_dir)])
+        self.assertEqual(ret_val, 0)
+        ret_verify = dpo_main(["--verify", "--fixtures-dir", str(self.fixtures_dir)])
+        self.assertEqual(ret_verify, 0)
+
         # Test DSPy optimizer evaluation
         dataset = load_fixtures_dataset(self.fixtures_dir)
         self.assertEqual(len(dataset), 6)

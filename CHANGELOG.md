@@ -35,6 +35,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **GLM-5.3 Empirical DPO Preference Dataset Export**:
   - Added preference dataset export (`data/glm5_dpo.jsonl`, `data/glm5_dpo_chatml.jsonl`, `data/glm5_dpo_sharegpt.jsonl`) generated directly from empirical dual-blind outputs.
   - Enhanced `scripts/export_dpo_pairs.py` to auto-ingest `tests/fixtures_glm5/` with `benchmark_results.json` metadata integration.
+- **Cross-Model Independent Replication on mimo-v2.6-flash (OpenCode Go Gateway)**:
+  - Introduced `scripts/run_mimo_benchmark.py`: the same dual-blind protocol re-run on `mimo-v2.6-flash` via `https://opencode.ai/zen/go/v1/chat/completions`, with runtime API-key resolution (env -> `~/.zcode/v2/provider_config.json` -> fallbacks), live per-call evidence printing (HTTP status code, latency, token usage incl. reasoning tokens), and a strict no-mock contract (non-200 / empty body / truncated / degenerate output raises and aborts).
+  - Hardened the harness with an output-sanity guard (pseudo `<tool_call>` marker detection + mixed CJK/English word floor) after a first-run degenerate output sneaked past the linter; all artifacts were purged and the benchmark fully re-run.
+  - Measured results (8 subjects, 24 live HTTP calls, all 200, 27976 tokens, 353.5 s): mean penalty 5.50 -> 2.06 (-62.5%), violations 14 -> 5 (-64.3%), gate pass rate 75.0% -> 100%; solo arm again fabricated the identical "35.7%" reduction rate in `polish` (cross-model collective hallucination) and was hard-blocked by `fidelity_added`.
+  - Exported `data/mimo_dpo/` preference pairs in three formats (`mimo_dpo.jsonl` / `mimo_dpo_chatml.jsonl` / `mimo_dpo_sharegpt.jsonl`, 8 pairs each) via the new `--output-dir` mode of `scripts/export_dpo_pairs.py`.
+  - Documented the replication as Section 6 of both benchmark reports and Section 2.1 of both READMEs, including counter-examples (popsci/translate flat scores) and authenticity evidence.
 
 ### Changed
 - **Replaced demonstration benchmark reports with real GLM-5.3 measurements**:

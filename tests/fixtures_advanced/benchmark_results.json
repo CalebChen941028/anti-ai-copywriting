@@ -5,30 +5,30 @@
     "lang": "zh",
     "prompt": "请撰写一份面向技术委员会的《核心交易集群跨机房双活与高可用架构演进方案》，字数要求在1000至1500字左右。内容需涵盖：现有单机房痛点剖析、双活网络拓扑与专线延时容忍设计、分布式事务与多活数据强一致同步机制、以及机房级容灾逃生演练策略。",
     "solo_model": {
-      "score": 3.0,
-      "normalized_score": 3.33,
+      "score": 4.0,
+      "normalized_score": 4.66,
       "passed": true,
       "violations_count": 1,
       "violations": [
         {
-          "cat": "punctuation_abuse",
-          "msg": "Excessive dashes/em-dashes (5 occurrences)"
+          "cat": "forbidden_word_zh",
+          "msg": "Found forbidden buzzword/cliché: 「闭环」"
         }
       ],
-      "burstiness_cv": 0.5238,
-      "mattr": 0.883,
-      "de_ratio": 0.0012,
-      "word_count": 902,
+      "burstiness_cv": 0.5542,
+      "mattr": 0.8794,
+      "de_ratio": 0.0025,
+      "word_count": 859,
       "api_evidence": {
         "http_status": 200,
-        "latency_ms": 23468.7,
+        "latency_ms": 30487.3,
         "usage": {
           "prompt_tokens": 102,
-          "completion_tokens": 2637,
-          "reasoning_tokens": 1841,
-          "total_tokens": 2739
+          "completion_tokens": 3618,
+          "reasoning_tokens": 2799,
+          "total_tokens": 3720
         },
-        "response_id": "021792852855764c41b39946b92a3163d51611244fc4a0d6925e7"
+        "response_id": "021792853951974124404eabe9b927fceaa7c0eaca8bf7a325e7b"
       }
     },
     "model_plus_skill_tool": {
@@ -37,21 +37,21 @@
       "passed": true,
       "violations_count": 0,
       "violations": [],
-      "burstiness_cv": 0.5551,
-      "mattr": 0.8768,
-      "de_ratio": 0.0055,
-      "word_count": 1388,
+      "burstiness_cv": 0.5599,
+      "mattr": 0.8861,
+      "de_ratio": 0.0087,
+      "word_count": 1503,
       "in_loop_remediation": false,
       "api_evidence": {
         "http_status": 200,
-        "latency_ms": 28746.0,
+        "latency_ms": 28545.9,
         "usage": {
           "prompt_tokens": 700,
-          "completion_tokens": 4109,
-          "reasoning_tokens": 2785,
-          "total_tokens": 4809
+          "completion_tokens": 4003,
+          "reasoning_tokens": 2561,
+          "total_tokens": 4703
         },
-        "response_id": "021792852878140ba082e75ad6045f729531cc716e805ec3688b4",
+        "response_id": "021792853980311d2ccc3ebdfdab12ac26ff482d60ed0eea50cce",
         "remediation_call": null
       }
     }
@@ -62,119 +62,76 @@
     "lang": "zh",
     "prompt": "请对以下金融清算系统改造成效通报进行专业技术润色与重构，提升面向高管的技术穿透力。必须严格基于给出的事实与数据，允许对度量衡与量纲进行合理等价转换（如毫秒与秒、万元与千万元转换），但严禁虚构任何未在原文中出现的衍生数据、增幅百分比或无端细节：\n\n本次核心清算系统数据库去O与微服务改造历时9个月，涉及核心系统12个微服务模块。实测数据库峰值查询时延由850ms降低至180ms，P99长尾时延由2.4s收敛至420ms。通过冷热数据分层归档与NVMe存储池化，年化硬件采购与维保预算节约3000万元。集群每秒峰值吞吐量由1.2万笔提升至4.8万笔，机房级故障自动切换恢复时间由15分钟缩减至30秒以内。",
     "solo_model": {
-      "score": 71.0,
-      "normalized_score": 110.25,
+      "score": 7.5,
+      "normalized_score": 19.74,
       "passed": false,
-      "violations_count": 15,
+      "violations_count": 2,
       "violations": [
         {
-          "cat": "formulaic_pattern",
-          "msg": "Found formulaic pattern: 轻动词名物化搭配(文字义肢)"
-        },
-        {
           "cat": "fidelity_added",
-          "msg": "Fact anchor '9' occurs 2 times in the output but only 1 in the source (possible fabricated detail)"
+          "msg": "Fact anchor '12' occurs 2 times in the output but only 1 in the source (possible fabricated detail)"
         },
         {
-          "cat": "fidelity_added",
-          "msg": "Fact anchor '12' occurs 3 times in the output but only 1 in the source (possible fabricated detail)"
-        },
-        {
-          "cat": "fidelity_added",
-          "msg": "Fact anchor '850' occurs 2 times in the output but only 1 in the source (possible fabricated detail)"
-        },
-        {
-          "cat": "fidelity_added",
-          "msg": "Fact anchor '180' occurs 2 times in the output but only 1 in the source (possible fabricated detail)"
-        },
-        {
-          "cat": "fidelity_added",
-          "msg": "Fact anchor '2.4' occurs 2 times in the output but only 1 in the source (possible fabricated detail)"
-        },
-        {
-          "cat": "fidelity_added",
-          "msg": "Fact anchor '420' occurs 2 times in the output but only 1 in the source (possible fabricated detail)"
-        },
-        {
-          "cat": "fidelity_added",
-          "msg": "Fact anchor '1.2' occurs 2 times in the output but only 1 in the source (possible fabricated detail)"
-        },
-        {
-          "cat": "fidelity_added",
-          "msg": "Fact anchor '12,000' appears in the output but not in the source (possible fabricated detail)"
-        },
-        {
-          "cat": "fidelity_added",
-          "msg": "Fact anchor '4.8' occurs 4 times in the output but only 1 in the source (possible fabricated detail)"
-        },
-        {
-          "cat": "fidelity_added",
-          "msg": "Fact anchor '48,000' appears in the output but not in the source (possible fabricated detail)"
-        },
-        {
-          "cat": "fidelity_added",
-          "msg": "Fact anchor '15' occurs 2 times in the output but only 1 in the source (possible fabricated detail)"
-        },
-        {
-          "cat": "fidelity_added",
-          "msg": "Fact anchor '30' occurs 4 times in the output but only 1 in the source (possible fabricated detail)"
-        },
-        {
-          "cat": "fidelity_added",
-          "msg": "Fact anchor '3,000' occurs 3 times in the output but only 1 in the source (possible fabricated detail)"
-        },
-        {
-          "cat": "localized_rhythmic_monotony",
-          "msg": "Localized rhythmic monotony detected in paragraph at line 7: CV=0.19 < 0.20 (5 sentences)"
+          "cat": "formatting_abuse",
+          "msg": "Excessive bold formatting (8 instances)"
         }
       ],
-      "burstiness_cv": 0.4807,
-      "mattr": 0.7938,
-      "de_ratio": 0.0052,
-      "word_count": 644,
+      "burstiness_cv": 0.6043,
+      "mattr": 0.8111,
+      "de_ratio": 0.0029,
+      "word_count": 380,
       "api_evidence": {
         "http_status": 200,
-        "latency_ms": 25246.9,
+        "latency_ms": 22000.5,
         "usage": {
           "prompt_tokens": 219,
-          "completion_tokens": 3870,
-          "reasoning_tokens": 3229,
-          "total_tokens": 4089
+          "completion_tokens": 2925,
+          "reasoning_tokens": 2590,
+          "total_tokens": 3144
         },
-        "response_id": "021792852907703fdccfc102ca12157f94275e78054dc3bbecda0"
+        "response_id": "021792854010955fd3ae808d5ba084b55a7f9e1600032cd465b50"
       }
     },
     "model_plus_skill_tool": {
-      "score": 0,
-      "normalized_score": 0.0,
+      "score": 5.0,
+      "normalized_score": 11.42,
       "passed": true,
-      "violations_count": 0,
-      "violations": [],
-      "burstiness_cv": 0.5342,
-      "mattr": 0.8758,
-      "de_ratio": 0.0249,
-      "word_count": 504,
+      "violations_count": 2,
+      "violations": [
+        {
+          "cat": "formatting_abuse",
+          "msg": "Excessive bold formatting (5 instances)"
+        },
+        {
+          "cat": "localized_rhythmic_monotony",
+          "msg": "Localized rhythmic monotony detected in paragraph at line 7: CV=0.16 < 0.20 (5 sentences)"
+        }
+      ],
+      "burstiness_cv": 0.6006,
+      "mattr": 0.8735,
+      "de_ratio": 0.0264,
+      "word_count": 438,
       "in_loop_remediation": true,
       "api_evidence": {
         "http_status": 200,
-        "latency_ms": 21561.2,
+        "latency_ms": 22966.0,
         "usage": {
           "prompt_tokens": 817,
-          "completion_tokens": 3077,
-          "reasoning_tokens": 2450,
-          "total_tokens": 3894
+          "completion_tokens": 3057,
+          "reasoning_tokens": 2535,
+          "total_tokens": 3874
         },
-        "response_id": "021792852933290fef143c4098cd8cc7e0dd8c08d18f9dba5bd46",
+        "response_id": "02179285403184099f4740eadd3360aa6250e68d85f7ec72fda5e",
         "remediation_call": {
           "http_status": 200,
-          "latency_ms": 24607.1,
+          "latency_ms": 12606.7,
           "usage": {
-            "prompt_tokens": 2702,
-            "completion_tokens": 3638,
-            "reasoning_tokens": 3182,
-            "total_tokens": 6340
+            "prompt_tokens": 3007,
+            "completion_tokens": 1645,
+            "reasoning_tokens": 1245,
+            "total_tokens": 4652
           },
-          "response_id": "0217928529547889601394fd5171fb187b1a439528361d34951aa"
+          "response_id": "0217928540548439e96f8c80ac47960a454270e9930f9541bbbf0"
         }
       }
     }
@@ -185,79 +142,68 @@
     "lang": "zh",
     "prompt": "请将以下充满大厂空洞黑话与套话的文字重构为干练、务实、直击要害的工作汇报。彻底剔除一切空洞动词、抽象套话与行业黑话，用具体、可落地的工程与业务表述陈述推进路径：\n\n我们要以此为重要抓手，全面赋能业务生态闭环，打通上下游全链路的最后一公里。通过深度下沉与多维联动，构建全方位、多层次的战略协同矩阵，以底层逻辑为依托，拉通各方资源，形成组合拳打法，全面助推核心业务实现跨越式高质量发展，助力企业降本增效。",
     "solo_model": {
-      "score": 22.5,
-      "normalized_score": 39.54,
-      "passed": false,
-      "violations_count": 5,
+      "score": 2.5,
+      "normalized_score": 6.96,
+      "passed": true,
+      "violations_count": 1,
       "violations": [
         {
-          "cat": "fidelity_added",
-          "msg": "Fact anchor 'XX' appears in the output but not in the source (possible fabricated detail)"
-        },
-        {
-          "cat": "fidelity_added",
-          "msg": "Fact anchor '30' appears in the output but not in the source (possible fabricated detail)"
-        },
-        {
-          "cat": "fidelity_added",
-          "msg": "Fact anchor '60' appears in the output but not in the source (possible fabricated detail)"
-        },
-        {
-          "cat": "fidelity_added",
-          "msg": "Fact anchor '90' appears in the output but not in the source (possible fabricated detail)"
-        },
-        {
           "cat": "formatting_abuse",
-          "msg": "Excessive bold formatting (9 instances)"
+          "msg": "Excessive bold formatting (20 instances)"
         }
       ],
-      "burstiness_cv": 0.6009,
-      "mattr": 0.8792,
-      "de_ratio": 0.0036,
-      "word_count": 569,
+      "burstiness_cv": 0.6987,
+      "mattr": 0.9061,
+      "de_ratio": 0.0085,
+      "word_count": 359,
       "api_evidence": {
         "http_status": 200,
-        "latency_ms": 21675.9,
+        "latency_ms": 17201.6,
         "usage": {
           "prompt_tokens": 150,
-          "completion_tokens": 3110,
-          "reasoning_tokens": 2661,
-          "total_tokens": 3260
+          "completion_tokens": 2117,
+          "reasoning_tokens": 1799,
+          "total_tokens": 2267
         },
-        "response_id": "0217928529806393c1f91f892e9aff2a902d86b047fe242425cfe"
+        "response_id": "0217928540678317e031431b40d2024cf18919c414bfdfa464ac2"
       }
     },
     "model_plus_skill_tool": {
-      "score": 0,
-      "normalized_score": 0.0,
+      "score": 2.5,
+      "normalized_score": 8.22,
       "passed": true,
-      "violations_count": 0,
-      "violations": [],
-      "burstiness_cv": 0.5201,
-      "mattr": 0.8685,
-      "de_ratio": 0.0249,
-      "word_count": 562,
+      "violations_count": 1,
+      "violations": [
+        {
+          "cat": "formatting_abuse",
+          "msg": "Excessive bold formatting (5 instances)"
+        }
+      ],
+      "burstiness_cv": 0.634,
+      "mattr": 0.856,
+      "de_ratio": 0.0164,
+      "word_count": 304,
       "in_loop_remediation": true,
       "api_evidence": {
         "http_status": 200,
-        "latency_ms": 14349.0,
+        "latency_ms": 16545.4,
         "usage": {
           "prompt_tokens": 748,
-          "completion_tokens": 1800,
-          "reasoning_tokens": 1277,
-          "total_tokens": 2548
+          "completion_tokens": 2134,
+          "reasoning_tokens": 1901,
+          "total_tokens": 2882
         },
-        "response_id": "02179285300218885fbb282d67f6232524942e9d2086badb39582",
+        "response_id": "0217928540850597afbd658227445da69c5198dc2d1b708acb7cc",
         "remediation_call": {
           "http_status": 200,
-          "latency_ms": 11450.1,
+          "latency_ms": 11479.6,
           "usage": {
-            "prompt_tokens": 2391,
-            "completion_tokens": 1538,
-            "reasoning_tokens": 1080,
-            "total_tokens": 3929
+            "prompt_tokens": 1072,
+            "completion_tokens": 1119,
+            "reasoning_tokens": 889,
+            "total_tokens": 2191
           },
-          "response_id": "021792853016710b3d24476cb0847a2446e1bf5e527b37b7e5a0b"
+          "response_id": "0217928541021664498c7002523dcce63b4e4e02dd9ae9c73cfd3"
         }
       }
     }
@@ -268,11 +214,15 @@
     "lang": "zh",
     "prompt": "请全面宏观地论述AI大模型在下一代多模态医学影像诊断中的深远战略意义、颠覆性突破与广阔应用前景，深入探讨其如何全方位革新传统医疗体系并带来跨越式赋能。字数400字左右。",
     "solo_model": {
-      "score": 10.5,
-      "normalized_score": 27.06,
+      "score": 11.0,
+      "normalized_score": 32.07,
       "passed": false,
       "violations_count": 3,
       "violations": [
+        {
+          "cat": "forbidden_word_zh",
+          "msg": "Found forbidden buzzword/cliché: 「闭环」"
+        },
         {
           "cat": "forbidden_word_zh",
           "msg": "Found forbidden buzzword/cliché: 「赋能」"
@@ -280,26 +230,22 @@
         {
           "cat": "punctuation_abuse",
           "msg": "Excessive dashes/em-dashes (2 occurrences)"
-        },
-        {
-          "cat": "rhythmic_monotony",
-          "msg": "Rhythmic monotony detected: sentence length Coefficient of Variation CV=0.28 < 0.28 (9 sentences, monotonous AI cadence)"
         }
       ],
-      "burstiness_cv": 0.2791,
-      "mattr": 0.9183,
-      "de_ratio": 0.0078,
-      "word_count": 388,
+      "burstiness_cv": 0.5526,
+      "mattr": 0.9078,
+      "de_ratio": 0.0059,
+      "word_count": 343,
       "api_evidence": {
         "http_status": 200,
-        "latency_ms": 9257.3,
+        "latency_ms": 11087.5,
         "usage": {
           "prompt_tokens": 78,
-          "completion_tokens": 461,
-          "reasoning_tokens": 189,
-          "total_tokens": 539
+          "completion_tokens": 584,
+          "reasoning_tokens": 342,
+          "total_tokens": 662
         },
-        "response_id": "02179285303177640df8d8926005c369421892d4819382e3b0cbb"
+        "response_id": "gw-34fbfca611ac-4cdca1"
       }
     },
     "model_plus_skill_tool": {
@@ -308,32 +254,22 @@
       "passed": true,
       "violations_count": 0,
       "violations": [],
-      "burstiness_cv": 0.5155,
-      "mattr": 0.9268,
-      "de_ratio": 0.0088,
-      "word_count": 344,
-      "in_loop_remediation": true,
+      "burstiness_cv": 0.5021,
+      "mattr": 0.9175,
+      "de_ratio": 0.0296,
+      "word_count": 407,
+      "in_loop_remediation": false,
       "api_evidence": {
         "http_status": 200,
-        "latency_ms": 13288.9,
+        "latency_ms": 17172.6,
         "usage": {
           "prompt_tokens": 676,
-          "completion_tokens": 1628,
-          "reasoning_tokens": 1305,
-          "total_tokens": 2304
+          "completion_tokens": 1072,
+          "reasoning_tokens": 800,
+          "total_tokens": 1748
         },
-        "response_id": "0217928530385129601394fd5171fb187b1a439528361d3f8f2ca",
-        "remediation_call": {
-          "http_status": 200,
-          "latency_ms": 7389.3,
-          "usage": {
-            "prompt_tokens": 1090,
-            "completion_tokens": 649,
-            "reasoning_tokens": 405,
-            "total_tokens": 1739
-          },
-          "response_id": "0217928530522175c43ce2d9f034e7655d8947a03ca6d93e25174"
-        }
+        "response_id": "gw-358d23a27ae4-4c0a18",
+        "remediation_call": null
       }
     }
   },
@@ -342,16 +278,16 @@
     "model": "deepseek-v4.1-flash",
     "session": "session-deepseek-advanced-benchmark-2026",
     "api_key_fingerprint": "oc_sk_d3a33d..._Icnnb",
-    "started_at_utc": "2026-10-24T14:40:52+00:00",
-    "finished_at_utc": "2026-10-24T14:44:18+00:00",
-    "wall_clock_s": 205.1,
+    "started_at_utc": "2026-10-24T14:59:07+00:00",
+    "finished_at_utc": "2026-10-24T15:02:21+00:00",
+    "wall_clock_s": 194.2,
     "token_totals": {
-      "http_calls": 11,
-      "prompt_tokens": 9673,
-      "completion_tokens": 26517,
-      "reasoning_tokens": 20404,
-      "total_tokens": 36190,
-      "mean_latency_ms": 18276.4
+      "http_calls": 10,
+      "prompt_tokens": 7569,
+      "completion_tokens": 22274,
+      "reasoning_tokens": 17461,
+      "total_tokens": 29843,
+      "mean_latency_ms": 19009.3
     },
     "no_mock_guarantee": "All texts generated by live HTTP calls; any failure aborts the run."
   }

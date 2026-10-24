@@ -1,0 +1,605 @@
+{
+  "academic": {
+    "title": "学术论文摘要与核心对比分析",
+    "genre": "academic",
+    "lang": "zh",
+    "prompt": "请撰写一段关于深度学习在蛋白质结构预测中应用的学术论文摘要与核心对比分析。字数在250-350字左右。",
+    "solo_model": {
+      "score": 16.5,
+      "normalized_score": 45.45,
+      "passed": false,
+      "violations_count": 5,
+      "violations": [
+        {
+          "cat": "formulaic_pattern",
+          "msg": "Found formulaic pattern: “随着……的飞速发展”公式化宏大开篇"
+        },
+        {
+          "cat": "formulaic_pattern",
+          "msg": "Found formulaic pattern: 轻动词名物化搭配(文字义肢)"
+        },
+        {
+          "cat": "particle_density",
+          "msg": "High '的' concentration (4 occurrences in single clause)"
+        },
+        {
+          "cat": "punctuation_abuse",
+          "msg": "Excessive dashes/em-dashes (2 occurrences)"
+        },
+        {
+          "cat": "rhythmic_monotony",
+          "msg": "Rhythmic monotony detected: sentence length Coefficient of Variation CV=0.25 < 0.28 (8 sentences, monotonous AI cadence)"
+        }
+      ],
+      "burstiness_cv": 0.2498,
+      "mattr": 0.9,
+      "de_ratio": 0.0401,
+      "word_count": 363,
+      "api_evidence": {
+        "http_status": 200,
+        "latency_ms": 13471.3,
+        "usage": {
+          "prompt_tokens": 41,
+          "completion_tokens": 341,
+          "reasoning_tokens": 34,
+          "total_tokens": 382
+        },
+        "response_id": "b80197fd-f957-49bd-8fda-6f8cbf6344a8_0c166688f7be47a899ec866c2477bf7c"
+      }
+    },
+    "model_plus_skill_tool": {
+      "score": 4.0,
+      "normalized_score": 11.66,
+      "passed": true,
+      "violations_count": 1,
+      "violations": [
+        {
+          "cat": "forbidden_word_zh",
+          "msg": "Found forbidden buzzword/cliché: 「赛道」"
+        }
+      ],
+      "burstiness_cv": 0.599,
+      "mattr": 0.9266,
+      "de_ratio": 0.0149,
+      "word_count": 343,
+      "in_loop_remediation": true,
+      "api_evidence": {
+        "http_status": 200,
+        "latency_ms": 23997.4,
+        "usage": {
+          "prompt_tokens": 674,
+          "completion_tokens": 1239,
+          "reasoning_tokens": 969,
+          "total_tokens": 1913
+        },
+        "response_id": "a18c8f9d-7230-462e-918f-85269c340738_1acff5edd85b416db0ae335a783502d7",
+        "remediation_call": {
+          "http_status": 200,
+          "latency_ms": 7433.4,
+          "usage": {
+            "prompt_tokens": 1042,
+            "completion_tokens": 370,
+            "reasoning_tokens": 95,
+            "total_tokens": 1412
+          },
+          "response_id": "c22f643a-4e98-47d8-8882-ae60ad36c91d_3573597153e742e6842fbcd02710016a"
+        }
+      }
+    }
+  },
+  "business": {
+    "title": "商业管理链路重构备忘录",
+    "genre": "general",
+    "lang": "zh",
+    "prompt": "请起草一份面向管理层的Q3核心订单调度系统重构总结备忘录，汇报高并发下的吞吐改善与降本成果。字数在200-300字左右。",
+    "solo_model": {
+      "score": 2.5,
+      "normalized_score": 9.29,
+      "passed": true,
+      "violations_count": 1,
+      "violations": [
+        {
+          "cat": "formatting_abuse",
+          "msg": "Excessive bold formatting (11 instances)"
+        }
+      ],
+      "burstiness_cv": 0.7919,
+      "mattr": 0.9284,
+      "de_ratio": 0.004,
+      "word_count": 269,
+      "api_evidence": {
+        "http_status": 200,
+        "latency_ms": 10675.4,
+        "usage": {
+          "prompt_tokens": 50,
+          "completion_tokens": 330,
+          "reasoning_tokens": 47,
+          "total_tokens": 380
+        },
+        "response_id": "66d8cf42-dd99-4efc-a4ba-9b757ba1f7c3_3bff1132c1544525aaa9ef0f9d853de4"
+      }
+    },
+    "model_plus_skill_tool": {
+      "score": 0,
+      "normalized_score": 0.0,
+      "passed": true,
+      "violations_count": 0,
+      "violations": [],
+      "burstiness_cv": 0.5625,
+      "mattr": 0.7892,
+      "de_ratio": 0.0041,
+      "word_count": 261,
+      "in_loop_remediation": true,
+      "api_evidence": {
+        "http_status": 200,
+        "latency_ms": 25150.6,
+        "usage": {
+          "prompt_tokens": 683,
+          "completion_tokens": 1212,
+          "reasoning_tokens": 937,
+          "total_tokens": 1895
+        },
+        "response_id": "b9ad5269-42fc-4133-ac28-a146a58fdf4b_d5f6d204e9d34ac193dba2956c31431b",
+        "remediation_call": {
+          "http_status": 200,
+          "latency_ms": 7861.5,
+          "usage": {
+            "prompt_tokens": 1056,
+            "completion_tokens": 300,
+            "reasoning_tokens": 33,
+            "total_tokens": 1356
+          },
+          "response_id": "81748688-4e21-4ab8-ab9a-d87ba778552b_6e30661f897c4f6a9391671c3d3a421b"
+        }
+      }
+    }
+  },
+  "en_academic": {
+    "title": "English Academic Paper (Speculative Decoding)",
+    "genre": "academic",
+    "lang": "en",
+    "prompt": "Draft an academic analysis on memory bandwidth overhead and latency trade-offs in speculative decoding for large language models. Length: 150-250 words.",
+    "solo_model": {
+      "score": 2.5,
+      "normalized_score": 12.63,
+      "passed": true,
+      "violations_count": 1,
+      "violations": [
+        {
+          "cat": "formatting_abuse",
+          "msg": "Excessive bold formatting (2 instances)"
+        }
+      ],
+      "burstiness_cv": 0.2842,
+      "mattr": 0.9004,
+      "de_ratio": 0.0,
+      "word_count": 198,
+      "api_evidence": {
+        "http_status": 200,
+        "latency_ms": 11614.1,
+        "usage": {
+          "prompt_tokens": 39,
+          "completion_tokens": 305,
+          "reasoning_tokens": 34,
+          "total_tokens": 344
+        },
+        "response_id": "cb6821ad-7c8f-406b-9d41-0351c4e078bf_cceef28d386d4b74a6421c7edb9fe31c"
+      }
+    },
+    "model_plus_skill_tool": {
+      "score": 0,
+      "normalized_score": 0.0,
+      "passed": true,
+      "violations_count": 0,
+      "violations": [],
+      "burstiness_cv": 0.7001,
+      "mattr": 0.8914,
+      "de_ratio": 0.0159,
+      "word_count": 298,
+      "in_loop_remediation": true,
+      "api_evidence": {
+        "http_status": 200,
+        "latency_ms": 30220.7,
+        "usage": {
+          "prompt_tokens": 532,
+          "completion_tokens": 2263,
+          "reasoning_tokens": 1918,
+          "total_tokens": 2795
+        },
+        "response_id": "38a43b76-3467-439e-9081-bf08ba20d630_93460c0f0ef44c8994fa95aaf5301874",
+        "remediation_call": {
+          "http_status": 200,
+          "latency_ms": 12212.1,
+          "usage": {
+            "prompt_tokens": 975,
+            "completion_tokens": 552,
+            "reasoning_tokens": 149,
+            "total_tokens": 1527
+          },
+          "response_id": "932e762e-c0a1-4704-abf7-b267f749958d_a3fc227d033c499cbe65a5a5a28faa23"
+        }
+      }
+    }
+  },
+  "grant": {
+    "title": "国家自然科学基金课题申报书技术路线",
+    "genre": "academic",
+    "lang": "zh",
+    "prompt": "请起草一份国家自然科学基金课题申报书中的核心技术路线与关键考核指标，主题为自主智能体系统的安全对齐与防御机制。字数在250-350字左右。",
+    "solo_model": {
+      "score": 5.5,
+      "normalized_score": 15.32,
+      "passed": true,
+      "violations_count": 2,
+      "violations": [
+        {
+          "cat": "punctuation_abuse",
+          "msg": "Excessive dashes/em-dashes (3 occurrences)"
+        },
+        {
+          "cat": "formatting_abuse",
+          "msg": "Excessive bold formatting (4 instances)"
+        }
+      ],
+      "burstiness_cv": 0.4737,
+      "mattr": 0.9129,
+      "de_ratio": 0.0283,
+      "word_count": 359,
+      "api_evidence": {
+        "http_status": 200,
+        "latency_ms": 13878.0,
+        "usage": {
+          "prompt_tokens": 50,
+          "completion_tokens": 397,
+          "reasoning_tokens": 97,
+          "total_tokens": 447
+        },
+        "response_id": "0b1a6fb0-d072-40da-ae2b-66f269225ff9_f1c25c60f4324641bb7d1ccbdb8ca24f"
+      }
+    },
+    "model_plus_skill_tool": {
+      "score": 3.0,
+      "normalized_score": 10.95,
+      "passed": true,
+      "violations_count": 1,
+      "violations": [
+        {
+          "cat": "punctuation_abuse",
+          "msg": "Excessive dashes/em-dashes (1 occurrences)"
+        }
+      ],
+      "burstiness_cv": 0.3216,
+      "mattr": 0.8987,
+      "de_ratio": 0.0233,
+      "word_count": 274,
+      "in_loop_remediation": true,
+      "api_evidence": {
+        "http_status": 200,
+        "latency_ms": 17100.2,
+        "usage": {
+          "prompt_tokens": 683,
+          "completion_tokens": 753,
+          "reasoning_tokens": 505,
+          "total_tokens": 1436
+        },
+        "response_id": "00b9bbc5-3877-4481-82bc-4a91eb84e124_70510d8169f84be8ba95ad8486f5eeee",
+        "remediation_call": {
+          "http_status": 200,
+          "latency_ms": 8418.5,
+          "usage": {
+            "prompt_tokens": 1029,
+            "completion_tokens": 264,
+            "reasoning_tokens": 37,
+            "total_tokens": 1293
+          },
+          "response_id": "ca0d4237-6f6d-4d5e-af7e-c5280b7b2c34_72fa4a4f913a471bbe691eb593ed011f"
+        }
+      }
+    }
+  },
+  "popsci": {
+    "title": "前沿科普专栏短文（大模型幻觉原理）",
+    "genre": "general",
+    "lang": "zh",
+    "prompt": "请以资深科技专栏作者的视角，向公众科普大模型幻觉与记忆机制的运作原理。字数在200-300字左右。",
+    "solo_model": {
+      "score": 3.0,
+      "normalized_score": 9.9,
+      "passed": true,
+      "violations_count": 1,
+      "violations": [
+        {
+          "cat": "punctuation_abuse",
+          "msg": "Excessive dashes/em-dashes (2 occurrences)"
+        }
+      ],
+      "burstiness_cv": 0.4336,
+      "mattr": 0.7984,
+      "de_ratio": 0.0334,
+      "word_count": 303,
+      "api_evidence": {
+        "http_status": 200,
+        "latency_ms": 13142.5,
+        "usage": {
+          "prompt_tokens": 43,
+          "completion_tokens": 300,
+          "reasoning_tokens": 31,
+          "total_tokens": 343
+        },
+        "response_id": "a2d0aa97-a940-4ace-99f1-f25b852e58ea_c8bca07951da46009b06e362c0897399"
+      }
+    },
+    "model_plus_skill_tool": {
+      "score": 3.0,
+      "normalized_score": 12.05,
+      "passed": true,
+      "violations_count": 1,
+      "violations": [
+        {
+          "cat": "punctuation_abuse",
+          "msg": "Excessive dashes/em-dashes (1 occurrences)"
+        }
+      ],
+      "burstiness_cv": 0.62,
+      "mattr": 0.8872,
+      "de_ratio": 0.0402,
+      "word_count": 249,
+      "in_loop_remediation": true,
+      "api_evidence": {
+        "http_status": 200,
+        "latency_ms": 32770.9,
+        "usage": {
+          "prompt_tokens": 676,
+          "completion_tokens": 1714,
+          "reasoning_tokens": 1512,
+          "total_tokens": 2390
+        },
+        "response_id": "46be016e-259b-4fe6-ac92-b55fe154f77f_aebea4e0f65343aa90765a06fa955910",
+        "remediation_call": {
+          "http_status": 200,
+          "latency_ms": 5890.2,
+          "usage": {
+            "prompt_tokens": 976,
+            "completion_tokens": 247,
+            "reasoning_tokens": 52,
+            "total_tokens": 1223
+          },
+          "response_id": "e0cee284-9b71-4a56-b460-a5c71cdd357c_05f34f188eb943078158a11458d0b2cd"
+        }
+      }
+    }
+  },
+  "social": {
+    "title": "数码产品真实实测复盘",
+    "genre": "general",
+    "lang": "zh",
+    "prompt": "请以数码极客视角撰写一篇降噪耳机的真实使用体验评测，总结其日常通勤中的真实降噪表现与优缺点。字数在200-300字左右。",
+    "solo_model": {
+      "score": 5.5,
+      "normalized_score": 23.11,
+      "passed": true,
+      "violations_count": 2,
+      "violations": [
+        {
+          "cat": "punctuation_abuse",
+          "msg": "Excessive dashes/em-dashes (2 occurrences)"
+        },
+        {
+          "cat": "formatting_abuse",
+          "msg": "Excessive bold formatting (6 instances)"
+        }
+      ],
+      "burstiness_cv": 0.4639,
+      "mattr": 0.9347,
+      "de_ratio": 0.0087,
+      "word_count": 238,
+      "api_evidence": {
+        "http_status": 200,
+        "latency_ms": 13080.0,
+        "usage": {
+          "prompt_tokens": 50,
+          "completion_tokens": 290,
+          "reasoning_tokens": 45,
+          "total_tokens": 340
+        },
+        "response_id": "56632040-4677-4d38-80e6-2aa8da2dbe67_4041d129edac485680b4c972b6d37894"
+      }
+    },
+    "model_plus_skill_tool": {
+      "score": 3.0,
+      "normalized_score": 11.15,
+      "passed": true,
+      "violations_count": 1,
+      "violations": [
+        {
+          "cat": "punctuation_abuse",
+          "msg": "Excessive dashes/em-dashes (1 occurrences)"
+        }
+      ],
+      "burstiness_cv": 0.5365,
+      "mattr": 0.9126,
+      "de_ratio": 0.0319,
+      "word_count": 269,
+      "in_loop_remediation": true,
+      "api_evidence": {
+        "http_status": 200,
+        "latency_ms": 18634.3,
+        "usage": {
+          "prompt_tokens": 683,
+          "completion_tokens": 463,
+          "reasoning_tokens": 187,
+          "total_tokens": 1146
+        },
+        "response_id": "f531def4-c438-42b7-87c3-c641d7b26ed2_6c4c16a27d184c2dad20145ace69ab10",
+        "remediation_call": {
+          "http_status": 200,
+          "latency_ms": 16445.3,
+          "usage": {
+            "prompt_tokens": 1057,
+            "completion_tokens": 353,
+            "reasoning_tokens": 85,
+            "total_tokens": 1410
+          },
+          "response_id": "37106bac-a345-45e4-aefc-26fe13c93e07_f3c6d839ec6e44a59cb7e09ce65f2f0b"
+        }
+      }
+    }
+  },
+  "polish": {
+    "title": "技术故障通报润色（信息守恒）",
+    "genre": "general",
+    "lang": "zh",
+    "prompt": "请对以下技术通报进行润色，提升其表达质量：\n\n本部门对系统老旧代码进行了梳理和优化工作，使得故障率有所下降，但由于人力资源不足，部分需求未能在预期内完成上线交付。第三季度故障次数从 14 次降到 9 次，延期需求共 3 项。",
+    "solo_model": {
+      "score": 5.0,
+      "normalized_score": 13.09,
+      "passed": false,
+      "violations_count": 1,
+      "violations": [
+        {
+          "cat": "fidelity_added",
+          "msg": "Fact anchor '35.7' appears in the output but not in the source (possible fabricated detail)"
+        }
+      ],
+      "burstiness_cv": 0.6229,
+      "mattr": 0.86,
+      "de_ratio": 0.016,
+      "word_count": 382,
+      "api_evidence": {
+        "http_status": 200,
+        "latency_ms": 13698.2,
+        "usage": {
+          "prompt_tokens": 78,
+          "completion_tokens": 596,
+          "reasoning_tokens": 215,
+          "total_tokens": 674
+        },
+        "response_id": "1de49f94-74e3-4bc5-a8dd-0dbc16b21a6d_1def3d3c3d5441c09a7f960b2d05f70c"
+      }
+    },
+    "model_plus_skill_tool": {
+      "score": 0,
+      "normalized_score": 0.0,
+      "passed": true,
+      "violations_count": 0,
+      "violations": [],
+      "burstiness_cv": 0.3962,
+      "mattr": 0.9,
+      "de_ratio": 0.0,
+      "word_count": 53,
+      "in_loop_remediation": true,
+      "api_evidence": {
+        "http_status": 200,
+        "latency_ms": 14885.6,
+        "usage": {
+          "prompt_tokens": 711,
+          "completion_tokens": 657,
+          "reasoning_tokens": 412,
+          "total_tokens": 1368
+        },
+        "response_id": "5b368977-e6d5-4223-b7c5-b1d5609dec92_837c57f0e69e46399eb01ab89e799b44",
+        "remediation_call": {
+          "http_status": 200,
+          "latency_ms": 6473.7,
+          "usage": {
+            "prompt_tokens": 1793,
+            "completion_tokens": 233,
+            "reasoning_tokens": 186,
+            "total_tokens": 2026
+          },
+          "response_id": "468477f7-c7fb-4702-9a66-698f4243f7df_eae502d8eb75451eae9ce2ca22d8def0"
+        }
+      }
+    }
+  },
+  "translate": {
+    "title": "技术文档英译中（信息守恒）",
+    "genre": "general",
+    "lang": "zh",
+    "prompt": "请将以下技术段落翻译为中文：\n\nWhen users encounter a menu with more than 5 levels, the interface adds friction and increases cognitive load. In our 2024 usability study of 48 participants, median task time rose from 12 s to 31 s.",
+    "solo_model": {
+      "score": 3.5,
+      "normalized_score": 51.47,
+      "passed": true,
+      "violations_count": 1,
+      "violations": [
+        {
+          "cat": "formulaic_pattern",
+          "msg": "Found formulaic pattern: 轻动词名物化搭配(文字义肢)"
+        }
+      ],
+      "burstiness_cv": 0.1471,
+      "mattr": 0.9347,
+      "de_ratio": 0.0476,
+      "word_count": 68,
+      "api_evidence": {
+        "http_status": 200,
+        "latency_ms": 4404.1,
+        "usage": {
+          "prompt_tokens": 68,
+          "completion_tokens": 73,
+          "reasoning_tokens": 15,
+          "total_tokens": 141
+        },
+        "response_id": "69ceb6e4-3cb6-4ea8-98af-27e4506b1440_b2c1568438ad4062b8b5a8b5a41bd271"
+      }
+    },
+    "model_plus_skill_tool": {
+      "score": 3.5,
+      "normalized_score": 56.45,
+      "passed": true,
+      "violations_count": 1,
+      "violations": [
+        {
+          "cat": "formulaic_pattern",
+          "msg": "Found formulaic pattern: 轻动词名物化搭配(文字义肢)"
+        }
+      ],
+      "burstiness_cv": 0.129,
+      "mattr": 0.9446,
+      "de_ratio": 0.0351,
+      "word_count": 62,
+      "in_loop_remediation": true,
+      "api_evidence": {
+        "http_status": 200,
+        "latency_ms": 8180.4,
+        "usage": {
+          "prompt_tokens": 701,
+          "completion_tokens": 92,
+          "reasoning_tokens": 27,
+          "total_tokens": 793
+        },
+        "response_id": "0e526fc9-14df-4e2a-87c4-af17bbf424ee_c29ad924f8ad499590f6d05b5287abdd",
+        "remediation_call": {
+          "http_status": 200,
+          "latency_ms": 15746.7,
+          "usage": {
+            "prompt_tokens": 864,
+            "completion_tokens": 78,
+            "reasoning_tokens": 13,
+            "total_tokens": 942
+          },
+          "response_id": "319b7805-ca7c-4021-bbdc-05101f5f410b_24f75785abb346598a34e646819fa451"
+        }
+      }
+    }
+  },
+  "_meta": {
+    "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+    "model": "mimo-v2.6-flash",
+    "session": "session-mimo-benchmark-2026",
+    "api_key_fingerprint": "oc_sk_9025b9...0QOMd0",
+    "started_at_utc": "2026-10-24T11:28:04+00:00",
+    "finished_at_utc": "2026-10-24T11:33:58+00:00",
+    "wall_clock_s": 353.5,
+    "token_totals": {
+      "http_calls": 24,
+      "prompt_tokens": 14554,
+      "completion_tokens": 13422,
+      "reasoning_tokens": 7635,
+      "total_tokens": 27976,
+      "mean_latency_ms": 14391.0
+    },
+    "no_mock_guarantee": "All texts generated by live HTTP calls; any failure aborts the run."
+  }
+}

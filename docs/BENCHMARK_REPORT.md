@@ -674,7 +674,91 @@ graph TD
 
 ---
 
-## 6. Reproducibility Guide & Commands
+## 6. Cross-Model Independent Replication: mimo-v2.6-flash (2026-10-24)
+
+To verify the findings are not bound to a single vendor, the identical protocol was re-run on **mimo-v2.6-flash** (a reasoning model served through the OpenCode Go gateway): the same neutral 8-scenario prompt set, the same rule injection, and the same `anti-ai-lint` in-loop gate with one remediation budget.
+
+### 6.1 Replication Protocol & Authenticity Evidence
+
+| Evidence item | Measured value |
+| :--- | :--- |
+| Endpoint | `https://opencode.ai/zen/go/v1/chat/completions` |
+| Model | `mimo-v2.6-flash` (reasoning tokens share the completion budget; `max_tokens=6000`) |
+| Time window | 2026-10-24T11:28:04Z -> 11:33:58Z (353.5 s wall clock) |
+| Live calls | **24 HTTP POSTs, all returning 200**; mean per-call latency 14391 ms |
+| Token usage | prompt 14554 + completion 13422 (incl. reasoning 7635) = **27976 total** |
+| Auth | Resolved at runtime (`~/.zcode/v2/provider_config.json` active key -> backup fallback), fingerprint `oc_sk_9025b9...0QOMd0` |
+| No-mock guarantee | Zero mocks in the harness: any non-200 / empty body / `finish_reason=length` truncation / degenerate output raises and aborts — no silent fallback. Per-call status codes, latencies, and usage stats were printed live and archived under `_meta` in `tests/fixtures_mimo/benchmark_results.json` |
+
+> [!WARNING]
+> **One genuine failure mode and the harness fix (disclosed in full)**: in the first execution, the skill arm of `en_academic` misread the rule injection as a tool-invocation instruction and returned a 15-word pseudo `<tool_call>` fragment instead of prose — a degenerate output that contains none of the blocked lexicon and therefore sneaked past the linter with a "zero-penalty" pass. The harness now carries an output-sanity guard (pseudo tool-call marker detection plus a mixed CJK/English word floor of 40); **all artifacts were purged and the full benchmark re-run**, so every figure in this section comes from the second complete execution (24 calls). See `scripts/run_mimo_benchmark.py`.
+
+### 6.2 Eight-Scenario Measured Matrix
+
+(field-by-field from `tests/fixtures_mimo/benchmark_results.json`)
+
+| Scenario | Genre | Solo Model | Model+Skill+Tool | Delta | Healing |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Academic abstract** `academic` | Academic | **16.5 pts / 5 / ❌ FAIL**<br>formulaic opener "随着……的飞速发展", light verb "取得了平衡", 4x "的" in one clause, em-dash x2, rhythmic monotony (CV 0.250) | **4.0 pts / 1 / ✅ PASS**<br>1 residual buzzword 「赛道」; opens on facts ("本研究评估……"); CV rises to 0.599 | **-75.8%, FAIL → PASS** | 1 pass |
+| **Business memo** `business` | General | 2.5 pts / 1 / ✅<br>bold abuse x11 | **0.0 pts / 0 / ✅**<br>bold cleared to zero | **-100.0%** | 1 pass |
+| **English paper** `en_academic` | English academic | 2.5 pts / 1 / ✅<br>bold x2 | **0.0 pts / 0 / ✅**<br>length-rhythm CV 0.284 -> 0.700 | **-100.0%** | 1 pass |
+| **Grant proposal** `grant` | Academic | 5.5 pts / 2 / ✅<br>em-dash x3 + bold x4 | **3.0 pts / 1 / ✅**<br>em-dash down to 1 | -45.5% | 1 pass |
+| **PopSci column** `popsci` | General | 3.0 pts / 1 / ✅<br>em-dash x2 | 3.0 pts / 1 / ✅<br>em-dash x1, not cleared | **Flat (counter-example, disclosed)** | 1 pass |
+| **Gadget review** `social` | General | 5.5 pts / 2 / ✅<br>em-dash x2 + bold x6 | **3.0 pts / 1 / ✅**<br>em-dash down to 1 | -45.5% | 1 pass |
+| **Incident polish** `polish`<br>(conservation) | General + `--source` | 5.0 pts / 1 / ❌ **FAIL**<br>**self-computed "降幅达 35.7%" fabricated anchor** (absent from source) | **0.0 pts / 0 / ✅ PASS**<br>anchors 14/9/3 conserved exactly | **-100.0%, FAIL → PASS** | 1 pass |
+| **EN->ZH translation** `translate`<br>(conservation) | General + `--source` | 3.5 pts / 1 / ✅<br>light verb "开展的……研究" | 3.5 pts / 1 / ✅<br>same light verb survives healing | **Flat (counter-example, disclosed)** | 1 pass |
+| **Macro average** (8) | - | **5.50 pts / 1.75**<br>pass rate **75.0% (6/8)**<br>"的" density 2.23%<br>mean CV 0.433 | **2.06 pts / 0.62**<br>pass rate **100% (8/8)**<br>"的" density 2.07%<br>mean CV 0.483 | **penalty -62.5%<br>violations -64.3%<br>zero-violation subjects 0/8 -> 3/8** | 8/8 fired |
+| **Conservation subset** (polish + translate) | - | 4.25 pts / **1** fabricated anchor | 1.75 pts / **0** fabricated anchors | **fabrication cleared, hard blocks lifted** | - |
+
+### 6.3 Cross-Model Shared Pathologies (two-generation comparison)
+
+The mimo-v2.6-flash replication corroborates the GLM-5.3 study on three points:
+
+1. **The self-computed reduction rate in polishing is a cross-model collective hallucination**: GLM-5.3 and mimo-v2.6-flash **independently** computed (14-9)/14 = "35.7%" and wrote it into the incident report — the source contains only "14 次降到 9 次", no percentage at all. Four independent generations (two models x two runs) fabricated the same figure, evidencing a systematic "report genre prefers quantified magnitude" tendency that only the `fidelity_added` hard gate can backstop.
+2. **The battleground has migrated from vocabulary to format and syntax**: the solo mimo model tripped the blocked-word list exactly once (「赛道」 — and in the skill arm at that); its penalties come from formulaic openers, light-verb crutches, em-dash stacking, and bold abuse — the same migration direction observed on GLM-5.3.
+3. **The gate's floor value replicates**: in both experiments the solo arm FAILed `polish` on fabricated anchors while the gated arm passed 100% with digits conserved; on mimo the solo arm additionally hard-failed `academic` (16.5 pts / 5 violations), healed to 4.0 in the gated arm. Counter-examples disclosed: `popsci` and `translate` stayed flat (one residual em-dash / light verb surviving the single healing budget), and the gated `academic` keeps one 「赛道」 — semantic-class violations heal reliably within one pass; style-class needs more.
+
+### 6.4 Representative Real Diffs (verbatim from `tests/fixtures_mimo/`)
+
+**Diff 1 — `academic` opener (formulaic grand opening -> facts first)**:
+
+```text
+❌ Solo (16.5 pts):
+蛋白质三维结构决定其生物学功能，准确的结构预测是生命科学研究的关键基础。
+随着深度学习技术的飞速发展，蛋白质结构预测领域实现了从传统物理模拟方法
+向数据驱动范式的根本性转变。
+(followed by a clause stacking 4x "的", em-dash x2, sentence-length CV of just 0.250)
+
+✅ Model+Skill+Tool (4.0 pts):
+本研究评估深度学习方法在蛋白质结构预测中的精度与适用边界。以 AlphaFold2
+与 RoseTTAFold 为代表，此类模型将多序列比对信息输入注意力网络，直接回归
+三维坐标，在 CASP14 无模板赛道取得接近实验精度的结果（GDT-TS 中位数约 92）。
+```
+
+**Diff 2 — `polish` information conservation (self-computed fabrication -> anchor conservation)**:
+
+```text
+❌ Solo (5.0 pts, hard FAIL on fidelity_added):
+本部门已完成对系统存量代码的梳理与优化工作，系统故障率显著改善：第三季度
+故障次数由 14 次降至 9 次，降幅达 35.7%。……
+
+✅ Model+Skill+Tool (0.0 pts, PASS):
+本部门梳理并优化了系统老旧代码，第三季度故障次数由 14 次降至 9 次。受人力
+不足制约，部分需求未能按期上线，共延期 3 项。
+```
+
+### 6.5 Reproduction Commands
+
+```bash
+python3 scripts/run_mimo_benchmark.py          # full 8-scenario dual-arm run + one in-loop healing pass
+python3 scripts/export_dpo_pairs.py --fixtures-dir tests/fixtures_mimo --output-dir data/mimo_dpo --validate
+```
+
+The real preference pairs are exported in three alignment formats under `data/mimo_dpo/`: `mimo_dpo.jsonl` (HF DPO triplets), `mimo_dpo_chatml.jsonl` (ChatML), and `mimo_dpo_sharegpt.jsonl` (ShareGPT), 8 pairs each. The `polish` / `translate` pairs are ties (healing did not beat the native output), and the exporter's validation does not run `--source` anchor comparison — conservation verdicts are authoritative in `benchmark_results.json`.
+
+---
+
+## 7. Reproducibility Guide & Commands
 
 ### 1. Re-run the real GLM-5.3 dual-blind benchmark
 ```bash
@@ -682,13 +766,19 @@ python3 scripts/run_glm5_benchmark.py
 ```
 *The script embeds the GLM-5.3 API calls, dual-blind conditions, and in-loop gate logic; artifacts land in `tests/fixtures_glm5/` (8 subjects x `solo_before.md` / `skill_tool_after.md` + `benchmark_results.json`).*
 
-### 2. Run the comprehensive unit & regression suite
+### 2. Re-run the mimo-v2.6-flash cross-model replication
+```bash
+python3 scripts/run_mimo_benchmark.py
+```
+*Live end-to-end replication through the OpenCode Go gateway (see Section 6); artifacts land in `tests/fixtures_mimo/`. The API key resolves at runtime; per-call HTTP status, latency, and token usage are printed live.*
+
+### 3. Run the comprehensive unit & regression suite
 ```bash
 python3 -m unittest discover -s tests
 ```
 *Expected: `Ran 97 tests ... OK`, covering platform install, gate assertions, 8-subject empirical benchmark regressions, and 27 workflow tests.*
 
-### 3. Inspect real artifacts via CLI
+### 4. Inspect real artifacts via CLI
 ```bash
 # Drafting scenario (academic genre):
 anti-ai-lint tests/fixtures_glm5/academic/solo_before.md --genre academic
@@ -699,7 +789,7 @@ anti-ai-lint tests/fixtures_glm5/polish/skill_tool_after.md --source tests/workf
 anti-ai-lint tests/fixtures_glm5/translate/skill_tool_after.md --source tests/workflow_cases/translate/source.en.md
 ```
 
-### 4. Validate DPO pairs and prompt optimizer
+### 5. Validate DPO pairs and prompt optimizer
 ```bash
 python3 scripts/export_dpo_pairs.py --validate
 python3 scripts/dspy_optimizer.py --iterations 1
@@ -707,7 +797,7 @@ python3 scripts/dspy_optimizer.py --iterations 1
 
 ---
 
-## 7. Academic References
+## 8. Academic References
 
 1. **Kobak, D., González-Márquez, R., Horvát, E.-Á., & Lause, J. (2025)**. Delving into LLM-assisted writing in biomedical publications through excess vocabulary. *Science Advances, 11*(27), eadt3813. https://doi.org/10.1126/sciadv.adt3813 (arXiv:2406.07016).
 2. **Meister, C., Pimentel, T., Haller, P., Jäger, L., Cotterell, R., & Levy, R. (2021)**. Revisiting the uniform information density hypothesis. In *Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing (EMNLP)* (arXiv:2109.11635).

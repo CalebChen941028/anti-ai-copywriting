@@ -674,7 +674,91 @@ graph TD
 
 ---
 
-## 6. 基准复现指南与测试命令
+## 6. 跨模型独立复测：mimo-v2.6-flash（2026-10-24）
+
+为验证结论不绑定单一厂商模型，在 GLM-5.3 之外对 **mimo-v2.6-flash**（OpenCode Go 网关接入的思考型模型）执行同一协议的独立复测：同一组 8 场景中立提示词、同一套规则注入、同一个 `anti-ai-lint` 环内门禁（一次自愈预算）。
+
+### 6.1 复测协议与真实性凭据
+
+| 凭据项 | 实测值 |
+| :--- | :--- |
+| 端点 | `https://opencode.ai/zen/go/v1/chat/completions` |
+| 模型 | `mimo-v2.6-flash`（reasoning token 计入 completion 预算，`max_tokens=6000`） |
+| 时间窗 | 2026-10-24T11:28:04Z → 11:33:58Z（353.5 s） |
+| 真实调用 | **24 次 HTTP POST，全部返回 200**；平均单次时延 14391 ms |
+| token 实测 | prompt 14554 + completion 13422（含 reasoning 7635）= **27976 total** |
+| 鉴权 | 运行时解析（`~/.zcode/v2/provider_config.json` active key → 备用 key 降级），指纹 `oc_sk_9025b9...0QOMd0` |
+| 防作弊声明 | 脚本零 mock：非 200 / 空正文 / `finish_reason=length` 截断 / 退化输出一律抛异常终止，无任何静默回退；逐调用 HTTP 状态码、时延与 usage 已打印并存档于 `tests/fixtures_mimo/benchmark_results.json` 的 `_meta` 字段 |
+
+> [!WARNING]
+> **一次真实失败模式与 harness 修正（如实披露）**：首轮执行中，`en_academic` 场景技能组把规则注入误解为工具调用指令，返回了一段 15 词的伪 `<tool_call>` 标记而非论文正文——该退化输出恰好不含任何封锁词，以"零扣分"骗过 lint 放行。据此为 harness 增加输出健全性守卫（伪 tool-call 标记检测 + 中英混合词数下限 40 词），**清除全部产物后全量重跑**，上表与本章所有数据均来自第二次完整运行（24 次调用）。守卫实现见 `scripts/run_mimo_benchmark.py`。
+
+### 6.2 八场景实测对照矩阵
+
+（数据逐字段来自 `tests/fixtures_mimo/benchmark_results.json`）
+
+| 测试场景 | 语体 | 单一模型 (Solo) | 模型+技能工具 (After) | 扣分降幅 | 自愈 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **学术论文摘要** `academic` | 学术级 | **16.5 分 / 5 处 / ❌ FAIL**<br>「随着……的飞速发展」公式化开篇、轻动词「取得了平衡」、单句 4 个"的"、破折号 ×2、节奏单调（CV 0.250） | **4.0 分 / 1 处 / ✅ PASS**<br>残留 1 处黑话「赛道」；开篇直入「本研究评估……」；CV 升至 0.599 | **-75.8%，FAIL → PASS** | 1 轮 |
+| **商业管理备忘** `business` | 通用级 | 2.5 分 / 1 处 / ✅<br>加粗滥用 11 处 | **0.0 分 / 0 处 / ✅**<br>加粗清零 | **-100.0%** | 1 轮 |
+| **英文顶会论文** `en_academic` | 英文学术 | 2.5 分 / 1 处 / ✅<br>加粗 2 处 | **0.0 分 / 0 处 / ✅**<br>句长节奏 CV 0.284 → 0.700 | **-100.0%** | 1 轮 |
+| **科研基金申报** `grant` | 学术级 | 5.5 分 / 2 处 / ✅<br>破折号 ×3 + 加粗 ×4 | **3.0 分 / 1 处 / ✅**<br>破折号降至 1 处 | -45.5% | 1 轮 |
+| **前沿科普专栏** `popsci` | 通用级 | 3.0 分 / 1 处 / ✅<br>破折号 ×2 | 3.0 分 / 1 处 / ✅<br>破折号 ×1，自愈未清零 | **持平（反例，如实披露）** | 1 轮 |
+| **社交数码实测** `social` | 通用级 | 5.5 分 / 2 处 / ✅<br>破折号 ×2 + 加粗 ×6 | **3.0 分 / 1 处 / ✅**<br>破折号降至 1 处 | -45.5% | 1 轮 |
+| **故障通报润色** `polish`<br>（信息守恒） | 通用级 + `--source` | 5.0 分 / 1 处 / ❌ **FAIL**<br>**自算「降幅达 35.7%」杜撰锚点**（源文无此数字） | **0.0 分 / 0 处 / ✅ PASS**<br>14/9/3 三锚点精确守恒 | **-100.0%，FAIL → PASS** | 1 轮 |
+| **技术文档英译中** `translate`<br>（信息守恒） | 通用级 + `--source` | 3.5 分 / 1 处 / ✅<br>轻动词「开展的……研究」 | 3.5 分 / 1 处 / ✅<br>同一处轻动词自愈后仍保留 | **持平（反例，如实披露）** | 1 轮 |
+| **宏观均值**（8 科） | - | **5.50 分 / 1.75 处**<br>通过率 **75.0% (6/8)**<br>「的」字密度 2.23%<br>CV 均值 0.433 | **2.06 分 / 0.62 处**<br>通过率 **100% (8/8)**<br>「的」字密度 2.07%<br>CV 均值 0.483 | **扣分 -62.5%<br>违规 -64.3%<br>零违规场景 0/8 → 3/8** | 8/8 触发 |
+| **信息守恒子集**（polish + translate） | - | 4.25 分 / 杜撰锚点 **1 处** | 1.75 分 / 杜撰锚点 **0 处** | **杜撰清零，硬拦截解除** | - |
+
+### 6.3 跨模型共性病理（两代模型对照）
+
+mimo-v2.6-flash 复测与 GLM-5.3 主测在三点上互相印证：
+
+1. **润色场景的「自算降幅」是跨模型共性幻觉**：GLM-5.3 与 mimo-v2.6-flash 在 `polish` 场景**各自独立**地由 (14-9)/14 自算出「35.7%」并写入通报——源文只有「14 次降到 9 次」，没有任何百分比。四个独立生成（两模型 × 两轮）全部杜撰同一数字，证明这不是单模型偶发，而是"汇报文体偏好量化幅度"的系统性倾向；`fidelity_added` 硬拦截是唯一兜底。
+2. **当代模型的主战场已从词汇迁移到格式与句法**：mimo 单一模型在封锁词表上仅触发 1 处（「赛道」，且出现在技能组），其扣分主体是公式化开篇（「随着……的飞速发展」）、轻动词义肢、破折号堆叠与加粗滥用——与 GLM-5.3 的病理迁移方向一致。
+3. **门禁的底线价值可复制**：两组实验中，单一模型均在 `polish` 场景 FAIL（杜撰锚点）、门禁组均 100% 放行且数字守恒；mimo 上单一模型另在 `academic` 因 5 处违规硬拦截（16.5 分），技能组降至 4.0 分放行。反例如实披露：`popsci` 与 `translate` 扣分持平（残余 1 处破折号 / 1 处轻动词，一轮自愈预算内未清零），`academic` 技能组残留 1 处「赛道」——自愈对语义类违规高效，对样式类仍需更多轮次。
+
+### 6.4 代表性真实 Diff（逐字摘自 `tests/fixtures_mimo/`）
+
+**Diff 1 —— `academic` 开篇（公式化宏大开篇 → 事实先行）**：
+
+```text
+❌ Solo（16.5 分）:
+蛋白质三维结构决定其生物学功能，准确的结构预测是生命科学研究的关键基础。
+随着深度学习技术的飞速发展，蛋白质结构预测领域实现了从传统物理模拟方法
+向数据驱动范式的根本性转变。
+（此后单句堆积 4 个"的"，破折号 ×2，句长 CV 仅 0.250）
+
+✅ Model+Skill+Tool（4.0 分）:
+本研究评估深度学习方法在蛋白质结构预测中的精度与适用边界。以 AlphaFold2
+与 RoseTTAFold 为代表，此类模型将多序列比对信息输入注意力网络，直接回归
+三维坐标，在 CASP14 无模板赛道取得接近实验精度的结果（GDT-TS 中位数约 92）。
+```
+
+**Diff 2 —— `polish` 信息守恒（自算降幅杜撰 → 锚点守恒）**：
+
+```text
+❌ Solo（5.0 分，fidelity_added 硬拦截 FAIL）:
+本部门已完成对系统存量代码的梳理与优化工作，系统故障率显著改善：第三季度
+故障次数由 14 次降至 9 次，降幅达 35.7%。……
+
+✅ Model+Skill+Tool（0.0 分，PASS）:
+本部门梳理并优化了系统老旧代码，第三季度故障次数由 14 次降至 9 次。受人力
+不足制约，部分需求未能按期上线，共延期 3 项。
+```
+
+### 6.5 复现命令
+
+```bash
+python3 scripts/run_mimo_benchmark.py          # 全量 8 场景双对照 + 一次环内自愈
+python3 scripts/export_dpo_pairs.py --fixtures-dir tests/fixtures_mimo --output-dir data/mimo_dpo --validate
+```
+
+真实偏好对已导出为三种对齐格式：`data/mimo_dpo/mimo_dpo.jsonl`（HF DPO 三元组）、`mimo_dpo_chatml.jsonl`（ChatML）、`mimo_dpo_sharegpt.jsonl`（ShareGPT），各 8 对；`polish` / `translate` 两条为等分对（自愈未超越原生），导出器校验时不含 `--source` 事实比对，其守恒判定以 `benchmark_results.json` 为准。
+
+---
+
+## 7. 基准复现指南与测试命令
 
 ### 1. 复跑真实 GLM-5.3 双盲评测
 ```bash
@@ -682,13 +766,19 @@ python3 scripts/run_glm5_benchmark.py
 ```
 *脚本内嵌 GLM-5.3 接口调用、双盲对照与环内门禁自愈逻辑，产物写入 `tests/fixtures_glm5/`（8 科 × `solo_before.md` / `skill_tool_after.md` + `benchmark_results.json`）。*
 
-### 2. 运行全量单元测试与回归套件
+### 2. 复跑 mimo-v2.6-flash 跨模型复测
+```bash
+python3 scripts/run_mimo_benchmark.py
+```
+*经 OpenCode Go 网关的真实端到端复测（详见第 6 章），产物写入 `tests/fixtures_mimo/`；密钥运行时解析，逐调用打印 HTTP 状态码、时延与 token usage。*
+
+### 3. 运行全量单元测试与回归套件
 ```bash
 python3 -m unittest discover -s tests
 ```
 *预期输出：`Ran 97 tests ... OK`，覆盖平台安装、门禁断言、8 大科目真实基准回归与 27 项工作流测试。*
 
-### 3. 对真实产物执行本地命令行质检
+### 4. 对真实产物执行本地命令行质检
 ```bash
 # 起草场景（学术级语体）：
 anti-ai-lint tests/fixtures_glm5/academic/solo_before.md --genre academic
@@ -699,7 +789,7 @@ anti-ai-lint tests/fixtures_glm5/polish/skill_tool_after.md --source tests/workf
 anti-ai-lint tests/fixtures_glm5/translate/skill_tool_after.md --source tests/workflow_cases/translate/source.en.md
 ```
 
-### 4. 校验 DPO 数据对与提示词优化
+### 5. 校验 DPO 数据对与提示词优化
 ```bash
 python3 scripts/export_dpo_pairs.py --validate
 python3 scripts/dspy_optimizer.py --iterations 1
@@ -707,7 +797,7 @@ python3 scripts/dspy_optimizer.py --iterations 1
 
 ---
 
-## 7. 学术参考文献（References）
+## 8. 学术参考文献（References）
 
 1. **Kobak, D., González-Márquez, R., Horvát, E.-Á., & Lause, J. (2025)**. Delving into LLM-assisted writing in biomedical publications through excess vocabulary. *Science Advances, 11*(27), eadt3813. https://doi.org/10.1126/sciadv.adt3813 (arXiv:2406.07016).
 2. **Meister, C., Pimentel, T., Haller, P., Jäger, L., Cotterell, R., & Levy, R. (2021)**. Revisiting the uniform information density hypothesis. In *Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing (EMNLP)* (arXiv:2109.11635).

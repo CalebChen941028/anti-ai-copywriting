@@ -207,6 +207,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Export validated DPO preference pairs for de-AI fine-tuning.")
     parser.add_argument("--fixtures-dir", type=str, default=str(_repo_root / "tests" / "fixtures_glm5"), help="Path to fixtures directory.")
     parser.add_argument("--output", "-o", type=str, default=None, help="Output JSONL filepath.")
+    parser.add_argument("--output-dir", type=str, default=None,
+                        help="Export all three formats (dpo, chatml, sharegpt) as <stem>_dpo*.jsonl into this directory.")
     parser.add_argument("--format", choices=["dpo", "chatml", "sharegpt"], default="dpo", help="Target preference format.")
     parser.add_argument("--validate", "--verify", dest="validate", action="store_true", help="Validate score margin between rejected and chosen.")
     parser.add_argument("--min-rejected-score", type=float, default=0.0, help="Minimum penalty score for rejected draft during validation.")
@@ -222,6 +224,15 @@ def main(argv: Optional[List[str]] = None) -> int:
     if not valid:
         sys.stderr.write("Validation failed on one or more fixture pairs.\n")
         return 1
+
+    if args.output_dir:
+        out_dir = Path(args.output_dir)
+        stem = out_dir.name.rstrip("/")
+        for fmt in ("dpo", "chatml", "sharegpt"):
+            suffix = "" if fmt == "dpo" else f"_{fmt}"
+            export_dpo(pairs, output_path=str(out_dir / f"{stem}{suffix}.jsonl"), fmt=fmt)
+        print(f"All three formats exported to {out_dir}/")
+        return 0
 
     if args.validate and not args.output:
         print(f"All {len(pairs)} preference pairs validated successfully.")

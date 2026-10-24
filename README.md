@@ -31,7 +31,7 @@ Typical AI text tools fall into two categories: **post-hoc detectors** that scor
 
 ---
 
-## 2. Real GLM-5.3 Benchmark: Solo Model vs. Model + Skill + Tool Gate
+## 2. Real Dual-Model Benchmark: GLM-5.3 & mimo-v2.6-flash (Solo Model vs. Model + Skill + Tool Gate)
 
 > [!NOTE]
 > For the comprehensive benchmark report, mathematical derivations, in-depth linguistic diagnoses across all 8 subjects, and CLI reproduction commands, please consult: **[Full Benchmark & Evaluation Report (docs/BENCHMARK_REPORT.md)](docs/BENCHMARK_REPORT.md)**.
@@ -56,6 +56,27 @@ The 8 subjects (6 drafting genres + 2 information-conservation workflows) score 
 - **Fabricated fact anchors 7 -> 0**: the solo model self-computed a "35.7% reduction" in polishing and added a "UX" acronym in translation — both hard-blocked by `fidelity_added`. The skill + gate arm conserves every number, model code, and acronym at 100%; the conservation subset mean drops 25.25 -> 1.75 (-93.1%).
 - **Gate pass rate 75.0% -> 100%**: the drafting margin is narrower (-34.3%) — real GLM-5.3's residual pathologies have migrated to bold abuse, em-dash stacking, and assistant-style meta chatter. One in-loop remediation pass clears semantic-class violations; style-class needs more rounds.
 - **Counter-example disclosed**: in popsci the solo model natively scored 0 violations and beat the skill arm (3.0). The gate is a floor guarantee and conservation backstop, not a promise of winning every scenario.
+
+### 2.1 Cross-Model Independent Replication: mimo-v2.6-flash (2026-10-24)
+
+> [!IMPORTANT]
+> **Data provenance.** The identical protocol was re-run on `mimo-v2.6-flash` through the OpenCode Go gateway (`https://opencode.ai/zen/go/v1/chat/completions`), time window 2026-10-24T11:28:04Z -> 11:33:58Z. All **24 real HTTP POSTs returned 200** (mean latency 14391 ms), consuming a measured 27976 tokens (prompt 14554 + completion 13422, incl. 7635 reasoning). The harness contains zero mocks — any non-200 / empty body / truncated / degenerate output raises and aborts. Raw artifacts persist under `tests/fixtures_mimo/`, reproducible via `python3 scripts/run_mimo_benchmark.py`.
+
+| Scenario | Solo Model | Model+Skill+Tool | Delta |
+| :--- | :--- | :--- | :--- |
+| Academic abstract `academic` | 16.5 pts / 5 / ❌ FAIL | **4.0 pts / 1 / ✅** | **-75.8%, FAIL → PASS** |
+| Business memo `business` | 2.5 pts / 1 | **0.0 pts / 0** | **-100.0%** |
+| English paper `en_academic` | 2.5 pts / 1 | **0.0 pts / 0** | **-100.0%** |
+| Grant proposal `grant` | 5.5 pts / 2 | **3.0 pts / 1** | -45.5% |
+| PopSci column `popsci` | 3.0 pts / 1 | 3.0 pts / 1 | Flat (counter-example) |
+| Gadget review `social` | 5.5 pts / 2 | **3.0 pts / 1** | -45.5% |
+| Incident polish `polish` (conservation) | 5.0 pts / ❌ FAIL (fabricated "35.7%") | **0.0 pts / ✅ (14/9/3 conserved)** | **-100.0%, FAIL → PASS** |
+| EN->ZH translation `translate` (conservation) | 3.5 pts / 1 | 3.5 pts / 1 | Flat (counter-example) |
+| **Macro average** (8) | **5.50 pts / 1.75 / 75% pass** | **2.06 pts / 0.62 / 100% pass** | **penalty -62.5%, violations -64.3%** |
+
+- **The self-computed reduction is a cross-model collective hallucination**: solo mimo independently computed "降幅达 35.7%" and wrote it into the incident report — the very same fabricated figure GLM-5.3 produced, while the source contains no percentage at all. `fidelity_added` hard-blocks it; the gated arm conserves every digit at 100%.
+- **Pathology migration corroborated**: solo mimo tripped the blocked-word list exactly once; its penalties come from the formulaic "随着……的飞速发展" opener, light-verb crutches, em-dash stacking, and bold abuse — the same migration direction as GLM-5.3.
+- Real preference pairs are exported in three alignment formats (HF DPO / ChatML / ShareGPT, 8 pairs each) to `data/mimo_dpo/`; methodology, representative diffs, and the full disclosure of one pseudo tool-call degenerate output are in [Report Section 6](docs/BENCHMARK_REPORT.md).
 
 ---
 

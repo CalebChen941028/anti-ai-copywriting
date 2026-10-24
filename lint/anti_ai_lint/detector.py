@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
 from dataclasses import asdict, dataclass, field
@@ -35,6 +36,8 @@ class TextMetrics:
     dash_count: int = 0
     bold_count: int = 0
     exclamation_count: int = 0
+    burstiness_cv: float = 0.0
+    mattr: float = 0.0
 
 
 @dataclass
@@ -95,12 +98,18 @@ def get_remediation_suggestion(category: str, match_text: str, context: str = ""
     en_buzz_map = {
         "delve into": "Replace with 'explore', 'examine', 'study', or 'inspect'",
         "delving into": "Replace with 'exploring', 'examining', 'studying', or 'inspecting'",
+        "delve": "Replace with 'explore', 'examine', 'study', or 'inspect'",
         "testament to": "Replace with 'reflects', 'shows', 'proves', or 'indicates'",
         "beacon of": "Replace with 'model', 'standard', or 'leader'",
         "tapestry of": "Replace with 'range', 'array', 'collection', or 'diversity'",
         "intricate tapestry": "Replace with 'complex range' or describe specific components",
+        "tapestry": "Replace with 'structure', 'range', 'combination', or describe concrete architecture",
+        "meticulously": "Replace with 'carefully', 'systematically', 'thoroughly', or specify exact protocol",
+        "commendable": "Delete subjective praise; let empirical metrics and results speak for themselves",
+        "unwavering": "Delete subjective modifier; describe factual persistence or specific constraints",
         "realm of": "Replace with 'area of', 'field of', or 'domain of'",
         "realm": "Replace with 'area', 'field', 'domain', or 'context'",
+        "intricate": "Replace with 'complex', 'detailed', or specify architectural layers",
         "navigating the complexities": "Replace with 'handling', 'working through', or 'addressing'",
         "navigating complexities": "Replace with 'handling' or 'addressing'",
         "revolutionize": "Replace with 'transform', 'alter', or describe specific technical change",
@@ -112,11 +121,15 @@ def get_remediation_suggestion(category: str, match_text: str, context: str = ""
         "seamless integration": "Replace with 'smooth integration' or specify the exact interface",
         "seamlessness": "Replace with 'continuity' or 'integration'",
         "seamless": "Replace with 'smooth', 'integrated', or 'direct'",
+        "seamlessly": "Replace with 'directly', 'smoothly', or describe the concrete pipeline/interface",
+        "comprehensive": "Replace with specific scope: detailed, complete, or list the specific dimensions evaluated",
+        "robust": "Replace with concrete technical property: fault-tolerant, resilient, or state stability bounds",
         "multifaceted approach": "Replace with 'detailed method' or state the specific steps",
         "multifaceted": "Replace with 'complex', 'detailed', or state specific components",
         "underscores the importance": "Replace with 'shows' or demonstrate importance through empirical data",
         "underscore the importance": "Replace with 'shows' or cite empirical results",
         "pivotal role": "Replace with active verb showing mechanism: 'drives', 'regulates', 'mediates'",
+        "pivotal": "Replace with active verb showing mechanism: 'drives', 'regulates', 'determines'",
         "crucial role": "Replace with active verb showing mechanism: 'drives', 'regulates', 'mediates'",
         "vital role": "Replace with active verb showing mechanism: 'drives', 'regulates', 'mediates'",
         "plays a pivotal role": "Replace with active verb: 'drives', 'regulates', 'mediates'",
@@ -131,6 +144,9 @@ def get_remediation_suggestion(category: str, match_text: str, context: str = ""
     }
     if match_text.lower() in en_buzz_map:
         return en_buzz_map[match_text.lower()]
+
+    if "轻动词" in match_text or "弱动词" in match_text:
+        return "消除轻动词与动作名物化（文字义肢）：将「进行/开展/展开等形式动词 + 抽象名词」还原为直接动作强动词（例如：将「进行深入分析」重构为「深入分析」）"
 
     if any(k in match_text for k in ("如表", "表中", "Table", "Figure", "表格")):
         return "学术呈现规范：数值结果单独成句紧贴解释，避免套话引出表格（如‘如表所示’或‘As shown in Table’）"
@@ -150,6 +166,7 @@ def get_remediation_suggestion(category: str, match_text: str, context: str = ""
         "vague_quantifier_plain": "受控白话层杜绝模糊量词（如‘若干’、‘一些’、‘等等’），请改用具体阿拉伯数字或明确定义",
         "table_formula_academic": "学术呈现规范：数值结果单独成句紧贴解释，避免套话引出表格（如‘如表所示’）",
         "empty_self_praise_academic": "学术语态规范：删去空洞自夸，客观陈述实证结果与应用场景",
+        "rhythmic_monotony": "打破AI单调节奏（Monotonous Drone）：大幅调整句子长短波动，穿插5~10字/词短促斩截句与论述长句，提升文本信息起伏与节奏感（Burstiness）",
     }
     return cat_map.get(category, "遵循自然语态重塑规则，消除机器生成痕迹")
 
@@ -196,7 +213,7 @@ def _load_default_wordlists() -> tuple[dict[str, Any], dict[str, Any]]:
                 {"pattern": "不仅体现在.{1,40}更体现在", "name": "不仅体现在……更体现在……公式化排比", "penalty": 4},
                 {"pattern": "不是.{1,30}而是(质的飞跃|协作模式的重塑|根本性的变革|跨越式的发展)", "name": "无实质对立面的伪对比煽情", "penalty": 4},
                 {"pattern": "从[^。！？\\n]{1,30}到[^。！？\\n]{1,30}的(质变|飞跃|跨越)", "name": "虚假范围递进", "penalty": 4},
-                {"pattern": "(进行|作出|造成|加以|具有|得到)[了的]?(详细|深入|系统|全面|实质|重要)?(调研|分析|探讨|研究|总结|考察|评估)", "name": "弱动词搭配抽象名词(文字义肢)", "penalty": 3},
+                {"pattern": "(进行|开展|展开|作出|予以|给以|加以|具有|得到|受到|作|做|致以)[了的]?(详细|深入|系统|全面|实质|重要|科学|持续)?[了的]?(分析|探讨|调研|考察|评估|审校|整改|梳理|阐述|测查|优化|迭代|部署|排查|总结|研究)", "name": "轻动词名物化搭配(文字义肢)", "penalty": 3.5},
                 {"pattern": "(如表所示|从表中可以看出|结果如表.{1,10}所示)", "name": "套话表格陈述", "penalty": 3},
                 {"pattern": "拟通过.{1,40}从而.{1,40}进而", "name": "“拟通过……从而……进而……”套链", "penalty": 3}
             ],
@@ -210,17 +227,37 @@ def _load_default_wordlists() -> tuple[dict[str, Any], dict[str, Any]]:
     if not en_data:
         en_data = {
             "forbidden_words": [
-                "delve into", "delving into", "testament to", "beacon of",
-                "tapestry of", "intricate tapestry", "realm of", "realm",
-                "navigating the complexities", "navigating complexities",
+                "delve into", "delving into", "delve", "testament to", "beacon of",
+                "tapestry of", "intricate tapestry", "tapestry", "meticulously",
+                "realm of", "realm", "intricate", "navigating the complexities", "navigating complexities",
                 "revolutionize", "paradigm shift", "foster a culture", "foster",
-                "myriad of", "myriad", "seamless integration", "seamlessness", "seamless",
+                "commendable", "unwavering", "myriad of", "myriad",
+                "seamless integration", "seamlessness", "seamless", "seamlessly",
                 "multifaceted approach", "multifaceted", "underscores the importance",
-                "underscore the importance", "pivotal role", "crucial role", "vital role",
+                "underscore the importance", "pivotal role", "pivotal", "crucial role", "vital role",
                 "plays a pivotal role", "plays a crucial role", "plays a vital role",
                 "in today's fast-paced world", "in conclusion", "to summarize",
-                "it is important to note that", "utilize", "leverage"
+                "it is important to note that", "utilize", "leverage", "comprehensive", "robust"
             ],
+            "tier_penalties": {
+                "delve into": 5.0, "delving into": 5.0, "delve": 5.0,
+                "tapestry of": 5.0, "intricate tapestry": 5.0, "tapestry": 5.0,
+                "meticulously": 5.0, "testament to": 5.0,
+                "realm of": 3.5, "realm": 3.5, "intricate": 3.5,
+                "pivotal role": 3.5, "pivotal": 3.5, "beacon of": 3.5,
+                "commendable": 3.5, "foster a culture": 3.5, "foster": 3.5,
+                "navigating the complexities": 3.5, "navigating complexities": 3.5,
+                "unwavering": 3.5, "plays a pivotal role": 3.5,
+                "plays a crucial role": 3.5, "plays a vital role": 3.5,
+                "comprehensive": 2.0, "robust": 2.0, "leverage": 2.0, "utilize": 2.0,
+                "seamless integration": 2.0, "seamlessness": 2.0, "seamless": 2.0, "seamlessly": 2.0,
+                "multifaceted approach": 2.0, "multifaceted": 2.0, "myriad of": 2.0, "myriad": 2.0,
+                "revolutionize": 2.0, "paradigm shift": 2.0,
+                "underscores the importance": 2.0, "underscore the importance": 2.0,
+                "crucial role": 2.0, "vital role": 2.0,
+                "in today's fast-paced world": 2.0, "in conclusion": 2.0, "to summarize": 2.0,
+                "it is important to note that": 2.0
+            },
             "formulaic_patterns": [
                 {"pattern": r"\bnot only\b[^.!?\r\n]{1,120}?\bbut also\b", "name": "Formulaic not only... but also", "penalty": 4},
                 {"pattern": r"\bmake an? (investigation|examination|analysis|assessment|evaluation)\b", "name": "Heavy nominalization (make an analysis/investigation)", "penalty": 3},
@@ -597,6 +634,40 @@ def analyze_text(
     sentences = split_sentences_spans(sanitized_text)
     sentence_count = len(sentences)
 
+    # Statistical cadence: Burstiness Coefficient of Variation (CV_len = sigma / mu)
+    qualifying_lengths: List[int] = []
+    for s_text, _ in sentences:
+        s_cjk = len(re.findall(r"[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af\u1100-\u11ff\u3130-\u318f\uff66-\uff9f]", s_text))
+        s_latin = len(re.findall(r"[a-zA-Z0-9]+(?:[-'][a-zA-Z0-9]+)*", s_text))
+        l_total = s_cjk + s_latin
+        if l_total >= 2:
+            qualifying_lengths.append(l_total)
+
+    burstiness_cv = 0.0
+    if len(qualifying_lengths) >= 6:
+        n_s = len(qualifying_lengths)
+        mean_len = sum(qualifying_lengths) / n_s
+        if mean_len > 0:
+            variance = sum((x - mean_len) ** 2 for x in qualifying_lengths) / n_s
+            std_dev = math.sqrt(variance)
+            burstiness_cv = round(std_dev / mean_len, 4)
+
+    # Statistical lexical richness: Moving-Average Type-Token Ratio (MATTR) with window 50
+    token_matches = re.findall(
+        r"[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af\u1100-\u11ff\u3130-\u318f\uff66-\uff9f]|[a-zA-Z0-9]+(?:[-'][a-zA-Z0-9]+)*",
+        sanitized_text.lower()
+    )
+    total_tokens = len(token_matches)
+    window_size = 50
+    if total_tokens == 0:
+        mattr = 0.0
+    elif total_tokens < window_size:
+        mattr = round(len(set(token_matches)) / total_tokens, 4)
+    else:
+        num_windows = total_tokens - window_size + 1
+        ttr_sum = sum(len(set(token_matches[i : i + window_size])) / window_size for i in range(num_windows))
+        mattr = round(ttr_sum / num_windows, 4)
+
     metrics = TextMetrics(
         total_chars=total_chars,
         total_words=total_words,
@@ -608,6 +679,8 @@ def analyze_text(
         dash_count=dash_count,
         bold_count=bold_count,
         exclamation_count=exclamation_count,
+        burstiness_cv=burstiness_cv,
+        mattr=mattr,
     )
 
     raw_lines = text.splitlines(keepends=True)
@@ -620,6 +693,7 @@ def analyze_text(
     # 1. Line-by-line checks for forbidden words and defensive disclaimers
     zh_forbidden = zh_data.get("forbidden_words", [])
     en_forbidden = en_data.get("forbidden_words", [])
+    en_tier_penalties = en_data.get("tier_penalties", {})
 
     for line_idx, line in enumerate(sanitized_lines, start=1):
         clean_line = line.strip()
@@ -658,7 +732,7 @@ def analyze_text(
             w_end_b = r"\b" if re.search(r"\w$", w) else r"(?!\w)"
             pattern = rf"{w_start_b}{re.escape(w)}{w_end_b}"
             for m in re.finditer(pattern, line, re.IGNORECASE):
-                p = 4.0
+                p = float(en_tier_penalties.get(w.lower(), 4.0))
                 context_str = raw_line[
                     max(0, m.start() - 15) : min(len(raw_line), m.end() + 15)
                 ].strip()
@@ -935,6 +1009,21 @@ def analyze_text(
                 context=f"Total bold: {bold_count}",
                 penalty=p,
                 suggestion=get_remediation_suggestion("formatting_abuse", f"bold={bold_count}"),
+            )
+        )
+
+    # Rhythmic monotony: sentence length variation CV < 0.28 when sentences >= 6
+    if len(qualifying_lengths) >= 6 and burstiness_cv < 0.28:
+        p = 3.5
+        violations.append(
+            LintViolation(
+                category="rhythmic_monotony",
+                message=f"Rhythmic monotony detected: sentence length Coefficient of Variation CV={burstiness_cv:.2f} < 0.28 ({len(qualifying_lengths)} sentences, monotonous AI cadence)",
+                line=1,
+                column=1,
+                context=f"burstiness_cv={burstiness_cv:.3f}, sentences={len(qualifying_lengths)}",
+                penalty=p,
+                suggestion=get_remediation_suggestion("rhythmic_monotony", f"{burstiness_cv:.2f}"),
             )
         )
 

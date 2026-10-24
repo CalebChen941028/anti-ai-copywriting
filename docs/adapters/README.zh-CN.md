@@ -15,11 +15,11 @@
 | **DeepSeek** | `deepseek` | `~/.deepseek/skills/anti-ai-copywriting/` | `~/.deepseek/AGENTS.md` | CLI 反思循环与 API 系统提示词注入 | [DeepSeek 指南](deepseek.zh-CN.md) |
 | **OpenCode** | `opencode` | `~/.opencode/skills/anti-ai-copywriting/` | `~/.opencode/AGENTS.md` | OpenCode 拦截插件（`plugin/anti-ai-copywriting.ts`） | [OpenCode 指南](opencode.zh-CN.md) |
 | **WorkBuddy** | `workbuddy` | `~/.workbuddy/skills/anti-ai-copywriting/` | `~/.workbuddy/prompts/anti-ai-rules.md` | 自动化 Webhook / CI 质检门禁 | [WorkBuddy 指南](workbuddy.zh-CN.md) |
-| **Cursor** | `cursor` | `.cursor/skills/anti-ai-copywriting/` | `.cursorrules` | MDC 规范定义与终端质检门禁 | [通用 / Cursor](generic.zh-CN.md#cursor) |
-| **Windsurf** | `windsurf` | `.windsurf/skills/anti-ai-copywriting/` | `.windsurfrules` | Cascade 全局规则注入 | [通用 / Windsurf](generic.zh-CN.md#windsurf) |
-| **Cline** | `cline` | `~/.cline/skills/anti-ai-copywriting/` | `.clinerules` | 任务初始提示词注入 | [通用 / Cline](generic.zh-CN.md#cline) |
-| **Aider** | `aider` | `~/.aider/skills/anti-ai-copywriting/` | `CONVENTIONS.md` | Aider `--read` 约定文件参数 | [通用 / Aider](generic.zh-CN.md#aider) |
-| **Antigravity** | `antigravity` | `~/.antigravity/skills/anti-ai-copywriting/` | `AGENTS.md` | 智能体系统规则与工具执行验证 | [通用 / Antigravity](generic.zh-CN.md#antigravity) |
+| **Cursor** | `cursor` | `.cursor/skills/anti-ai-copywriting/` | `.cursorrules` | 原生 MCP 服务与 `.cursorrules` 规则 | [Cursor 指南](cursor.zh-CN.md) |
+| **Windsurf** | `windsurf` | `.windsurf/skills/anti-ai-copywriting/` | `.windsurfrules` | Cascade MCP 工具与 `.windsurfrules` | [Windsurf 指南](windsurf.zh-CN.md) |
+| **Cline** | `cline` | `~/.cline/skills/anti-ai-copywriting/` | `.clinerules` | 任务初始提示词与 MCP 服务 | [Cline 指南](cline.zh-CN.md) |
+| **Aider** | `aider` | `~/.aider/skills/anti-ai-copywriting/` | `CONVENTIONS.md` | Aider `--read CONVENTIONS.md` | [Aider 指南](aider.zh-CN.md) |
+| **Antigravity** | `antigravity` | `~/.antigravity/skills/anti-ai-copywriting/` | `AGENTS.md` | Harness² 子智能体、自动触发与 MCP | [Antigravity 指南](antigravity.zh-CN.md) |
 | **Harness²** | `harness2` | `~/.harness2/skills/anti-ai-copywriting/` | `~/.harness2/AGENTS.md` | Harness² c8 环内钩子与子智能体联动 | [Codex / Harness²](codex.zh-CN.md) |
 | **通用 / 自定义** | `generic` | 通过 `--dest` 自定义路径 | 通过 `--dest` 自定义路径 | 纯 Python 零依赖命令行门禁（`anti-ai-lint`） | [通用适配指南](generic.zh-CN.md) |
 | **ZCode** | `zcode` | `~/.zcode/skills/anti-ai-copywriting/` | `~/.zcode/AGENTS.md` | 全局技能引擎直接集成 | [ZCode 指南](zcode.zh-CN.md) |

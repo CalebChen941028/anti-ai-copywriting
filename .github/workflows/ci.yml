@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Liangliang Chen
 name: CI
 
 on:
@@ -25,7 +27,16 @@ jobs:
         run: |
           python3 -m unittest discover -s tests
 
-      - name: Test CLI Direct Invocation
+      - name: Test CLI Direct Invocation & Output Formats
         run: |
           PYTHONPATH=lint python3 -m anti_ai_lint tests/fixtures/academic/paper.after.md --max-score 5.0
           PYTHONPATH=lint python3 -m anti_ai_lint --format json tests/fixtures/en_academic/paper.after.md
+          PYTHONPATH=lint python3 -m anti_ai_lint --format github tests/fixtures/academic/paper.after.md
+
+      - name: Validate DPO Dataset Exporter
+        run: |
+          python3 scripts/export_dpo_pairs.py --validate
+
+      - name: Test DSPy Prompt Optimizer
+        run: |
+          python3 scripts/dspy_optimizer.py

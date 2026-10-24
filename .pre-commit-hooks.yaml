@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Liangliang Chen
+- id: anti-ai-lint
+  name: anti-ai-lint
+  description: Deterministic zero-dependency linter for detecting AI clichés, buzzwords, and stylistic monotony.
+  entry: anti-ai-lint
+  language: python
+  types: [markdown]
+  args: ["--format", "hook", "--genre", "general", "--max-score", "10.0"]

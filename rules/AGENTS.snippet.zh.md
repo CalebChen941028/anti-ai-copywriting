@@ -1,4 +1,4 @@
-<!-- BEGIN anti-ai-copywriting v0.3.0 -->
+<!-- BEGIN anti-ai-copywriting v0.4.0 -->
 # 自然语态与学术专业文案规则（全域强制静默生效）
 
 <auto_trigger>

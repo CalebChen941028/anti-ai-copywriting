@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "anti-ai-lint"
-version = "0.3.0"
+version = "0.4.0"
 description = "Deterministic zero-dependency linter for Anti-AI natural copywriting."
 readme = "README.md"
 requires-python = ">=3.8"
@@ -20,6 +20,7 @@ classifiers = [
 
 [project.scripts]
 anti-ai-lint = "anti_ai_lint.cli:main"
+anti-ai-mcp = "anti_ai_lint.mcp_server:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

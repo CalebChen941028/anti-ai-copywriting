@@ -15,11 +15,11 @@ This directory provides platform-specific integration guides and adapters for de
 | **DeepSeek** | `deepseek` | `~/.deepseek/skills/anti-ai-copywriting/` | `~/.deepseek/AGENTS.md` | CLI reflection loop & API system prompt | [DeepSeek Guide](deepseek.md) |
 | **OpenCode** | `opencode` | `~/.opencode/skills/anti-ai-copywriting/` | `~/.opencode/AGENTS.md` | OpenCode Plugin (`plugin/anti-ai-copywriting.ts`) | [OpenCode Guide](opencode.md) |
 | **WorkBuddy** | `workbuddy` | `~/.workbuddy/skills/anti-ai-copywriting/` | `~/.workbuddy/prompts/anti-ai-rules.md` | Webhook / CI quality gate | [WorkBuddy Guide](workbuddy.md) |
-| **Cursor** | `cursor` | `.cursor/skills/anti-ai-copywriting/` | `.cursorrules` | MDC rule definition & terminal lint gate | [Generic / Cursor](generic.md#cursor) |
-| **Windsurf** | `windsurf` | `.windsurf/skills/anti-ai-copywriting/` | `.windsurfrules` | Cascade global rule injection | [Generic / Windsurf](generic.md#windsurf) |
-| **Cline** | `cline` | `~/.cline/skills/anti-ai-copywriting/` | `.clinerules` | Task initialization prompt injection | [Generic / Cline](generic.md#cline) |
-| **Aider** | `aider` | `~/.aider/skills/anti-ai-copywriting/` | `CONVENTIONS.md` | Aider `--read` conventions parameter | [Generic / Aider](generic.md#aider) |
-| **Antigravity** | `antigravity` | `~/.antigravity/skills/anti-ai-copywriting/` | `AGENTS.md` | Agent system prompt & tool verification | [Generic / Antigravity](generic.md#antigravity) |
+| **Cursor** | `cursor` | `.cursor/skills/anti-ai-copywriting/` | `.cursorrules` | Native MCP Server & `.cursorrules` | [Cursor Guide](cursor.md) |
+| **Windsurf** | `windsurf` | `.windsurf/skills/anti-ai-copywriting/` | `.windsurfrules` | Cascade MCP Tooling & `.windsurfrules` | [Windsurf Guide](windsurf.md) |
+| **Cline** | `cline` | `~/.cline/skills/anti-ai-copywriting/` | `.clinerules` | Task initialization prompt & MCP | [Cline Guide](cline.md) |
+| **Aider** | `aider` | `~/.aider/skills/anti-ai-copywriting/` | `CONVENTIONS.md` | Aider `--read CONVENTIONS.md` | [Aider Guide](aider.md) |
+| **Antigravity** | `antigravity` | `~/.antigravity/skills/anti-ai-copywriting/` | `AGENTS.md` | Harness² subagent, autotriggers & MCP | [Antigravity Guide](antigravity.md) |
 | **Harness²** | `harness2` | `~/.harness2/skills/anti-ai-copywriting/` | `~/.harness2/AGENTS.md` | Harness² c8 in-loop hooks & subagents | [Codex / Harness²](codex.md) |
 | **Generic / Custom** | `generic` | Custom path via `--dest` | Custom path via `--dest` | Deterministic CLI gate (`anti-ai-lint`) | [Generic Guide](generic.md) |
 | **ZCode** | `zcode` | `~/.zcode/skills/anti-ai-copywriting/` | `~/.zcode/AGENTS.md` | Global skills engine integration | [ZCode Guide](zcode.md) |

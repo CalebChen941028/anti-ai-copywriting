@@ -1,8 +1,9 @@
-# anti-ai-copywriting（反 AI 腔文案引擎）
+# anti-ai-copywriting（自然语态与学术文案引擎）
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
 [![CI](https://github.com/CalebChen941028/anti-ai-copywriting/actions/workflows/ci.yml/badge.svg)](https://github.com/CalebChen941028/anti-ai-copywriting/actions)
+[![Version: 0.4.0](https://img.shields.io/badge/version-0.4.0-green.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
 
@@ -12,27 +13,51 @@
 
 ---
 
-## 核心特性
+## 1. 系统定位与行业范式对比
 
-- **多平台智能体适配**：原生支持 Codex、Claude Code、DeepSeek、OpenCode、WorkBuddy 以及常见智能体（Cursor、Windsurf、Cline、Aider、Antigravity、Harness²、ZCode）。
-- **场景锚定与体裁定制（`--genre general|academic|plain`）**：
-  - `academic`：严格去防御化、因果逻辑与科学问题导向、APA/JARS 规范统计量、严禁 `如表所示` 套话引表。
-  - `plain`：受控白话层（中文单句 $\le 30$ 字，英文 $\le 25$ 词，杜绝“若干/一些/等等”模糊量词）。
-  - `general`：全域通用自然语态清洗。
-- **全域封锁 AI 腔词汇与套话模板**：彻底封锁 `赋能`、`抓手`、`闭环`、`底层逻辑`、`颗粒度`、`多维度`、`全方位`、`深度融合`、`随着……飞速发展`、`不仅是……更是……` 以及英文 `delve into`、`tapestry of`、`testament to`、`realm`、`navigating the complexities`、`revolutionize`、`leverage`。
-- **具象化整改建议（Actionable Remediation）**：每一处检测出的违规均附带明确、可执行的替换词与改写方案。
-- **Harness² 架构范式融合（c1..c8）**：
-  - **c8 环内验证钩子（In-Loop Verification Hook）**：提供 `hooks/hooks.json` 与 `.codex/hooks.json`，在智能体调用写文件工具后即时运行门禁。
-  - **c8 OpenCode 插件**：`plugin/anti-ai-copywriting.ts` 拦截工具执行并在发现机器腔时自动向智能体注入反馈。
-  - **c5 专属文案润色子智能体（Copy-Editing Subagent）**：`sub_agents/copywriting-editor/AGENT.md` 定义专属审校专家智能体及调用契约。
-  - **c6/c1 显式主动触发契约**：规则片段中内置 `<auto_trigger>` 契约块，驱动智能体主动加载技能规范。
-- **零依赖确定性检查工具（`anti-ai-lint`）**：纯 Python 标准库实现，支持 text、json、hook、agent 四种格式及千字归一化扣分（`--max-normalized-score`）。
+当前市面上的 AI 文本工具普遍落入两类极端：一类是**事后惩罚型检测器**，对非母语作者误杀率高且无法指导写作；另一类是**粗暴同义词乱换的商业降重器**，严重摧毁学术与工程写作所必须的术语纪律与因果链条。`anti-ai-copywriting` 定位于**主动式先验生成约束与环内确定性验证门禁**。
+
+| 评估维度 | 被动检测工具<br>*(Turnitin, GPTZero, Copyleaks)* | 商业降重黑盒<br>*(Undetectable AI, HIX Bypass)* | `anti-ai-copywriting`<br>*(本项目)* |
+| :--- | :--- | :--- | :--- |
+| **干预时机** | 事后打分；在用户起草后进行被动判定 | 事后粗暴改写 | **先验生成约束** (`<auto_trigger>`) + **环内确定性门禁** |
+| **术语与因果纪律** | 无（仅负责标记） | 盲目同义词换装，破坏孟德尔随机化、生态效度等专业术语 | **严格术语纪律与因果动词校准**，科学事实绝不降维换词 |
+| **文体节奏建模** | 依赖黑盒困惑度/波动度打分 | 制造不通顺病句逃避检测 | **纯标准库句长波动变异系数** ($CV_{len} \ge 0.28$) 与 **MATTR** (窗口50) |
+| **词汇实证依据** | 不透明启发式规则 | 人工收集的同义词替换表 | **Nature 2024 PubMed 1400万篇论文超额词表** + **朱德熙形式动词闭集** |
+| **AI 工程生态** | 付费 Web 控制台 / 限额 API | 网页订阅制付费墙 | **零依赖 CLI**、**原生 MCP 服务**、**GitHub Action** 与 **DPO 语料飞轮** |
 
 ---
 
-## 安装与部署
+## 2. 核心架构与 AI 前沿方法学
 
-### 1. 智能体技能与规则安装
+- **信息论节奏感度量（Burstiness & UID 均匀信息密度假说）**：
+  - 基于纯 Python 标准库实现句长变异系数（Coefficient of Variation, $CV_{len} = \sigma / \mu$）。
+  - 当段落句数 $\ge 6$ 且 $CV_{len} < 0.28$ 时，自动判定为 `rhythmic_monotony`（节奏呆滞单调，扣 3.5 分），打破大模型常见的 20 词/30 字匀速机器嗡鸣感。
+  - 引入滑动窗口词汇丰富度（MATTR / Moving-Average Type-Token Ratio，窗口 50），避免传统 TTR 受文本长度影响的问题。
+- **Kobak et al. 2024 Nature/Science Advances 科学论文超额词频突变模型**：
+  - 基于 PubMed 1400 万篇论文摘要实证统计，建立基于对数优势比（Log-Odds Ratio）的动态惩罚分级：
+    - **Tier S（极高跃升，扣 5.0 分）**：`delve`, `delve into`, `delving into`, `tapestry of`, `intricate tapestry`, `meticulously`, `testament to`。
+    - **Tier A（中高跃升，扣 3.5 分）**：`realm`, `realm of`, `intricate`, `pivotal role`, `pivotal`, `beacon of`, `commendable`, `foster`, `navigating complexities`, `unwavering`。
+    - **Tier B（高频通用，扣 2.0 分）**：`comprehensive`, `robust`, `leverage`, `utilize`, `seamless integration`, `seamless`, `seamlessly`, `multifaceted`, `myriad`, `revolutionize`。
+- **汉语形式动词/轻动词结构（Light Verb Constructions, LVC）闭集**：
+  - 朱德熙现代汉语形式动词闭集：`进行|开展|展开|作出|予以|给以|加以|具有|得到|受到|作|做|致以`。
+  - 名物化动作靶点扩充：`分析|探讨|调研|考察|评估|审校|整改|梳理|阐述|测查|优化|迭代|部署|排查|总结|研究`。
+  - 自动提供动作名词去名物化复原规则（如将“针对系统展开了全面的性能测评”精简为“全面测评了系统性能”）。
+- **Model Context Protocol (MCP) 原生工具服务**：
+  - 零外部依赖的纯标准库 JSON-RPC 2.0 stdio MCP 服务（`anti-ai-mcp` 或 `python3 -m anti_ai_lint.mcp_server`）。
+  - 面向 Cursor、Claude Code、Windsurf、Zed、Cline 开放三大原子工具：`lint_prose`、`remediate_violation` 与 `get_style_contract`。
+- **现代化 AI 工程交付体系**：
+  - 官方 GitHub Action (`action.yml`)：支持在 PR 代码行直接输出 Workflow Commands 行内注释（`::warning` / `::error`）。
+  - Pre-commit 提交前拦截钩子（`.pre-commit-hooks.yaml`）。
+  - Stanford DSPy 提示词优化评估脚本（`scripts/dspy_optimizer.py`）。
+  - DPO / SimPO 偏好对齐语料库导出器（`scripts/export_dpo_pairs.py`），生成 HuggingFace TRL、ChatML 与 ShareGPT 三元组。
+- **全平台多智能体适配**：
+  - 全面适配 **Codex**, **Claude Code**, **DeepSeek**, **OpenCode**, **WorkBuddy**, **Cursor**, **Windsurf**, **Cline**, **Aider**, **Antigravity**, **Harness²**, **ZCode**。
+
+---
+
+## 3. 安装与部署
+
+### 3.1 智能体规则与技能安装
 
 使用统一安装脚本（支持多目标清单追踪与 `--lang zh|en` 语义切换）：
 
@@ -66,23 +91,23 @@
 # 安装到 ZCode：
 ./install.sh --target zcode --lang zh
 
-# 安装到通用指定路径：
+# 安装到通用项目目录：
 ./install.sh --target generic --dest /path/to/project --lang zh
 ```
 
-各平台详细集成说明与架构设计，请参阅 [智能体适配器支持总览与安装文档](docs/adapters/README.zh-CN.md)。
+详细接入文档请参阅 [智能体适配器与集成指南](docs/adapters/README.zh-CN.md)。
 
 ---
 
-### 2. 独立检查工具（`anti-ai-lint`）
+### 3.2 独立 Python 质检工具（`anti-ai-lint`）
 
-在本地虚拟环境中安装：
+在本地或虚拟环境中安装：
 
 ```bash
 pip install ./lint
 ```
 
-或者直接以模块形式运行（免安装）：
+亦可免安装直接运行：
 
 ```bash
 python3 -m anti_ai_lint /path/to/document.md --max-score 8.0
@@ -90,70 +115,128 @@ python3 -m anti_ai_lint /path/to/document.md --max-score 8.0
 
 ---
 
-## 检查工具使用示例与格式
+### 3.3 Model Context Protocol (MCP) 服务配置
+
+在 Cursor、Windsurf、Claude Code 或 Zed 中接入 MCP 服务：
 
 ```bash
-# 默认文本检查
-anti-ai-lint paper.md
+# 直接以 stdio 方式启动：
+python3 -m anti_ai_lint.mcp_server
 
-# 学术场景 + 钩子格式（适用于 CI 流程或 Git Pre-commit）
-anti-ai-lint paper.md --genre academic --format hook --max-score 8.0
-
-# 受控白话层检查 + 智能体反馈格式（直接返回给大模型反思循环）
-anti-ai-lint guide.md --genre plain --format agent
-
-# 基于千字密度的归一化扣分门禁
-anti-ai-lint docs/ --max-normalized-score 25.0 --format json
+# 或使用安装好的可执行命令：
+anti-ai-mcp
 ```
 
-### 输出格式说明 (`--format`)
+在项目 `.cursor/mcp.json` 或 Cline 设置中添加：
 
-- `text`：包含精确行列号、上下文与改写建议的详尽报告。
-- `json`：机器可读的结构化 AST 与指标数据。
-- `hook`：极简格式，专为 Git pre-commit 与 Harness² 环内钩子设计。
-- `agent`：结构化 `<anti-ai-lint-feedback>` 标记格式，直接注入智能体上下文促成重写。
+```json
+{
+  "mcpServers": {
+    "anti-ai-copywriting": {
+      "command": "python3",
+      "args": ["-m", "anti_ai_lint.mcp_server"]
+    }
+  }
+}
+```
 
 ---
 
-## 卸载与还原
+### 3.4 GitHub Action 与 Pre-commit 门禁
 
-支持针对单一目标或全部目标安全卸载，保留用户既有规则并清理空目录：
+**GitHub Actions 流水线配置 (`.github/workflows/prose-lint.yml`)**：
+
+```yaml
+name: Natural Prose Linter
+on: [push, pull_request]
+
+jobs:
+  lint-prose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./action.yml
+        with:
+          paths: 'docs/'
+          genre: 'academic'
+          max-score: '10.0'
+```
+
+**Pre-commit 提交前检查 (`.pre-commit-config.yaml`)**：
+
+```yaml
+repos:
+  - repo: https://github.com/CalebChen941028/anti-ai-copywriting
+    rev: v0.4.0
+    hooks:
+      - id: anti-ai-lint
+        args: ["--format", "hook", "--genre", "general"]
+```
+
+---
+
+## 4. 检查模式与输出格式
 
 ```bash
-# 卸载指定目标（全局或特定项目）
+# 默认检查单个文件
+anti-ai-lint paper.md
+
+# 学术场景模式（适合论文、基金申报与预提交）
+anti-ai-lint paper.md --genre academic --format hook --max-score 8.0
+
+# 受控白话层质检
+anti-ai-lint guide.md --genre plain --format agent
+
+# GitHub Action 模式（输出 PR 行内报错与警告标记）
+anti-ai-lint docs/ --format github
+```
+
+### 输出格式说明（`--format`）
+
+- `text`：终端可读摘要，标明行列位置、节奏变异系数（CV）、MATTR 与改写建议。
+- `json`：机器可读的结构化 AST 与指标报告。
+- `hook`：单行/紧凑摘要，适用于 git pre-commit 与 Harness² 环内拦截。
+- `agent`：专为大模型反思循环设计的 `<anti-ai-lint-feedback>` 格式载荷。
+- `github`：GitHub Actions Workflow Commands 标记格式（`::warning` 与 `::error`）。
+
+---
+
+## 5. 学术参考文献（APA 规范）
+
+`anti-ai-copywriting` 所采用的指标建模与语法特征分析具有严谨的学术与实证基础：
+
+1. **Kobak, D., González-Márquez, R., Horvát, E. Á., & Schulz, C. (2024)**. Monitoring the footprint of large language models in scientific writing. *Nature/Science Advances* (arXiv:2406.07016).
+2. **Meister, C., Leszczynski, M., Aji, A. F., & Cotterell, R. (2021)**. Uniform information density and language generation. In *Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing (EMNLP)*.
+3. **Mitchell, E., Yoon, J., Miao, N., Finn, C., & Manning, C. D. (2023)**. DetectGPT: Zero-shot machine-generated text detection using probability curvature. In *International Conference on Learning Representations (ICLR 2023)*.
+4. **Hans, A., Schwarzschild, A., Cherepanova, V., Bansal, H., Saha, S., Jain, A., ... & Goldblum, M. (2024)**. Spotting LLMs with Binoculars: Zero-shot detection of machine-generated text. In *International Conference on Learning Representations (ICLR 2024)*.
+5. **Li, W., et al. (2024)**. RAID: A shared benchmark for robust evaluation of machine-generated text detectors. In *Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (ACL 2024)*.
+6. **朱德熙. (1982)**. *语法讲义*. 商务印书馆.（关于汉语形式动词结构与名物化语法分析）.
+7. **ASD-STE100 规范**. 欧洲航空航天与防务工业协会（ASD）. 简化技术英语规范.
+8. **Google Research (2024)**. Harness²: Agentic Evaluation, Specification, and Guardrail Protocols.
+
+---
+
+## 6. 卸载与清理
+
+干净卸载已安装的规则与技能，恢复备份，绝不触碰用户个人其他配置：
+
+```bash
+# 卸载指定目标
 ./uninstall.sh --target codex
 ./uninstall.sh --target cursor --dest /path/to/project
-./uninstall.sh --dest /path/to/project
 
-# 卸载全部已安装目标
+# 卸载所有已注册目标
 ./uninstall.sh --all
 ```
 
 ---
 
-## 回归测试集
+## 7. 商标与非背书声明
 
-运行全量测试套件（涵盖 6 大场景回归、代码块隔离、分句精度、体裁规则、归一化分数与多平台安装器集成）：
-
-```bash
-python3 -m unittest discover -s tests
-```
+本仓库中提及的所有产品名称、商标、服务标志与机构名称（包括 Anthropic、Claude、Claude Code、OpenAI、ChatGPT、Codex、DeepSeek、Google、Gemini、Antigravity、Cursor、Windsurf、Codeium、Cline、Aider、WorkBuddy 等）均为其各自所有者的财产。在此提及仅用于技术兼容性标识与说明，不代表各所有者对本项目的任何赞助、认可或关联。
 
 ---
 
-## 引用与致谢
+## 8. 开源许可证
 
-- **ASD-STE100**：受控白话层在设计思路上借鉴了 ASD-STE100 简化技术英文的受控语言通用原则（该规范版权归 ASD 所有，本项目全部规则与检测逻辑均为自主编写）。
-- **Google Research Harness²**：架构工程模式融入了 Google Research Harness² 智能体系统范式（c1 契约规范、c5 子智能体分工、c6 主动触发、c8 环内实时校验）。
-
----
-
-## 商标与非关联声明
-
-文档与代码中提及的所有产品名称、商标、品牌与注册商标（包括 Anthropic、Claude、Claude Code、OpenAI、Codex、DeepSeek、Google、Cursor、Windsurf、Codeium、Cline、Aider、WorkBuddy 等）均归其各自所有者拥有。在本项目中引用这些名称仅为便于标识和说明兼容性。本项目为独立开源项目，与上述实体无任何官方关联、赞助或背书关系。
-
----
-
-## 开源许可证
-
-[MIT](LICENSE) © 2026 Liangliang Chen
+本项目基于 [MIT](LICENSE) 开源许可证发布 © 2026 Liangliang Chen

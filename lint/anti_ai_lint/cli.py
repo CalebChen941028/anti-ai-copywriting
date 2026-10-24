@@ -32,6 +32,7 @@ def format_text_report(report: LintReport) -> str:
     lines.append(
         f"  Metrics: {report.metrics.total_chars} chars, {report.metrics.total_words} words "
         f"({report.metrics.cjk_count} CJK, {report.metrics.latin_words} Latin), "
+        f"CV: {report.metrics.burstiness_cv:.2f}, MATTR: {report.metrics.mattr:.2f}, "
         f"'的' ratio: {report.metrics.de_ratio*100:.1f}%, dashes: {report.metrics.dash_count}, "
         f"bold: {report.metrics.bold_count}"
     )
@@ -44,6 +45,20 @@ def format_text_report(report: LintReport) -> str:
                 lines.append(f"      context: \"{v.context}\"")
             if v.suggestion:
                 lines.append(f"      fix: {v.suggestion}")
+    return "\n".join(lines)
+
+
+def format_github_report(reports: List[LintReport]) -> str:
+    lines = []
+    for r in reports:
+        target = r.file_path or "<stdin>"
+        level = "error" if not r.passed else "warning"
+        for v in r.violations:
+            sugg = f" | Remediation: {v.suggestion}" if v.suggestion else ""
+            lines.append(f"::{level} file={target},line={v.line},col={v.column}::[{v.category}] {v.message} (+{v.penalty:.1f}){sugg}")
+    failed_count = sum(1 for r in reports if not r.passed)
+    status = "FAILED" if failed_count > 0 else "PASSED"
+    lines.append(f"[anti-ai-lint] {status}: {len(reports)} checked, {failed_count} failed.")
     return "\n".join(lines)
 
 
@@ -118,14 +133,22 @@ def main(argv: Optional[List[str]] = None) -> int:
     )
     parser.add_argument(
         "--format",
-        choices=["text", "json", "hook", "agent"],
+        choices=["text", "json", "hook", "agent", "github", "gh-action"],
         default="text",
-        help="Output format: 'text' (human summary), 'json' (structured AST/report), 'hook' (compact git/tool hook), or 'agent' (LLM tool feedback payload).",
+        help="Output format: 'text' (human summary), 'json' (structured AST/report), 'hook' (compact git/tool hook), 'agent' (LLM tool feedback payload), or 'github' (GitHub Actions workflow annotations).",
     )
+    parser.add_argument("--mcp", action="store_true", help="Launch Model Context Protocol (MCP) server over stdio.")
     parser.add_argument("--wordlists", type=str, default=None, help="Path to custom wordlists directory.")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
 
     args = parser.parse_args(argv)
+
+    if args.mcp:
+        try:
+            from .mcp_server import run_mcp_server
+        except (ImportError, ValueError):
+            from anti_ai_lint.mcp_server import run_mcp_server
+        return run_mcp_server()
 
     reports: List[LintReport] = []
     had_error = False
@@ -215,6 +238,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         print(format_hook_report(reports))
     elif args.format == "agent":
         print(format_agent_report(reports, args.max_score, args.max_normalized_score))
+    elif args.format in ("github", "gh-action"):
+        print(format_github_report(reports))
     else:
         for r in reports:
             print(format_text_report(r))

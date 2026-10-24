@@ -528,6 +528,237 @@ class TestAntiAiLinter(unittest.TestCase):
         categories = [v.category for v in report.violations]
         self.assertNotIn("formatting_abuse", categories)
 
+    def test_burstiness_and_rhythmic_monotony(self):
+        # Monotonous text: 8 sentences of identical length (20 characters each)
+        mono_text = (
+            "这是第一个测试句子长度完全相同的例句。"
+            "这是第二个测试句子长度完全相同的例句。"
+            "这是第三个测试句子长度完全相同的例句。"
+            "这是第四个测试句子长度完全相同的例句。"
+            "这是第五个测试句子长度完全相同的例句。"
+            "这是第六个测试句子长度完全相同的例句。"
+            "这是第七个测试句子长度完全相同的例句。"
+            "这是第八个测试句子长度完全相同的例句。"
+        )
+        rep_mono = analyze_text(mono_text)
+        self.assertAlmostEqual(rep_mono.metrics.burstiness_cv, 0.0, places=2)
+        categories_mono = [v.category for v in rep_mono.violations]
+        self.assertIn("rhythmic_monotony", categories_mono)
+        v_mono = [v for v in rep_mono.violations if v.category == "rhythmic_monotony"][0]
+        self.assertEqual(v_mono.penalty, 3.5)
+        self.assertIn("Monotonous", v_mono.suggestion)
+
+        # Varied text: 7 sentences with significant length variations
+        varied_text = (
+            "短句斩截。"
+            "这是一句比较长的具有丰富观察和复杂论证结构的句子用来测试变异系数是否达标。"
+            "再来一句。"
+            "然后我们深入探讨各种不同维度，但是句子长度必须有着非常显著的波动与起伏。"
+            "是的。"
+            "这一段的长度也是专门为了拉开标准差而设计的长句。"
+            "完结。"
+        )
+        rep_var = analyze_text(varied_text)
+        self.assertGreater(rep_var.metrics.burstiness_cv, 0.40)
+        categories_var = [v.category for v in rep_var.violations]
+        self.assertNotIn("rhythmic_monotony", categories_var)
+
+        # Monotonous but fewer than 6 sentences (< 6 should not trigger)
+        short_mono = (
+            "这是第一个测试句子长度完全相同的例句。"
+            "这是第二个测试句子长度完全相同的例句。"
+            "这是第三个测试句子长度完全相同的例句。"
+            "这是第四个测试句子长度完全相同的例句。"
+        )
+        rep_short = analyze_text(short_mono)
+        categories_short = [v.category for v in rep_short.violations]
+        self.assertNotIn("rhythmic_monotony", categories_short)
+
+    def test_mattr_lexical_richness_metric(self):
+        # Empty text
+        rep_empty = analyze_text("")
+        self.assertEqual(rep_empty.metrics.mattr, 0.0)
+
+        # Repetitive token loop (low MATTR)
+        rep_loop = analyze_text("the token " * 60)
+        self.assertLess(rep_loop.metrics.mattr, 0.20)
+
+        # Diverse prose (high MATTR)
+        diverse_text = (
+            "AlphaFold2 couples multiple sequence alignments with axial attention "
+            "to predict high-resolution protein coordinate geometry without templates."
+        )
+        rep_div = analyze_text(diverse_text)
+        self.assertGreater(rep_div.metrics.mattr, 0.80)
+
+    def test_kobak_2024_excess_vocabulary_and_tiered_penalties(self):
+        # Tier S words (penalty 5.0)
+        text_tier_s = "We delve into the meticulous details as a testament to progress."
+        rep_s = analyze_text(text_tier_s)
+        delve_v = [v for v in rep_s.violations if "delve into" in v.message]
+        self.assertEqual(len(delve_v), 1)
+        self.assertEqual(delve_v[0].penalty, 5.0)
+
+        testament_v = [v for v in rep_s.violations if "testament to" in v.message]
+        self.assertEqual(len(testament_v), 1)
+        self.assertEqual(testament_v[0].penalty, 5.0)
+
+        rep_meticulous = analyze_text("The data were meticulously examined.")
+        met_v = [v for v in rep_meticulous.violations if "meticulously" in v.message]
+        self.assertEqual(len(met_v), 1)
+        self.assertEqual(met_v[0].penalty, 5.0)
+
+        # Tier A words (penalty 3.5)
+        rep_realm = analyze_text("In this realm of physics, it plays a pivotal role.")
+        realm_v = [v for v in rep_realm.violations if "realm" in v.message]
+        self.assertEqual(len(realm_v), 1)
+        self.assertEqual(realm_v[0].penalty, 3.5)
+
+        # Tier B words (penalty 2.0)
+        rep_robust = analyze_text("We utilize a robust framework for comprehensive evaluation.")
+        utilize_v = [v for v in rep_robust.violations if "utilize" in v.message]
+        self.assertEqual(len(utilize_v), 1)
+        self.assertEqual(utilize_v[0].penalty, 2.0)
+
+        robust_v = [v for v in rep_robust.violations if "robust" in v.message]
+        self.assertEqual(len(robust_v), 1)
+        self.assertEqual(robust_v[0].penalty, 2.0)
+
+    def test_chinese_light_verb_constructions_expanded(self):
+        # Test various light verbs and nominalized action targets
+        samples = [
+            "课题组对该系统开展了深入的分析与对比。",
+            "我们展开了全面的调研并提交总结报告。",
+            "专家组对该项目予以系统评估。",
+            "各部门必须对安全隐患加以科学整改。",
+        ]
+        for s in samples:
+            rep = analyze_text(s)
+            pats = [v for v in rep.violations if "轻动词名物化" in v.message]
+            self.assertTrue(len(pats) >= 1, f"Failed to detect expanded LVC in: {s}")
+            self.assertEqual(pats[0].penalty, 3.5)
+            self.assertIn("还原为直接动作强动词", pats[0].suggestion)
+
+    def test_mcp_server_jsonrpc_protocol(self):
+        from anti_ai_lint.mcp_server import process_jsonrpc_message
+
+        # 1. initialize
+        init_req = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {"protocolVersion": "2024-11-05"},
+        }
+        init_resp = process_jsonrpc_message(init_req)
+        self.assertEqual(init_resp["id"], 1)
+        self.assertEqual(init_resp["result"]["serverInfo"]["name"], "anti-ai-copywriting")
+        self.assertIn("tools", init_resp["result"]["capabilities"])
+
+        # 2. ping
+        ping_resp = process_jsonrpc_message({"jsonrpc": "2.0", "id": 2, "method": "ping"})
+        self.assertEqual(ping_resp["id"], 2)
+        self.assertEqual(ping_resp["result"], {})
+
+        # 3. tools/list
+        list_resp = process_jsonrpc_message({"jsonrpc": "2.0", "id": 3, "method": "tools/list"})
+        tools = list_resp["result"]["tools"]
+        tool_names = [t["name"] for t in tools]
+        self.assertIn("lint_prose", tool_names)
+        self.assertIn("remediate_violation", tool_names)
+        self.assertIn("get_style_contract", tool_names)
+
+        # 4. tools/call -> lint_prose (clean text)
+        call_lint = process_jsonrpc_message({
+            "jsonrpc": "2.0",
+            "id": 4,
+            "method": "tools/call",
+            "params": {
+                "name": "lint_prose",
+                "arguments": {
+                    "text": "AlphaFold2 predicts protein coordinates with high accuracy.",
+                    "genre": "academic",
+                },
+            },
+        })
+        self.assertFalse(call_lint["result"]["isError"])
+        lint_payload = json.loads(call_lint["result"]["content"][0]["text"])
+        self.assertTrue(lint_payload["passed"])
+
+        # 5. tools/call -> remediate_violation
+        call_rem = process_jsonrpc_message({
+            "jsonrpc": "2.0",
+            "id": 5,
+            "method": "tools/call",
+            "params": {
+                "name": "remediate_violation",
+                "arguments": {
+                    "category": "forbidden_word_zh",
+                    "match_text": "赋能",
+                    "context": "为业务全面赋能",
+                },
+            },
+        })
+        self.assertFalse(call_rem["result"]["isError"])
+        self.assertIn("支持", call_rem["result"]["content"][0]["text"])
+
+        # 6. tools/call -> get_style_contract
+        call_contract = process_jsonrpc_message({
+            "jsonrpc": "2.0",
+            "id": 6,
+            "method": "tools/call",
+            "params": {
+                "name": "get_style_contract",
+                "arguments": {"genre": "academic", "lang": "zh"},
+            },
+        })
+        self.assertIn("学术专业语态公理", call_contract["result"]["content"][0]["text"])
+
+        # 7. Invalid method returns -32601
+        err_resp = process_jsonrpc_message({
+            "jsonrpc": "2.0",
+            "id": 99,
+            "method": "non_existent_method",
+        })
+        self.assertEqual(err_resp["error"]["code"], -32601)
+
+    def test_cli_github_action_format(self):
+        bad = self.fixtures_dir / "academic" / "paper.before.md"
+        old_stdout = sys.stdout
+        sys.stdout = StringIO()
+        try:
+            exit_code = main([str(bad), "--format", "github", "--max-score", "10.0"])
+            out = sys.stdout.getvalue()
+        finally:
+            sys.stdout = old_stdout
+
+        self.assertEqual(exit_code, 1)
+        self.assertIn("::error file=", out)
+        self.assertIn("Remediation:", out)
+        self.assertIn("[anti-ai-lint] FAILED:", out)
+
+    def test_dpo_exporter_and_dspy_optimizer_modules(self):
+        from scripts.export_dpo_pairs import load_fixture_pairs, export_dpo, validate_pairs
+        from scripts.dspy_optimizer import evaluate_lint_metric, load_fixtures_dataset, run_standalone_optimizer
+
+        # Test DPO pairs loading and validation
+        pairs = load_fixture_pairs(self.fixtures_dir)
+        self.assertEqual(len(pairs), 6)
+        valid = validate_pairs(pairs)
+        self.assertTrue(valid)
+
+        dpo_records = export_dpo(pairs, fmt="dpo")
+        self.assertEqual(len(dpo_records), 6)
+        self.assertIn("prompt", dpo_records[0])
+        self.assertIn("chosen", dpo_records[0])
+        self.assertIn("rejected", dpo_records[0])
+
+        # Test DSPy optimizer evaluation
+        dataset = load_fixtures_dataset(self.fixtures_dir)
+        self.assertEqual(len(dataset), 6)
+        summary = run_standalone_optimizer(dataset, iterations=1, verbose=False)
+        self.assertIn("best_candidate", summary)
+        self.assertEqual(summary["best_candidate"]["pass_rate"], "6/6")
+
 
 if __name__ == "__main__":
     unittest.main()

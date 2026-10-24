@@ -27,7 +27,7 @@ description: >-
 
 ### 1.2 句法重构与欧化清洗
 - **拆解长难前饰句**：将冗长定语拆开，按时序或事理顺向铺排为 3 至 5 个短句，严格控制单句中助词“的”的出现频率（例如将“遇到一个穿着讲究且说话很有分寸感的同行”改写为“遇到一位同行，穿着讲究，说话也很有分寸”）。
-- **拔除“文字的义肢”**：将“`进行`、`作出`、`造成`、`加以`、`具有`、`得到`”等万能弱动词搭配抽象名词的结构，还原为单纯有力的强动词或形容词（例如将“对市场`进行了详细的调研`”改为“深入调研了市场”；“具有很强的相关性”改为“强相关”）。
+- **拔除“文字的义肢”（形式动词/轻动词名物化）**：将形式动词闭集（`进行`、`开展`、`展开`、`作出`、`予以`、`给以`、`加以`、`具有`、`得到`、`受到`、`作`、`做`、`致以`）搭配双音节动作名物化（分析、探讨、调研、考察、评估、审校、整改、梳理、阐述、测查、优化、迭代、部署、排查）还原为单纯有力的强动词（例如将“对系统展开了全面的性能测评”精简为“全面测评了系统性能”；“具有很强的相关性”改为“强相关”）。
 - **主语优化与语态调整**：以人、具体事件或动词短语作主语，减少被动“被”字句；剥离句首机械堆砌的显性逻辑连接词（“`首先`、`其次`、`再者`、`综上所述`”）。
 
 ### 1.3 词汇修辞与煽情封锁
@@ -45,6 +45,7 @@ description: >-
 ### 1.4 学术母语语感细则
 - **术语纪律**：首次出现给全称+简称，此后一律用统一简称；同一概念全文只用一个词，杜绝为了避免重复而随意同义换装（如混用“干预/处理/介入”）。
 - **数据句式**：数值结果单独成句紧贴解释（例如：“两组相差 4.2 分（95%CI 2.1–6.3，P<0.001）。差异主要来自………”）；严禁用“`结果如表X所示`，`从表中可以看出`”。
+- **节奏波动度 (Burstiness & UID)**：打破 AI 常见的均匀信息密度与机械匀长单调感（$CV_{len} \ge 0.28$）。交替使用 5~10 字短促斩截句与缜密论述长句，形成富有呼吸感的语篇起伏。
 - **段落骨架**：段首一句立论，段内单线推进，段尾收束或递进；不用“`综上所述`”式收尾。
 - **课题申报语态**：目标—内容—方法—预期直线陈述，条目动词开头（构建/验证/估计/随访）；删除“`拟通过……从而……进而……`”套链；预期成果写可核验指标，不写形容词。
 - **标点节奏**：句号优先；破折号每千字至多 1 次；顿号只用于纯名词性短语并列。
@@ -54,12 +55,15 @@ description: >-
 ## 2. English Natural Voice & Academic Pro-Voice
 
 ### 2.1 Forbidden AI Vocabulary & Direct Replacements
-Eliminate the telltale lexical markers of LLMs:
-- `delve into` $\rightarrow$ explore, examine, study, inspect
+Eliminate the telltale lexical markers of LLMs (calibrated against Kobak et al. 2024 Nature/Science Advances PubMed excess vocabulary):
+- `delve into / delve` $\rightarrow$ explore, examine, study, inspect
 - `testament to` $\rightarrow$ reflects, shows, proves, indicates
 - `beacon of` $\rightarrow$ model, standard, leader
-- `tapestry of` $\rightarrow$ range, array, collection, diversity
-- `realm` $\rightarrow$ area, field, domain, context
+- `tapestry of / tapestry` $\rightarrow$ range, array, collection, diversity
+- `meticulously` $\rightarrow$ carefully, systematically, thoroughly, rigorously
+- `commendable` $\rightarrow$ delete subjective praise; let empirical metrics speak
+- `unwavering` $\rightarrow$ persistent, consistent, or state exact protocol
+- `realm / realm of` $\rightarrow$ area, field, domain, context
 - `crucial / paramount / vital` $\rightarrow$ key, essential (or delete and let the evidence demonstrate importance)
 - `navigating the complexities` $\rightarrow$ handling, working through, addressing
 - `revolutionize / paradigm shift` $\rightarrow$ change, alter, overhaul, transform
@@ -70,8 +74,8 @@ Eliminate the telltale lexical markers of LLMs:
 - `underscore / highlight` $\rightarrow$ show, indicate, demonstrate
 - `pivotal` $\rightarrow$ key, critical, central
 - `myriad` $\rightarrow$ many, numerous
-- `seamless / seamlessness` $\rightarrow$ smooth, integrated, direct
-- `foster` $\rightarrow$ build, support, encourage, promote
+- `seamless / seamlessly / seamlessness` $\rightarrow$ smooth, integrated, direct
+- `foster / foster a culture` $\rightarrow$ build, support, encourage, promote
 - `intricate / multifaceted` $\rightarrow$ complex, detailed, specific
 - `It is important to note that...` $\rightarrow$ delete entirely; begin directly with the claim.
 - `In conclusion / To summarize` $\rightarrow$ delete; conclude naturally on findings or implications.
@@ -82,7 +86,7 @@ Eliminate the telltale lexical markers of LLMs:
 - **Nominalization Reduction**: Unpack dense, sluggish noun phrases back into active verbs.
   - ❌ *The team made an evaluation of the system performance.*
   - ✅ *The team evaluated system performance.*
-- **Sentence-Variety & Cadence**: Break mechanical uniformity of length (the monotonous 20-word AI drone). Vary sentence lengths: punchy short clauses alternating with well-structured complex observations.
+- **Sentence-Variety & Cadence (Burstiness $CV_{len} \ge 0.28$)**: Break mechanical uniformity of length (the monotonous 20-word AI drone). Vary sentence lengths: punchy short clauses (5–8 words) alternating with well-structured complex observations (30–45 words).
 - **Academic De-hedging**: When evidence supports the claim, use confident affirmative voice (`The data demonstrate...`, `The trial confirmed...`) instead of multi-layered hedging (`It could potentially be suggested that these results might indicate...`).
 
 ### 2.3 English Academic Precision & Native Flow

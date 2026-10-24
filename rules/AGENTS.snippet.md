@@ -1,4 +1,4 @@
-<!-- BEGIN anti-ai-copywriting v0.3.0 -->
+<!-- BEGIN anti-ai-copywriting v0.4.0 -->
 # Anti-AI Copywriting & Natural Voice Rules (Mandatory & Silent)
 
 <auto_trigger>

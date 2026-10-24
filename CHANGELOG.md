@@ -4,6 +4,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-10-24
+
+### Added
+- **Statistical Cadence & Information-Theoretic Metrics (UID Hypothesis & Burstiness)**:
+  - Added pure Python standard library sentence length variation / Burstiness Coefficient of Variation ($CV_{len} = \sigma / \mu$).
+  - Implemented automated `rhythmic_monotony` detection (penalty 3.5) triggered when $CV_{len} < 0.28$ across qualifying sentences ($\ge 6$).
+  - Added Moving-Average Type-Token Ratio (MATTR) with window size 50 for sliding lexical richness tracking without sample-length bias.
+- **Kobak et al. 2024 (Nature/Science Advances) Excess Vocabulary Integration**:
+  - Calibrated PubMed excess vocabulary with tiered log-odds penalty weights:
+    - Tier S (Penalty 5.0): `delve`, `delve into`, `delving into`, `tapestry of`, `intricate tapestry`, `meticulously`, `testament to`.
+    - Tier A (Penalty 3.5): `realm`, `realm of`, `intricate`, `pivotal role`, `pivotal`, `beacon of`, `commendable`, `foster`, `navigating complexities`, `unwavering`.
+    - Tier B (Penalty 2.0): `comprehensive`, `robust`, `leverage`, `utilize`, `seamless integration`, `seamless`, `seamlessly`, `multifaceted`, `myriad`, `revolutionize`.
+- **Chinese Light Verb Constructions (LVC / 文字义肢) Closed Set Expansion**:
+  - Expanded closed set of light verbs (`进行|开展|展开|作出|予以|给以|加以|具有|得到|受到|作|做|致以`) paired with 16 nominalized action targets (`分析|探讨|调研|考察|评估|审校|整改|梳理|阐述|测查|优化|迭代|部署|排查|总结|研究`).
+  - Added actionable de-nominalization rewrite guidelines and remediation suggestions.
+- **Model Context Protocol (MCP) Server**:
+  - Implemented zero-dependency JSON-RPC 2.0 stdio MCP server (`anti-ai-mcp` / `python3 -m anti_ai_lint.mcp_server` and `mcp_server/server.py`).
+  - Exposed 3 standard MCP tools: `lint_prose`, `remediate_violation`, and `get_style_contract`.
+- **Modern AI Engineering Toolchain**:
+  - Official GitHub Action (`action.yml`) supporting PR inline workflow annotations (`::warning` / `::error`).
+  - Added `--format github` and `--format gh-action` to CLI.
+  - Official pre-commit configuration (`.pre-commit-hooks.yaml`).
+  - Added DSPy prompt optimization runner script (`scripts/dspy_optimizer.py`).
+  - Added DPO / SimPO preference dataset exporter (`scripts/export_dpo_pairs.py`) supporting DPO, ChatML, and ShareGPT formats.
+- **Multi-Platform Agent Guides**:
+  - Added dedicated bilingual integration guides for **Cursor**, **Windsurf**, **Cline**, **Aider**, and **Antigravity**.
+
 ## [0.3.0] - 2026-10-24
 
 ### Added

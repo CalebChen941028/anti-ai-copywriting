@@ -1,0 +1,58 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Liangliang Chen
+name: 'Anti-AI Copywriting Linter'
+description: 'Deterministic zero-dependency style gate & linter detecting AI tropes, buzzwords, and stylistic monotony.'
+author: 'Liangliang Chen'
+branding:
+  icon: 'edit-3'
+  color: 'green'
+
+inputs:
+  paths:
+    description: 'Path(s) to markdown or text documents/directories to check (defaults to current directory)'
+    required: false
+    default: '.'
+  genre:
+    description: "Target writing genre: 'general', 'academic', or 'plain'"
+    required: false
+    default: 'general'
+  max-score:
+    description: 'Maximum penalty score before failure'
+    required: false
+    default: '10.0'
+  max-normalized-score:
+    description: 'Optional maximum penalty score per 1,000 words'
+    required: false
+    default: ''
+  fail-on-error:
+    description: 'Whether to exit with code 1 when violations exceed the threshold'
+    required: false
+    default: 'true'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Run Anti-AI Linter
+      shell: bash
+      run: |
+        EXTRA_ARGS=()
+        if [ -n "${{ inputs.max-normalized-score }}" ]; then
+          EXTRA_ARGS+=(--max-normalized-score "${{ inputs.max-normalized-score }}")
+        fi
+
+        python3 "${{ github.action_path }}/lint/anti_ai_lint/cli.py" \
+          ${{ inputs.paths }} \
+          --genre "${{ inputs.genre }}" \
+          --max-score "${{ inputs.max-score }}" \
+          "${EXTRA_ARGS[@]}" \
+          --format github || EXIT_CODE=$?
+
+        EXIT_CODE=${EXIT_CODE:-0}
+        if [ "$EXIT_CODE" -ne 0 ] && [ "${{ inputs.fail-on-error }}" = "true" ]; then
+          exit "$EXIT_CODE"
+        fi

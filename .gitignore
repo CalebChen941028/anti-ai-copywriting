@@ -13,6 +13,6 @@ models.local.json
 .local/
 *.log
 .tmp/
-.serena/
 tmp/
 .serena/
+.video_agent/

@@ -174,6 +174,7 @@ def get_remediation_suggestion(category: str, match_text: str, context: str = ""
         "table_formula_academic": "学术呈现规范：数值结果单独成句紧贴解释，避免套话引出表格（如‘如表所示’）",
         "empty_self_praise_academic": "学术语态规范：删去空洞自夸，客观陈述实证结果与应用场景",
         "rhythmic_monotony": "打破AI单调节奏（Monotonous Drone）：大幅调整句子长短波动，穿插5~10字/词短促斩截句与论述长句，提升文本信息起伏与节奏感（Burstiness）",
+        "localized_rhythmic_monotony": "打破段落级局部节奏呆滞：该段落内连续句子长度过匀，建议穿插短促句（5~10字）打破等长单调感",
         "fidelity_added": "信息守恒：润色与翻译不得新增原文没有的数字、代号或细节；核对原文后删除，或还原原文数值",
         "fidelity_dropped": "信息守恒：核对是否误删原文事实；数字、型号、参数不得在润色或翻译中丢失",
     }
@@ -1069,6 +1070,42 @@ def analyze_text(
                 suggestion=get_remediation_suggestion("rhythmic_monotony", f"{burstiness_cv:.2f}"),
             )
         )
+    elif burstiness_cv >= 0.28 and (total_chars >= 600 or total_words >= 400):
+        # Localized paragraph-level rhythmic monotony: in long-form texts (>=600 chars), check each prose paragraph
+        para_pattern = re.compile(r"(?:[ \t]*\n){2,}")
+        para_starts = [0] + [m.end() for m in para_pattern.finditer(sanitized_text)]
+        para_blocks = para_pattern.split(sanitized_text)
+        for p_idx, p_block in enumerate(para_blocks):
+            # Skip empty paragraphs or list / enumeration blocks (e.g. 1. 2. 3. or bullets)
+            if not p_block.strip() or re.search(r"^[ \t>]*(?:[-*+]|\d+[.)、）])", p_block, re.M):
+                continue
+            p_sents = split_sentences_spans(p_block)
+            p_lengths: List[int] = []
+            for s_t, _ in p_sents:
+                c = len(re.findall(r"[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af\u1100-\u11ff\u3130-\u318f\uff66-\uff9f]", s_t))
+                l = len(re.findall(r"[a-zA-Z0-9]+(?:[-'][a-zA-Z0-9]+)*", s_t))
+                if c + l >= 4:
+                    p_lengths.append(c + l)
+            if len(p_lengths) >= 5:
+                p_mean = sum(p_lengths) / len(p_lengths)
+                if p_mean > 0:
+                    p_var = sum((x - p_mean) ** 2 for x in p_lengths) / len(p_lengths)
+                    p_cv = round(math.sqrt(p_var) / p_mean, 4)
+                    if p_cv < 0.20:
+                        p_off = para_starts[p_idx]
+                        p_line = sanitized_text[:p_off].count("\n") + 1
+                        violations.append(
+                            LintViolation(
+                                category="localized_rhythmic_monotony",
+                                message=f"Localized rhythmic monotony detected in paragraph at line {p_line}: CV={p_cv:.2f} < 0.20 ({len(p_lengths)} sentences)",
+                                line=p_line,
+                                column=1,
+                                context=p_block[:60].replace("\n", " ").strip(),
+                                penalty=2.5,
+                                suggestion=get_remediation_suggestion("localized_rhythmic_monotony", f"{p_cv:.2f}"),
+                            )
+                        )
+                        break
 
     penalty_sum = round(sum(v.penalty for v in violations), 2)
 

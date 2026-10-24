@@ -116,6 +116,38 @@ class TestFidelityCheck(unittest.TestCase):
         self.assertEqual(issues[0].kind, "added")
         self.assertEqual(issues[0].token, "78.8")
 
+    def test_multi_source_fidelity(self):
+        src1 = "核心系统A查询时延850ms，涉及12个服务。"
+        src2 = "存储重构节约3000万元，吞吐量提升至4.8万笔。"
+        # Faithful synthesis: draws facts from both sources with unit equivalence
+        out_good = "通过去O改造，系统A查询时延收敛至0.85秒，12个微服务平稳运行；存储预算缩减3千万元，支撑每秒4.8万笔交易。"
+        self.assertEqual(check_fidelity([src1, src2], out_good), [])
+
+        # Fabricated synthesis: introduces 99.99% availability not in either source
+        out_bad = "系统A时延0.85秒，节约3千万元，系统可用性达到99.99%。"
+        issues = check_fidelity([src1, src2], out_bad)
+        self.assertEqual(len(issues), 1)
+        self.assertEqual(issues[0].kind, "added")
+        self.assertEqual(issues[0].token, "99.99")
+
+    def test_code_and_math_blocks_fidelity_resilience(self):
+        src = (
+            "系统峰值查询时延降至180ms。\n"
+            "```python\n"
+            "# listen on port 8080\n"
+            "server_port = 8080\n"
+            "```\n"
+            "公式定义：$$E = mc^2$$\n"
+        )
+        out = (
+            "系统峰值查询时延降至0.18秒。\n"
+            "```python\n"
+            "server_port = 9090\n"
+            "```\n"
+        )
+        # Port inside fenced code block should not be treated as a prose factual anchor
+        self.assertEqual(check_fidelity(src, out), [])
+
 
 class TestFidelityCli(unittest.TestCase):
     def test_cli_source_flag_pass_and_fail(self):
@@ -170,6 +202,18 @@ class TestFidelityCli(unittest.TestCase):
             out_file.write_text("共 5 例。", encoding="utf-8")
             code, _, _ = run_cli([str(out_file), "--source", str(src), "--format", "hook"])
             self.assertEqual(code, 0)
+
+    def test_cli_multi_source_support(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            s1 = Path(tmp) / "src1.md"
+            s1.write_text("查询时延850ms。", encoding="utf-8")
+            s2 = Path(tmp) / "src2.md"
+            s2.write_text("节约资金3000万元。", encoding="utf-8")
+            out = Path(tmp) / "out.md"
+            out.write_text("查询时延收敛至0.85秒，节约3千万元。", encoding="utf-8")
+            code, stdout, _ = run_cli([str(out), "--source", str(s1), str(s2), "--format", "hook"])
+            self.assertEqual(code, 0)
+            self.assertIn("PASS", stdout)
 
 
 class TestFidelityMcp(unittest.TestCase):

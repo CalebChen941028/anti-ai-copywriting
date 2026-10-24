@@ -610,6 +610,40 @@ class TestAntiAiLinter(unittest.TestCase):
         cats = [v.category for v in rep.violations]
         self.assertIn("localized_rhythmic_monotony", cats)
 
+    def test_inappropriate_colloquialism_in_formal_genres(self):
+        text_acad = "说白了，算法的最终收敛速度取决于学习率的自适应调整策略。"
+        rep_acad = analyze_text(text_acad, genre="academic")
+        self.assertIn("inappropriate_colloquialism", [v.category for v in rep_acad.violations])
+
+        # In plain or conversational context, it is not flagged
+        rep_plain = analyze_text(text_acad, genre="plain")
+        self.assertNotIn("inappropriate_colloquialism", [v.category for v in rep_plain.violations])
+
+    def test_staccato_overfragmentation(self):
+        # 3 consecutive micro sentences
+        text = "系统全面完成重构。对。没错。就是它。后续模块继续按照预期平稳推进演进。"
+        rep = analyze_text(text)
+        self.assertIn("staccato_overfragmentation", [v.category for v in rep.violations])
+
+    def test_english_fronting_patterns(self):
+        # Fronted participial clauses (>=2 occurrences)
+        text_part = (
+            "Leveraging this distributed cache, the application achieves 2x throughput. "
+            "Delving into the latency metrics, we observe significant reductions in tail delay. "
+            "The cluster maintains high availability under heavy workloads."
+        )
+        rep_part = analyze_text(text_part)
+        self.assertIn("english_participial_fronting", [v.category for v in rep_part.violations])
+
+        # Fronted transitional adverbs (>=2 occurrences)
+        text_adv = (
+            "Crucially, memory bandwidth limits peak inference speed. "
+            "Notably, speculative decoding alleviates the target model load. "
+            "Both factors determine overall end-to-end efficiency."
+        )
+        rep_adv = analyze_text(text_adv)
+        self.assertIn("english_sentence_head_stacking", [v.category for v in rep_adv.violations])
+
     def test_mattr_lexical_richness_metric(self):
         # Empty text
         rep_empty = analyze_text("")

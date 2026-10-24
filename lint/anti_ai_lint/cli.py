@@ -139,11 +139,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     )
     parser.add_argument(
         "--source",
-        type=str,
+        nargs="+",
         default=None,
         help=(
-            "Original text file for polishing or translation. Enables the information-conservation check: "
-            "numbers, codes, and acronyms added to or dropped from the checked text are penalized."
+            "Original text file(s) for polishing, translation, or multi-source synthesis. "
+            "Accepts one or more files; when multiple files are given, anchors from all sources are pooled."
         ),
     )
     parser.add_argument("--mcp", action="store_true", help="Launch Model Context Protocol (MCP) server over stdio.")
@@ -159,17 +159,20 @@ def main(argv: Optional[List[str]] = None) -> int:
             from anti_ai_lint.mcp_server import run_mcp_server
         return run_mcp_server()
 
-    source_text: Optional[str] = None
+    source_text: Optional[str | List[str]] = None
     if args.source is not None:
         if len(args.paths) > 1 or (args.paths and Path(args.paths[0]).is_dir()):
             parser.error("--source requires a single output file (or stdin), not multiple files or a directory")
-        src_path = Path(args.source)
-        if not src_path.is_file():
-            parser.error(f"--source file not found: {args.source}")
-        try:
-            source_text = src_path.read_text(encoding="utf-8", errors="replace")
-        except OSError as e:
-            parser.error(f"could not read --source file {args.source}: {e}")
+        src_texts: List[str] = []
+        for s_file in args.source:
+            src_path = Path(s_file)
+            if not src_path.is_file():
+                parser.error(f"--source file not found: {s_file}")
+            try:
+                src_texts.append(src_path.read_text(encoding="utf-8", errors="replace"))
+            except OSError as e:
+                parser.error(f"could not read --source file {s_file}: {e}")
+        source_text = src_texts[0] if len(src_texts) == 1 else src_texts
 
     reports: List[LintReport] = []
     had_error = False

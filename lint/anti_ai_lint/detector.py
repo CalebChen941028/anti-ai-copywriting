@@ -175,10 +175,21 @@ def get_remediation_suggestion(category: str, match_text: str, context: str = ""
         "empty_self_praise_academic": "学术语态规范：删去空洞自夸，客观陈述实证结果与应用场景",
         "rhythmic_monotony": "打破AI单调节奏（Monotonous Drone）：大幅调整句子长短波动，穿插5~10字/词短促斩截句与论述长句，提升文本信息起伏与节奏感（Burstiness）",
         "localized_rhythmic_monotony": "打破段落级局部节奏呆滞：该段落内连续句子长度过匀，建议穿插短促句（5~10字）打破等长单调感",
+        "inappropriate_colloquialism": f"语体规范：在专业/学术/公文中剔除口语垫字与网络口吻（如「{match_text}」），恢复严谨务实的专业语态",
+        "staccato_overfragmentation": "纠治过碎断气句：检测到连续3句以上超短碎片句，切勿为机械拉大句长方差而刻意切碎句子，保持论述连贯与自然呼吸",
+        "english_participial_fronting": f"Eliminate repetitive fronted participial clauses ('{match_text}'): rephrase using direct subject-verb constructions",
+        "english_sentence_head_stacking": f"Eliminate repetitive fronted discourse markers ('{match_text}'): vary sentence openings and integrate transitions smoothly",
         "fidelity_added": "信息守恒：润色与翻译不得新增原文没有的数字、代号或细节；核对原文后删除，或还原原文数值",
         "fidelity_dropped": "信息守恒：核对是否误删原文事实；数字、型号、参数不得在润色或翻译中丢失",
     }
     return cat_map.get(category, "遵循自然语态重塑规则，消除机器生成痕迹")
+
+
+_INAPPROPRIATE_COLLOQUIALISMS = [
+    "你猜怎么着", "说白了", "坦率地讲", "坦率地说", "老实讲", "老实说",
+    "话说回来", "大伙儿", "老铁", "懂的都懂", "咱就是说", "谁能想到",
+    "不得不承认的是", "无可厚非的是"
+]
 
 
 def _load_default_wordlists() -> tuple[dict[str, Any], dict[str, Any]]:
@@ -594,7 +605,7 @@ def analyze_text(
     max_normalized_score: Optional[float] = None,
     genre: str = "general",
     wordlists_dir: Optional[str] = None,
-    source_text: Optional[str] = None,
+    source_text: Optional[str | List[str]] = None,
 ) -> LintReport:
     """
     Analyze text for AI buzzwords, punctuation abuse, particle density, and clichés.
@@ -805,6 +816,30 @@ def analyze_text(
                         suggestion=get_remediation_suggestion("defensive_disclaimer", discl, context_str),
                     )
                 ))
+
+        # Check inappropriate colloquialisms (in formal genres: academic and general)
+        if genre in ("academic", "general"):
+            for coll in _INAPPROPRIATE_COLLOQUIALISMS:
+                if coll in line:
+                    m_start = line.find(coll)
+                    context_str = raw_line[
+                        max(0, m_start - 10) : min(len(raw_line), m_start + len(coll) + 15)
+                    ].strip()
+                    g_start = line_start_off + m_start
+                    g_end = g_start + len(coll)
+                    raw_violations.append((
+                        g_start,
+                        g_end,
+                        LintViolation(
+                            category="inappropriate_colloquialism",
+                            message=f"Found inappropriate colloquial filler in formal context: 「{coll}」",
+                            line=line_idx,
+                            column=m_start + 1,
+                            context=context_str,
+                            penalty=2.5,
+                            suggestion=get_remediation_suggestion("inappropriate_colloquialism", coll, context_str),
+                        )
+                    ))
 
     # 2. Formulaic patterns across sanitized text
     for pat_info in zh_data.get("formulaic_patterns", []):
@@ -1106,6 +1141,88 @@ def analyze_text(
                             )
                         )
                         break
+
+    # Staccato over-fragmentation check: >= 3 consecutive micro-sentences (1 to 3 words/chars) in natural prose
+    staccato_streak = 0
+    staccato_start_idx = 0
+    for s_idx, (s_text, s_pos) in enumerate(sentences):
+        # Ignore markdown lists, headers, tables, links, or URL lines
+        raw_s = text[s_pos : s_pos + len(s_text)]
+        if (
+            re.search(r"^[ \t>]*(?:[-*+]|\d+[.)、）]|#|\|)", s_text)
+            or any(ch in raw_s for ch in ("[", "]", "(", ")", "http", "/", "\\", "`", ":", "："))
+        ):
+            staccato_streak = 0
+            continue
+        s_cjk = len(re.findall(r"[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af\u1100-\u11ff\u3130-\u318f\uff66-\uff9f]", s_text))
+        s_latin = len(re.findall(r"[a-zA-Z0-9]+(?:[-'][a-zA-Z0-9]+)*", s_text))
+        tot_l = s_cjk + s_latin
+        if 1 <= tot_l <= 3:
+            if staccato_streak == 0:
+                staccato_start_idx = s_idx
+            staccato_streak += 1
+            if staccato_streak >= 3:
+                s_line = sanitized_text[:sentences[staccato_start_idx][1]].count("\n") + 1
+                streak_text = " ".join(sentences[j][0] for j in range(staccato_start_idx, s_idx + 1))
+                violations.append(
+                    LintViolation(
+                        category="staccato_overfragmentation",
+                        message=f"Staccato over-fragmentation detected at line {s_line}: {staccato_streak} consecutive micro-sentences ('{streak_text[:40]}')",
+                        line=s_line,
+                        column=1,
+                        context=streak_text[:60],
+                        penalty=2.5,
+                        suggestion=get_remediation_suggestion("staccato_overfragmentation", streak_text[:30]),
+                    )
+                )
+                break
+        else:
+            staccato_streak = 0
+
+    # English sentence-head repetitive constructions (participial clauses & discourse adverbs)
+    if latin_words >= 20:
+        part_re = re.compile(r"^(?:(?!(?:During|According|Following|Including)\b)(?:[A-Z][a-z]*ing|Having\s+[a-z]+(?:ed|en|t))\b[^,]{3,45},)")
+        adv_re = re.compile(r"^(?:Crucially|Notably|Importantly|Strikingly|Essentially|Ultimately|Consequently|Interestingly|Remarkably)\s*,")
+        fronted_participle_matches = []
+        fronted_adverb_matches = []
+        for s_text, s_pos in sentences:
+            s_clean = s_text.strip()
+            m_p = part_re.match(s_clean)
+            if m_p:
+                fronted_participle_matches.append((m_p.group(0), s_pos))
+            m_a = adv_re.match(s_clean)
+            if m_a:
+                fronted_adverb_matches.append((m_a.group(0), s_pos))
+
+        if len(fronted_participle_matches) >= 2:
+            first_match, s_pos = fronted_participle_matches[0]
+            s_line = sanitized_text[:s_pos].count("\n") + 1
+            violations.append(
+                LintViolation(
+                    category="english_participial_fronting",
+                    message=f"Repetitive fronted participial clauses detected ({len(fronted_participle_matches)} occurrences, e.g. '{first_match}')",
+                    line=s_line,
+                    column=1,
+                    context=first_match,
+                    penalty=2.5,
+                    suggestion=get_remediation_suggestion("english_participial_fronting", first_match),
+                )
+            )
+
+        if len(fronted_adverb_matches) >= 2:
+            first_match, s_pos = fronted_adverb_matches[0]
+            s_line = sanitized_text[:s_pos].count("\n") + 1
+            violations.append(
+                LintViolation(
+                    category="english_sentence_head_stacking",
+                    message=f"Repetitive fronted transitional adverbs detected ({len(fronted_adverb_matches)} occurrences, e.g. '{first_match}')",
+                    line=s_line,
+                    column=1,
+                    context=first_match,
+                    penalty=2.5,
+                    suggestion=get_remediation_suggestion("english_sentence_head_stacking", first_match),
+                )
+            )
 
     penalty_sum = round(sum(v.penalty for v in violations), 2)
 

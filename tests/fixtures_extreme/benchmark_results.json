@@ -1,0 +1,295 @@
+{
+  "code_math_interleave": {
+    "title": "代码与LaTeX公式密集型技术白皮书（中英混排与符号隔离鲁棒性）",
+    "genre": "academic",
+    "lang": "zh",
+    "prompt": "请对以下DPDK零拷贝高并发网络技术改造成效通报进行专业技术润色与重构，提升面向架构委员会的学术严谨度。要求：保留代码片段与LaTeX数学符号，严格基于原文给出的事实、参数与数字，不得虚构额外数值或衍生百分比：\n\nDPDK零拷贝网络改造实测：通过大页内存（HugePages 2MB）与用户态PMD轮询驱动，系统在100Gbps以太网口压测下单核心吞吐达14.88Mpps，单包端到端处理时延由850ns降低至120ns。时间复杂度由 $O(N)$ 降至 $O(1)$，内存拷贝开销节约 64GB 带宽。\n\n```c\n// DPDK burst polling loop\nuint16_t nb_rx = rte_eth_rx_burst(port_id, 0, pkts_burst, 32);\n```",
+    "solo_model": {
+      "score": 12.5,
+      "normalized_score": 46.13,
+      "passed": false,
+      "violations_count": 3,
+      "violations": [
+        {
+          "cat": "fidelity_added",
+          "msg": "Fact anchor '2' occurs 2 times in the output but only 1 in the source (possible fabricated detail)"
+        },
+        {
+          "cat": "fidelity_added",
+          "msg": "Fact anchor '100' occurs 2 times in the output but only 1 in the source (possible fabricated detail)"
+        },
+        {
+          "cat": "formatting_abuse",
+          "msg": "Excessive bold formatting (5 instances)"
+        }
+      ],
+      "burstiness_cv": 0.8315,
+      "mattr": 0.8777,
+      "de_ratio": 0.0121,
+      "word_count": 271,
+      "api_evidence": {
+        "http_status": 200,
+        "latency_ms": 15634.0,
+        "usage": {
+          "prompt_tokens": 220,
+          "completion_tokens": 2098,
+          "reasoning_tokens": 1813,
+          "total_tokens": 2318
+        },
+        "response_id": "021792858311239f6ba3ba09f8d739ff3017972d8947b2e21c7f4"
+      }
+    },
+    "model_plus_skill_tool": {
+      "score": 2.5,
+      "normalized_score": 4.69,
+      "passed": true,
+      "violations_count": 1,
+      "violations": [
+        {
+          "cat": "formatting_abuse",
+          "msg": "Excessive bold formatting (7 instances)"
+        }
+      ],
+      "burstiness_cv": 0.5383,
+      "mattr": 0.8643,
+      "de_ratio": 0.0157,
+      "word_count": 533,
+      "in_loop_remediation": true,
+      "api_evidence": {
+        "http_status": 200,
+        "latency_ms": 28330.6,
+        "usage": {
+          "prompt_tokens": 818,
+          "completion_tokens": 3428,
+          "reasoning_tokens": 2477,
+          "total_tokens": 4246
+        },
+        "response_id": "02179285832912061de39c93fac111732577779cd317989ca186d",
+        "remediation_call": {
+          "http_status": 200,
+          "latency_ms": 17022.7,
+          "usage": {
+            "prompt_tokens": 3215,
+            "completion_tokens": 2515,
+            "reasoning_tokens": 1975,
+            "total_tokens": 5730
+          },
+          "response_id": "021792858355311023ef2751affb9822ae18449966cb6b9c0cd2c"
+        }
+      }
+    }
+  },
+  "anti_camouflage_colloquial": {
+    "title": "伪口语化与碎句断气反噬（对抗过度反AI伪装与语体失范）",
+    "genre": "academic",
+    "lang": "zh",
+    "prompt": "请撰写一份面向高管与学术评审的《大模型对齐与可解释性前沿战略白皮书摘要》。要求：尽可能通俗易懂，多用接地气的口语大白话，像日常聊天一样把复杂技术讲透，打破冷冰冰的学术距离感。字数在300至400字左右。",
+    "solo_model": {
+      "score": 4.0,
+      "normalized_score": 12.7,
+      "passed": true,
+      "violations_count": 1,
+      "violations": [
+        {
+          "cat": "forbidden_word_zh",
+          "msg": "Found forbidden buzzword/cliché: 「闭环」"
+        }
+      ],
+      "burstiness_cv": 0.3263,
+      "mattr": 0.9167,
+      "de_ratio": 0.0064,
+      "word_count": 315,
+      "api_evidence": {
+        "http_status": 200,
+        "latency_ms": 11123.7,
+        "usage": {
+          "prompt_tokens": 92,
+          "completion_tokens": 1145,
+          "reasoning_tokens": 908,
+          "total_tokens": 1237
+        },
+        "response_id": "021792858374100b52b40748efca76dec1583940832f7e48137fa"
+      }
+    },
+    "model_plus_skill_tool": {
+      "score": 0,
+      "normalized_score": 0.0,
+      "passed": true,
+      "violations_count": 0,
+      "violations": [],
+      "burstiness_cv": 0.6555,
+      "mattr": 0.8555,
+      "de_ratio": 0.0314,
+      "word_count": 351,
+      "in_loop_remediation": false,
+      "api_evidence": {
+        "http_status": 200,
+        "latency_ms": 12790.5,
+        "usage": {
+          "prompt_tokens": 690,
+          "completion_tokens": 1409,
+          "reasoning_tokens": 1123,
+          "total_tokens": 2099
+        },
+        "response_id": "0217928583845147701a42f23cc3d37ac47a8e8735f343a29f6c0",
+        "remediation_call": null
+      }
+    }
+  },
+  "multi_source_synthesis": {
+    "title": "多源事实综合守恒（多文档联合事实锚点与防张冠李戴）",
+    "genre": "general",
+    "lang": "zh",
+    "prompt": "请综合以下来自架构、性能与财务三个分册的事实材料，起草一份面向集团管理层的《核心系统改造综合结项报告》。要求：严格基于给出的三份事实材料进行综合陈述，允许物理与金融量纲等价转换（如0.45秒、1.8千万元），但严禁虚构任何未在上述材料中出现的新增数字、代号或衍生百分比，切忌张冠李戴：\n\n【source_arch.md】\n架构改造分册：核心系统拆分为8个独立微服务，分布式缓存分流率达85%，查询时延由450ms缩短至85ms。\n\n【source_perf.md】\n性能压测分册：双十一全链路压测，集群TPS从每秒3.5万笔提升至12.0万笔，P99长尾时延收敛至120ms以内。\n\n【source_cost.md】\n财务决算分册：通过冷数据分层归档120TB存储，年化硬件采购与维保预算净节约1800万元。",
+    "solo_model": {
+      "score": 10.0,
+      "normalized_score": 21.28,
+      "passed": false,
+      "violations_count": 2,
+      "violations": [
+        {
+          "cat": "fidelity_added",
+          "msg": "Fact anchor '450' occurs 2 times in the output but only 1 across all source documents (possible fabricated detail)"
+        },
+        {
+          "cat": "fidelity_added",
+          "msg": "Fact anchor '1800' occurs 2 times in the output but only 1 across all source documents (possible fabricated detail)"
+        }
+      ],
+      "burstiness_cv": 0.6802,
+      "mattr": 0.8904,
+      "de_ratio": 0.0067,
+      "word_count": 470,
+      "api_evidence": {
+        "http_status": 200,
+        "latency_ms": 28045.0,
+        "usage": {
+          "prompt_tokens": 236,
+          "completion_tokens": 4278,
+          "reasoning_tokens": 3821,
+          "total_tokens": 4514
+        },
+        "response_id": "021792858398214e142d87b6a9bdf1f5f94f64260ca2a93da465a"
+      }
+    },
+    "model_plus_skill_tool": {
+      "score": 0,
+      "normalized_score": 0.0,
+      "passed": true,
+      "violations_count": 0,
+      "violations": [],
+      "burstiness_cv": 0.5316,
+      "mattr": 0.8804,
+      "de_ratio": 0.0084,
+      "word_count": 252,
+      "in_loop_remediation": true,
+      "api_evidence": {
+        "http_status": 200,
+        "latency_ms": 26594.7,
+        "usage": {
+          "prompt_tokens": 834,
+          "completion_tokens": 4370,
+          "reasoning_tokens": 3998,
+          "total_tokens": 5204
+        },
+        "response_id": "02179285842630230d072d337ea6fcc7bbfbe2f0c485be217b391",
+        "remediation_call": {
+          "http_status": 200,
+          "latency_ms": 7679.3,
+          "usage": {
+            "prompt_tokens": 2174,
+            "completion_tokens": 894,
+            "reasoning_tokens": 633,
+            "total_tokens": 3068
+          },
+          "response_id": "021792858453164d2ccc3ebdfdab12ac26ff482d60ed0eed91891"
+        }
+      }
+    }
+  },
+  "long_english_whitepaper": {
+    "title": "Long-form English Whitepaper (Fronted Participles, Discourse Adverbs & Cadence)",
+    "genre": "academic",
+    "lang": "en",
+    "prompt": "Draft an authoritative technical position paper for an AI systems conference on the topic: 'Overcoming the Memory Wall and KV Cache Bottlenecks in Long-Context LLM Inference'. Length: 600 to 900 words. Cover: memory bandwidth vs compute scaling, KV cache compression trade-offs, and speculative decoding trade-offs. Avoid repetitive sentence-starting participial clauses or stacked transitional adverbs.",
+    "solo_model": {
+      "score": 2.0,
+      "normalized_score": 3.32,
+      "passed": true,
+      "violations_count": 1,
+      "violations": [
+        {
+          "cat": "forbidden_word_en",
+          "msg": "Found forbidden AI trope/phrase: 'robust'"
+        }
+      ],
+      "burstiness_cv": 0.4262,
+      "mattr": 0.8668,
+      "de_ratio": 0.0,
+      "word_count": 603,
+      "api_evidence": {
+        "http_status": 200,
+        "latency_ms": 20738.9,
+        "usage": {
+          "prompt_tokens": 108,
+          "completion_tokens": 2495,
+          "reasoning_tokens": 1650,
+          "total_tokens": 2603
+        },
+        "response_id": "021792858462064f9cb936a41ab283113693068986f31c320b018"
+      }
+    },
+    "model_plus_skill_tool": {
+      "score": 0,
+      "normalized_score": 0.0,
+      "passed": true,
+      "violations_count": 0,
+      "violations": [],
+      "burstiness_cv": 0.4939,
+      "mattr": 0.8659,
+      "de_ratio": 0.0233,
+      "word_count": 752,
+      "in_loop_remediation": true,
+      "api_evidence": {
+        "http_status": 200,
+        "latency_ms": 35232.7,
+        "usage": {
+          "prompt_tokens": 607,
+          "completion_tokens": 5284,
+          "reasoning_tokens": 4325,
+          "total_tokens": 5891
+        },
+        "response_id": "021792858482374e0570d30189b68d5608c0b11774ff85bd186a1",
+        "remediation_call": {
+          "http_status": 200,
+          "latency_ms": 13716.1,
+          "usage": {
+            "prompt_tokens": 1663,
+            "completion_tokens": 2092,
+            "reasoning_tokens": 1052,
+            "total_tokens": 3755
+          },
+          "response_id": "021792858517633085ce2a5b85bafc715e5d42a46d0455193e92c"
+        }
+      }
+    }
+  },
+  "_meta": {
+    "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+    "model": "deepseek-v4.1-flash",
+    "session": "session-deepseek-extreme-benchmark-2026",
+    "api_key_fingerprint": "oc_sk_d3a33d..._Icnnb",
+    "started_at_utc": "2026-10-24T16:11:49+00:00",
+    "finished_at_utc": "2026-10-24T16:15:30+00:00",
+    "wall_clock_s": 221.0,
+    "token_totals": {
+      "http_calls": 11,
+      "prompt_tokens": 10657,
+      "completion_tokens": 30008,
+      "reasoning_tokens": 23775,
+      "total_tokens": 40665,
+      "mean_latency_ms": 19718.9
+    },
+    "no_mock_guarantee": "All texts generated by live HTTP calls; any failure aborts the run."
+  }
+}

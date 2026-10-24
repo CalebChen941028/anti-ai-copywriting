@@ -28,6 +28,8 @@ DROPPED_PENALTY = 3.0
 _LIST_MARKER = re.compile(r"^[ \t>]*(?:[-*+]|\d+[.)、）])[ \t]+", re.MULTILINE)
 _HEADING_MARK = re.compile(r"^[ \t>]*#{1,6}[ \t]+", re.MULTILINE)
 _FOOTNOTE_REF = re.compile(r"\[\^?[A-Za-z0-9_-]+\]")
+_FENCED_CODE_BLOCK = re.compile(r"^[ \t>]*(?:```|~~~)[^\n]*\n[\s\S]*?\n[ \t>]*(?:```|~~~)[ \t]*$", re.MULTILINE)
+_DISPLAY_MATH = re.compile(r"\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]", re.MULTILINE)
 # Alternation order matters: letter-led codes first, then plain numbers, then acronyms.
 _ANCHOR = re.compile(
     r"(?P<code>(?<![A-Za-z0-9])[A-Za-z]+\d[A-Za-z0-9]*)"
@@ -98,9 +100,14 @@ class FidelityIssue:
 
 def _normalize_source(text: str) -> str:
     text = unicodedata.normalize("NFKC", text)
+    # Mask fenced code listings and display equations so code details (ports, memory offsets) don't trigger prose anchors
+    text = _FENCED_CODE_BLOCK.sub(" ", text)
+    text = _DISPLAY_MATH.sub(" ", text)
     text = _HEADING_MARK.sub("", text)
     text = _LIST_MARKER.sub("", text)
     text = _FOOTNOTE_REF.sub(" ", text)
+    # Strip backticks and math dollar delimiters so inline code `850ms` or $x=5$ expose pure numerals cleanly
+    text = text.replace("`", " ").replace("$", " ")
     return text
 
 
@@ -164,51 +171,145 @@ def _locate(norm: str, pos: int) -> Tuple[int, int, str]:
     return line, column, context
 
 
-def check_fidelity(source_text: str, output_text: str) -> List[FidelityIssue]:
+def check_fidelity(source_text: str | List[str] | Tuple[str, ...], output_text: str) -> List[FidelityIssue]:
     """Compare fact anchors of ``output_text`` against ``source_text``.
 
+    Supports single source string or multiple source documents (list/tuple of strings) for synthesis.
     Returns issues for anchors added in the output (penalty 5.0) and for numbers or codes
     dropped from the output (penalty 3.0). Valid unit and magnitude conversions (e.g. 850ms <-> 0.85秒,
     3000万元 <-> 3千万元) are recognized as equivalent and not flagged as additions or omissions.
+    In multi-source synthesis, anchors from all sources are pooled, and dropped facts from background
+    documents are not penalized.
     """
-    src_anchors, _ = extract_anchors(source_text)
+    is_multi_source = isinstance(source_text, (list, tuple))
+    if is_multi_source and len(source_text) == 1:
+        source_text = source_text[0]
+        is_multi_source = False
+
     out_anchors, out_norm = extract_anchors(output_text)
-    src_norm = _normalize_source(source_text)
 
-    # Collect available canonical quantities in source for semantic equivalence matching
-    available_src_quantities: Dict[Tuple[str, float], int] = {}
-    src_qty_to_tokens: Dict[Tuple[str, float], List[str]] = {}
-    for s_tok, s_info in src_anchors.items():
-        for q in s_info.get("quantities", []):
-            available_src_quantities[q] = available_src_quantities.get(q, 0) + 1
-            src_qty_to_tokens.setdefault(q, []).append(s_tok)
+    if not is_multi_source:
+        src_text_str = str(source_text or "")
+        src_anchors, _ = extract_anchors(src_text_str)
+        src_norm = _normalize_source(src_text_str)
 
-    matched_src_tokens: set[str] = set()
+        # Collect available canonical quantities in source for semantic equivalence matching
+        available_src_quantities: Dict[Tuple[str, float], int] = {}
+        src_qty_to_tokens: Dict[Tuple[str, float], List[str]] = {}
+        for s_tok, s_info in src_anchors.items():
+            for q in s_info.get("quantities", []):
+                available_src_quantities[q] = available_src_quantities.get(q, 0) + 1
+                src_qty_to_tokens.setdefault(q, []).append(s_tok)
+
+        matched_src_tokens: set[str] = set()
+
+        issues: List[FidelityIssue] = []
+        for token, info in out_anchors.items():
+            src_info = src_anchors.get(token)
+            if src_info is not None:
+                surplus = info["kind"] == "num" and int(info["count"]) > int(src_info["count"])
+                if not surplus:
+                    continue
+                detail = (
+                    f"occurs {info['count']} times in the output but only {src_info['count']} in the source"
+                )
+            else:
+                # Check if this output token can be matched via unit/magnitude equivalence
+                matched_by_quantity = False
+                for q in info.get("quantities", []):
+                    if available_src_quantities.get(q, 0) > 0:
+                        available_src_quantities[q] -= 1
+                        matched_by_quantity = True
+                        # Mark corresponding source tokens as matched
+                        for st in src_qty_to_tokens.get(q, []):
+                            matched_src_tokens.add(st)
+                        break
+                if matched_by_quantity:
+                    continue
+                detail = "appears in the output but not in the source"
+
+            line, column, context = _locate(out_norm, int(info["pos"]))
+            issues.append(
+                FidelityIssue(
+                    kind="added",
+                    token=str(info["raw"]),
+                    line=line,
+                    column=column,
+                    context=context,
+                    penalty=ADDED_PENALTY,
+                    message=f"Fact anchor '{info['raw']}' {detail} (possible fabricated detail)",
+                    suggestion=(
+                        "润色与翻译必须信息守恒：核对原文，若原文没有该数字/代号/缩写，请删除；"
+                        "Polishing and translation must not add facts: delete it or restore the source value."
+                    ),
+                )
+            )
+
+        for token, info in src_anchors.items():
+            if token in out_anchors or token in matched_src_tokens or info["kind"] == "acr":
+                continue
+            line, column, context = _locate(src_norm, int(info["pos"]))
+            issues.append(
+                FidelityIssue(
+                    kind="dropped",
+                    token=str(info["raw"]),
+                    line=1,
+                    column=1,
+                    context=f"source L{line}: {context}",
+                    penalty=DROPPED_PENALTY,
+                    message=f"Fact anchor '{info['raw']}' from the source is missing in the output (possible omission)",
+                    suggestion=(
+                        "核对是否误删事实：数字、型号、参数不得在润色或翻译中丢失；"
+                        "Restore the value unless it was deliberately removed padding."
+                    ),
+                )
+            )
+        issues.sort(key=lambda i: (i.kind != "added", i.line, i.column))
+        return issues
+
+    # Multi-source synthesis mode
+    all_src_anchors: Dict[str, Dict[str, object]] = {}
+    available_src_quantities = {}
+    src_qty_to_tokens = {}
+
+    for single_src in (source_text or []):  # type: ignore[union-attr]
+        s_anchors, _ = extract_anchors(str(single_src or ""))
+        for tok, s_info in s_anchors.items():
+            if tok not in all_src_anchors:
+                all_src_anchors[tok] = {
+                    "kind": s_info["kind"],
+                    "pos": s_info["pos"],
+                    "raw": s_info["raw"],
+                    "count": int(s_info["count"]),
+                    "quantities": list(s_info.get("quantities", [])),
+                }
+            else:
+                all_src_anchors[tok]["count"] = int(all_src_anchors[tok]["count"]) + int(s_info["count"])
+                all_src_anchors[tok]["quantities"].extend(s_info.get("quantities", []))  # type: ignore[attr-defined]
+
+            for q in s_info.get("quantities", []):
+                available_src_quantities[q] = available_src_quantities.get(q, 0) + 1
+                src_qty_to_tokens.setdefault(q, []).append(tok)
 
     issues: List[FidelityIssue] = []
     for token, info in out_anchors.items():
-        src_info = src_anchors.get(token)
+        src_info = all_src_anchors.get(token)
         if src_info is not None:
             surplus = info["kind"] == "num" and int(info["count"]) > int(src_info["count"])
             if not surplus:
                 continue
-            detail = (
-                f"occurs {info['count']} times in the output but only {src_info['count']} in the source"
-            )
+            detail = f"occurs {info['count']} times in the output but only {src_info['count']} across all source documents"
         else:
-            # Check if this output token can be matched via unit/magnitude equivalence
+            # Check quantity equivalence across all sources
             matched_by_quantity = False
             for q in info.get("quantities", []):
                 if available_src_quantities.get(q, 0) > 0:
                     available_src_quantities[q] -= 1
                     matched_by_quantity = True
-                    # Mark corresponding source tokens as matched
-                    for st in src_qty_to_tokens.get(q, []):
-                        matched_src_tokens.add(st)
                     break
             if matched_by_quantity:
                 continue
-            detail = "appears in the output but not in the source"
+            detail = "appears in the output but not in any provided source document"
 
         line, column, context = _locate(out_norm, int(info["pos"]))
         issues.append(
@@ -221,30 +322,11 @@ def check_fidelity(source_text: str, output_text: str) -> List[FidelityIssue]:
                 penalty=ADDED_PENALTY,
                 message=f"Fact anchor '{info['raw']}' {detail} (possible fabricated detail)",
                 suggestion=(
-                    "润色与翻译必须信息守恒：核对原文，若原文没有该数字/代号/缩写，请删除；"
-                    "Polishing and translation must not add facts: delete it or restore the source value."
+                    f"多源事实守恒：'{info['raw']}' 未在任何提供的源文档中出现，"
+                    "请核实并删除未经授权的衍生数据。"
                 ),
             )
         )
 
-    for token, info in src_anchors.items():
-        if token in out_anchors or token in matched_src_tokens or info["kind"] == "acr":
-            continue
-        line, column, context = _locate(src_norm, int(info["pos"]))
-        issues.append(
-            FidelityIssue(
-                kind="dropped",
-                token=str(info["raw"]),
-                line=1,
-                column=1,
-                context=f"source L{line}: {context}",
-                penalty=DROPPED_PENALTY,
-                message=f"Fact anchor '{info['raw']}' from the source is missing in the output (possible omission)",
-                suggestion=(
-                    "核对是否误删事实：数字、型号、参数不得在润色或翻译中丢失；"
-                    "Restore the value unless it was deliberately removed padding."
-                ),
-            )
-        )
     issues.sort(key=lambda i: (i.kind != "added", i.line, i.column))
     return issues

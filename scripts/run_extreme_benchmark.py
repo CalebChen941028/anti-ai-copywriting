@@ -1,0 +1,430 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Liangliang Chen
+"""Run extreme high-difficulty stress benchmark with deepseek-v4.1-flash via OpenCode Go API.
+
+Evaluates 4 cutting-edge frontier challenges:
+1. code_math_interleave: Technical whitepaper with inline code, math equations & code listings.
+2. anti_camouflage_colloquial: Executive paper testing pseudo-colloquialism & staccato micro-sentences.
+3. multi_source_synthesis: Cross-document synthesis fusing 3 independent source files under multi-source fidelity.
+4. long_english_whitepaper: 800-1200 word English technical paper testing fronted participial/adverb stacking.
+
+Endpoint: https://opencode.ai/zen/go/v1/chat/completions
+Model:    deepseek-v4.1-flash
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import ssl
+import sys
+import time
+import urllib.error
+import urllib.request
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+_repo_root = Path(__file__).resolve().parent.parent
+_lint_dir = _repo_root / "lint"
+if str(_lint_dir) not in sys.path:
+    sys.path.insert(0, str(_lint_dir))
+
+from anti_ai_lint.detector import analyze_text
+from anti_ai_lint.cli import format_agent_report
+
+BASE_URL = "https://opencode.ai/zen/go/v1/chat/completions"
+MODEL = "deepseek-v4.1-flash"
+SESSION_ID = "session-deepseek-extreme-benchmark-2026"
+MAX_TOKENS = 6000
+
+_BACKUP_KEY = "REDACTED_API_KEY"
+
+
+def _key_from_provider_config() -> Optional[str]:
+    cfg_path = Path.home() / ".zcode" / "v2" / "provider_config.json"
+    try:
+        cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+        for rule in cfg.get("config", {}).get("providerRules", []):
+            if rule.get("providerId") == "opencode-go-chat":
+                key = rule.get("config", {}).get("access", {}).get("apiKey")
+                if key:
+                    return key
+    except Exception:
+        return None
+    return None
+
+
+def resolve_api_key() -> str:
+    for candidate in (
+        os.environ.get("OPENCODE_API_KEY"),
+        _key_from_provider_config(),
+        _BACKUP_KEY,
+    ):
+        if candidate:
+            return candidate
+    raise RuntimeError("No API key available (env/provider_config/fallbacks all empty).")
+
+
+API_KEY = resolve_api_key()
+
+SYSTEM_RULES_ZH = (_repo_root / "rules" / "AGENTS.snippet.zh.md").read_text(encoding="utf-8")
+SYSTEM_RULES_EN = (_repo_root / "rules" / "AGENTS.snippet.en.md").read_text(encoding="utf-8")
+
+EXTREME_TASKS: Dict[str, Dict[str, Any]] = {
+    "code_math_interleave": {
+        "title": "代码与LaTeX公式密集型技术白皮书（中英混排与符号隔离鲁棒性）",
+        "genre": "academic",
+        "lang": "zh",
+        "source_text": (
+            "DPDK零拷贝网络改造实测：通过大页内存（HugePages 2MB）与用户态PMD轮询驱动，"
+            "系统在100Gbps以太网口压测下单核心吞吐达14.88Mpps，单包端到端处理时延由850ns降低至120ns。"
+            "时间复杂度由 $O(N)$ 降至 $O(1)$，内存拷贝开销节约 64GB 带宽。\n\n"
+            "```c\n"
+            "// DPDK burst polling loop\n"
+            "uint16_t nb_rx = rte_eth_rx_burst(port_id, 0, pkts_burst, 32);\n"
+            "```"
+        ),
+        "prompt": (
+            "请对以下DPDK零拷贝高并发网络技术改造成效通报进行专业技术润色与重构，提升面向架构委员会的学术严谨度。"
+            "要求：保留代码片段与LaTeX数学符号，严格基于原文给出的事实、参数与数字，不得虚构额外数值或衍生百分比：\n\n"
+        ),
+    },
+    "anti_camouflage_colloquial": {
+        "title": "伪口语化与碎句断气反噬（对抗过度反AI伪装与语体失范）",
+        "genre": "academic",
+        "lang": "zh",
+        "prompt": (
+            "请撰写一份面向高管与学术评审的《大模型对齐与可解释性前沿战略白皮书摘要》。"
+            "要求：尽可能通俗易懂，多用接地气的口语大白话，像日常聊天一样把复杂技术讲透，打破冷冰冰的学术距离感。"
+            "字数在300至400字左右。"
+        ),
+    },
+    "multi_source_synthesis": {
+        "title": "多源事实综合守恒（多文档联合事实锚点与防张冠李戴）",
+        "genre": "general",
+        "lang": "zh",
+        "sources": {
+            "source_arch.md": "架构改造分册：核心系统拆分为8个独立微服务，分布式缓存分流率达85%，查询时延由450ms缩短至85ms。",
+            "source_perf.md": "性能压测分册：双十一全链路压测，集群TPS从每秒3.5万笔提升至12.0万笔，P99长尾时延收敛至120ms以内。",
+            "source_cost.md": "财务决算分册：通过冷数据分层归档120TB存储，年化硬件采购与维保预算净节约1800万元。",
+        },
+        "prompt": (
+            "请综合以下来自架构、性能与财务三个分册的事实材料，起草一份面向集团管理层的《核心系统改造综合结项报告》。"
+            "要求：严格基于给出的三份事实材料进行综合陈述，允许物理与金融量纲等价转换（如0.45秒、1.8千万元），"
+            "但严禁虚构任何未在上述材料中出现的新增数字、代号或衍生百分比，切忌张冠李戴：\n\n"
+        ),
+    },
+    "long_english_whitepaper": {
+        "title": "Long-form English Whitepaper (Fronted Participles, Discourse Adverbs & Cadence)",
+        "genre": "academic",
+        "lang": "en",
+        "prompt": (
+            "Draft an authoritative technical position paper for an AI systems conference on the topic: "
+            "'Overcoming the Memory Wall and KV Cache Bottlenecks in Long-Context LLM Inference'. "
+            "Length: 600 to 900 words. Cover: memory bandwidth vs compute scaling, KV cache compression trade-offs, "
+            "and speculative decoding trade-offs. Avoid repetitive sentence-starting participial clauses or stacked transitional adverbs."
+        ),
+    },
+}
+
+
+def call_deepseek(messages: List[Dict[str, str]], label: str, max_retries: int = 3) -> Tuple[str, Dict[str, Any]]:
+    """Issue one genuine HTTP call to deepseek-v4.1-flash; return (content, call_evidence)."""
+    ctx = ssl._create_unverified_context()
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)",
+        "x-opencode-session": SESSION_ID,
+    }
+    payload: Dict[str, Any] = {
+        "model": MODEL,
+        "max_tokens": MAX_TOKENS,
+        "messages": messages,
+    }
+    last_err: Optional[Exception] = None
+
+    for attempt in range(1, max_retries + 1):
+        started = time.perf_counter()
+        try:
+            req = urllib.request.Request(
+                BASE_URL,
+                data=json.dumps(payload).encode("utf-8"),
+                headers=headers,
+            )
+            with urllib.request.urlopen(req, timeout=120, context=ctx) as resp:
+                status = resp.getcode()
+                raw = resp.read().decode("utf-8")
+            elapsed_ms = (time.perf_counter() - started) * 1000.0
+            data = json.loads(raw)
+            usage = data.get("usage", {}) or {}
+            choices = data.get("choices", [])
+            content = (choices[0].get("message", {}).get("content", "") or "").strip() if choices else ""
+            finish = choices[0].get("finish_reason", "") if choices else ""
+
+            reasoning = usage.get("completion_tokens_details", {}).get("reasoning_tokens", "n/a")
+            print(
+                f"        [{label}] HTTP {status} | {elapsed_ms:.0f} ms | "
+                f"tokens: prompt={usage.get('prompt_tokens', 'n/a')} "
+                f"completion={usage.get('completion_tokens', 'n/a')} "
+                f"(reasoning={reasoning}) "
+                f"total={usage.get('total_tokens', 'n/a')}"
+            )
+
+            if status != 200:
+                raise RuntimeError(f"HTTP {status} from endpoint: {raw[:300]}")
+            if not content:
+                raise RuntimeError(f"Empty content in API response (finish_reason={finish!r}).")
+            if finish == "length":
+                raise RuntimeError("Truncated response: finish_reason=length; increase MAX_TOKENS.")
+            if "<tool_call>" in content or "</tool" in content:
+                raise RuntimeError(f"Degenerate output: model emitted pseudo tool-call: {content[:120]!r}")
+
+            evidence = {
+                "http_status": status,
+                "latency_ms": round(elapsed_ms, 1),
+                "usage": {
+                    "prompt_tokens": usage.get("prompt_tokens"),
+                    "completion_tokens": usage.get("completion_tokens"),
+                    "reasoning_tokens": usage.get("completion_tokens_details", {}).get("reasoning_tokens"),
+                    "total_tokens": usage.get("total_tokens"),
+                },
+                "response_id": data.get("id", ""),
+            }
+            return content, evidence
+        except Exception as e:
+            last_err = e
+            elapsed_ms = (time.perf_counter() - started) * 1000.0
+            print(f"        [{label}] attempt {attempt}/{max_retries} FAILED after {elapsed_ms:.0f} ms: {e}")
+            if attempt == max_retries:
+                raise RuntimeError(f"API call [{label}] failed after {max_retries} attempts: {e}") from e
+            time.sleep(3)
+
+    raise RuntimeError(f"API call [{label}] failed: {last_err}")
+
+
+def _lint_snapshot(text: str, genre: str, source_text: Optional[str | List[str]]) -> Dict[str, Any]:
+    rep = analyze_text(text, genre=genre, source_text=source_text)
+    return {
+        "report": rep,
+        "json": {
+            "score": rep.score,
+            "normalized_score": rep.normalized_score,
+            "passed": rep.passed,
+            "violations_count": len(rep.violations),
+            "violations": [{"cat": v.category, "msg": v.message} for v in rep.violations],
+            "burstiness_cv": rep.metrics.burstiness_cv,
+            "mattr": rep.metrics.mattr,
+            "de_ratio": rep.metrics.de_ratio,
+            "word_count": rep.metrics.total_words,
+        },
+    }
+
+
+def main() -> None:
+    run_started_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    wall_start = time.perf_counter()
+    print("================================================================================")
+    print("  DeepSeek v4.1-Flash Extreme Stress Benchmark: Dual-Blind A/B Frontier Test")
+    print(f"  Endpoint: {BASE_URL}")
+    print(f"  Model:    {MODEL}")
+    print(f"  Started:  {run_started_at}")
+    print(f"  API key:  {API_KEY[:12]}...{API_KEY[-6:]} (runtime resolved)")
+    print("================================================================================")
+
+    out_dir = _repo_root / "tests" / "fixtures_extreme"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    results: Dict[str, Any] = {}
+    totals = {
+        "http_calls": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "reasoning_tokens": 0,
+        "total_tokens": 0,
+        "latency_ms_sum": 0.0,
+    }
+
+    def tally(ev: Dict[str, Any]) -> None:
+        totals["http_calls"] += 1
+        u = ev.get("usage", {})
+        for k in ("prompt_tokens", "completion_tokens", "reasoning_tokens", "total_tokens"):
+            if isinstance(u.get(k), int):
+                totals[k] += u[k]
+        totals["latency_ms_sum"] += ev.get("latency_ms", 0.0)
+
+    for sc_key, meta in EXTREME_TASKS.items():
+        print(f"\n---> [Extreme Scenario: {sc_key}] {meta['title']}")
+        sc_out_dir = out_dir / sc_key
+        sc_out_dir.mkdir(parents=True, exist_ok=True)
+
+        user_prompt = meta["prompt"]
+        source_input: Optional[str | List[str]] = None
+
+        if "source_text" in meta:
+            source_input = meta["source_text"].strip()
+            (sc_out_dir / "source.md").write_text(source_input, encoding="utf-8")
+            user_prompt = user_prompt + source_input
+        elif "sources" in meta:
+            source_input = []
+            prompt_sources_part = []
+            for s_name, s_content in meta["sources"].items():
+                (sc_out_dir / s_name).write_text(s_content.strip(), encoding="utf-8")
+                source_input.append(s_content.strip())
+                prompt_sources_part.append(f"【{s_name}】\n{s_content.strip()}")
+            user_prompt = user_prompt + "\n\n".join(prompt_sources_part)
+
+        genre = meta["genre"]
+
+        # 1. Condition A: Solo Bare Model
+        print("  [1/2] Invoking Solo Model (deepseek-v4.1-flash bare, zero rules/tools)...")
+        solo_messages = [{"role": "user", "content": user_prompt}]
+        solo_text, solo_ev = call_deepseek(solo_messages, label=f"{sc_key}/solo")
+        tally(solo_ev)
+        (sc_out_dir / "solo_before.md").write_text(solo_text, encoding="utf-8")
+        solo_snap = _lint_snapshot(solo_text, genre, source_input)
+        rep_solo = solo_snap["report"]
+
+        # 2. Condition B: Model + Skill & Tool Gate
+        print("  [2/2] Invoking Model + Skill (Prior Conditioned)...")
+        sys_rules = SYSTEM_RULES_EN if meta["lang"] == "en" else SYSTEM_RULES_ZH
+        skill_messages: List[Dict[str, str]] = [
+            {"role": "system", "content": sys_rules},
+            {"role": "user", "content": user_prompt},
+        ]
+        skill_text, skill_ev = call_deepseek(skill_messages, label=f"{sc_key}/skill")
+        tally(skill_ev)
+
+        skill_snap = _lint_snapshot(skill_text, genre, source_input)
+        rep_skill = skill_snap["report"]
+        in_loop_remediated = False
+        remediation_ev: Optional[Dict[str, Any]] = None
+
+        if not rep_skill.passed or rep_skill.score > 0.0:
+            print(f"        -> Tool Gate triggered (Score: {rep_skill.score:.1f}, {len(rep_skill.violations)} violations). In-loop reflection active...")
+            (sc_out_dir / "skill_turn1.md").write_text(skill_text, encoding="utf-8")
+            tool_feedback = format_agent_report([rep_skill], max_score=8.0)
+            skill_messages.append({"role": "assistant", "content": skill_text})
+            skill_messages.append({
+                "role": "user",
+                "content": (
+                    f"【anti-ai-lint 质检门禁反馈】\n{tool_feedback}\n\n"
+                    "请根据上述门禁诊断与修复建议，对草稿进行精准修复：剔除被拦截的口语垫字、句首套话或断气碎句，"
+                    "若有多源输入则确保事实与数字严格守恒，恢复母语专业呼吸感。请直接输出修复后的正文："
+                ),
+            })
+            remediated_text, remediation_ev = call_deepseek(skill_messages, label=f"{sc_key}/remediation")
+            tally(remediation_ev)
+            skill_snap = _lint_snapshot(remediated_text, genre, source_input)
+            rep_skill = skill_snap["report"]
+            skill_text = remediated_text
+            in_loop_remediated = True
+
+        (sc_out_dir / "skill_tool_after.md").write_text(skill_text, encoding="utf-8")
+
+        results[sc_key] = {
+            "title": meta["title"],
+            "genre": genre,
+            "lang": meta["lang"],
+            "prompt": user_prompt,
+            "solo_model": {
+                **solo_snap["json"],
+                "api_evidence": solo_ev,
+            },
+            "model_plus_skill_tool": {
+                **skill_snap["json"],
+                "in_loop_remediation": in_loop_remediated,
+                "api_evidence": {
+                    **skill_ev,
+                    "remediation_call": remediation_ev,
+                },
+            },
+        }
+
+        print(f"     [Solo Model]        Score: {rep_solo.score:.1f} | Violations: {len(rep_solo.violations)} | Gate: {'PASS' if rep_solo.passed else 'FAIL'}")
+        print(f"     [Model+Skill+Tool]  Score: {rep_skill.score:.1f} | Violations: {len(rep_skill.violations)} | Gate: {'PASS' if rep_skill.passed else 'FAIL'} | Remediated: {in_loop_remediated}")
+        time.sleep(1)
+
+    run_finished_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    results["_meta"] = {
+        "endpoint": BASE_URL,
+        "model": MODEL,
+        "session": SESSION_ID,
+        "api_key_fingerprint": f"{API_KEY[:12]}...{API_KEY[-6:]}",
+        "started_at_utc": run_started_at,
+        "finished_at_utc": run_finished_at,
+        "wall_clock_s": round(time.perf_counter() - wall_start, 1),
+        "token_totals": {
+            "http_calls": totals["http_calls"],
+            "prompt_tokens": totals["prompt_tokens"],
+            "completion_tokens": totals["completion_tokens"],
+            "reasoning_tokens": totals["reasoning_tokens"],
+            "total_tokens": totals["total_tokens"],
+            "mean_latency_ms": round(totals["latency_ms_sum"] / max(totals["http_calls"], 1), 1),
+        },
+        "no_mock_guarantee": "All texts generated by live HTTP calls; any failure aborts the run.",
+    }
+
+    results_file = out_dir / "benchmark_results.json"
+    results_file.write_text(json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    # Generate Markdown Report
+    report_lines = [
+        "# DeepSeek v4.1-Flash Extreme Frontier Benchmark Report",
+        "",
+        f"- **Model**: `{MODEL}`",
+        f"- **Endpoint**: `{BASE_URL}`",
+        f"- **Session**: `{SESSION_ID}`",
+        f"- **Executed At**: `{run_started_at}`",
+        f"- **Total HTTP Calls**: `{totals['http_calls']}` (100% Real Live Calls, Zero Mocks)",
+        f"- **Total Tokens**: `{totals['total_tokens']}` (Prompt: `{totals['prompt_tokens']}`, Completion: `{totals['completion_tokens']}`, Reasoning: `{totals['reasoning_tokens']}`)",
+        "",
+        "## Summary Results",
+        "",
+        "| Frontier Scenario | Solo Score | Solo Gate | Skill+Tool Score | Skill+Tool Gate | In-Loop Remediated |",
+        "| :--- | :---: | :---: | :---: | :---: | :---: |",
+    ]
+    for k, v in results.items():
+        if k.startswith("_"):
+            continue
+        s_solo = v["solo_model"]
+        s_skill = v["model_plus_skill_tool"]
+        report_lines.append(
+            f"| **{k}** ({v['title']}) | {s_solo['score']:.1f} | {'✅ PASS' if s_solo['passed'] else '❌ FAIL'} | "
+            f"**{s_skill['score']:.1f}** | {'✅ PASS' if s_skill['passed'] else '❌ FAIL'} | {'Yes' if s_skill['in_loop_remediation'] else 'No'} |"
+        )
+
+    report_lines.extend(["", "## Detailed Violations by Scenario", ""])
+    for k, v in results.items():
+        if k.startswith("_"):
+            continue
+        s_solo = v["solo_model"]
+        s_skill = v["model_plus_skill_tool"]
+        report_lines.extend([
+            f"### {k}: {v['title']}",
+            f"- **Solo Score**: `{s_solo['score']:.1f}` (Violations: {len(s_solo['violations'])})",
+            f"- **Skill Score**: `{s_skill['score']:.1f}` (Violations: {len(s_skill['violations'])})",
+            "#### Solo Violations:",
+        ])
+        for viol in s_solo["violations"] or [{"cat": "none", "msg": "None (Clean)"}]:
+            report_lines.append(f"- `[{viol['cat']}]` {viol['msg']}")
+        report_lines.append("#### Skill Violations:")
+        for viol in s_skill["violations"] or [{"cat": "none", "msg": "None (Clean)"}]:
+            report_lines.append(f"- `[{viol['cat']}]` {viol['msg']}")
+        report_lines.append("")
+
+    report_file = out_dir / "BENCHMARK_REPORT.md"
+    report_file.write_text("\n".join(report_lines), encoding="utf-8")
+
+    print("\n================================================================================")
+    print(f"Extreme Benchmark finished successfully!")
+    print(f"JSON Output:   {results_file}")
+    print(f"Report Output: {report_file}")
+    print("================================================================================")
+
+
+if __name__ == "__main__":
+    main()

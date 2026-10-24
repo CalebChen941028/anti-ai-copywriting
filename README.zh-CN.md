@@ -3,27 +3,31 @@
 [English](README.md) | [简体中文](README.zh-CN.md)
 
 [![CI](https://github.com/CalebChen941028/anti-ai-copywriting/actions/workflows/ci.yml/badge.svg)](https://github.com/CalebChen941028/anti-ai-copywriting/actions)
-[![Version: 0.4.0](https://img.shields.io/badge/version-0.4.0-green.svg)](CHANGELOG.md)
+[![Version: 0.5.0](https://img.shields.io/badge/version-0.5.0-green.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
 
-**中英双语自然语态与学术专业文案引擎（面向 AI 编程智能体与大模型工作流）。**
+**一套指导 AI 生成自然语言、符合母语特征、无明显 AI 腔调的双语规范准则（面向 AI 编程智能体与大模型工作流）。**
 
-系统性消除大模型输出中的恶性欧化、翻译腔、伪学术黑话、公式化煽情排比与防御性免责，恢复母语呼吸感与笃定专业质感。
+系统性消除大模型输出中的恶性欧化、翻译腔、伪学术黑话、公式化煽情排比与防御性免责。覆盖四类核心任务：起草 (Drafting)、润色 (Polishing)、翻译 (Translation) 与评审 (Review)。在润色与翻译场景下严格遵循**信息守恒**（零增添、零遗漏、断言强度不变）；在经验起草场景下提供可选的**温感叙事语态**，且严禁杜撰未提供的细节。
 
 ---
 
 ## 1. 系统定位与行业范式对比
 
-当前市面上的 AI 文本工具普遍落入两类极端：一类是**事后惩罚型检测器**，对非母语作者误杀率高且无法指导写作；另一类是**粗暴同义词乱换的商业降重器**，严重摧毁学术与工程写作所必须的术语纪律与因果链条。`anti-ai-copywriting` 定位于**主动式先验生成约束与环内确定性验证门禁**。
+当前市面上的 AI 文本工具普遍落入两类极端：一类是**事后惩罚型检测工具**，仅在成文后打分；另一类是**粗暴同义词替换的商业改写降重工具**，容易破坏学术与专业写作所必须的术语与事实。`anti-ai-copywriting` 开辟了第三种路径：**先验生成规范引导结合环内确定性拦截门禁**。
 
-| 评估维度 | 被动检测工具<br>*(Turnitin, GPTZero, Copyleaks)* | 商业降重黑盒<br>*(Undetectable AI, HIX Bypass)* | `anti-ai-copywriting`<br>*(本项目)* |
+> [!NOTE]
+> 本表仅从技术机制维度对常见工具类别作宏观范式比对，并非针对任何商业产品的跑分评测，亦未对任何具体竞品进行实测对比。
+
+| 评估维度 | 事后检测工具类<br>*(Turnitin, GPTZero 等)* | 改写降重工具类<br>*(商业改写降重服务)* | `anti-ai-copywriting`<br>*(本项目)* |
 | :--- | :--- | :--- | :--- |
-| **干预时机** | 事后打分；在用户起草后进行被动判定 | 事后粗暴改写 | **先验生成约束** (`<auto_trigger>`) + **环内确定性门禁** |
-| **术语与因果纪律** | 无（仅负责标记） | 盲目同义词换装，破坏孟德尔随机化、生态效度等专业术语 | **严格术语纪律与因果动词校准**，科学事实绝不降维换词 |
-| **文体节奏建模** | 依赖黑盒困惑度/波动度打分 | 制造不通顺病句逃避检测 | **纯标准库句长波动变异系数** ($CV_{len} \ge 0.28$) 与 **MATTR** (窗口50) |
-| **词汇实证依据** | 不透明启发式规则 | 人工收集的同义词替换表 | **Nature 2024 PubMed 1400万篇论文超额词表** + **朱德熙形式动词闭集** |
-| **AI 工程生态** | 付费 Web 控制台 / 限额 API | 网页订阅制付费墙 | **零依赖 CLI**、**原生 MCP 服务**、**GitHub Action** 与 **DPO 语料飞轮** |
+| **干预时机** | 事后打分；在文本生成后进行被动判定 | 事后改写，替换同义词 | **起草前先验注入约束** (`<auto_trigger>`) + **环内确定性拦截门禁** |
+| **事实与术语纪律** | 无（仅负责标记） | 盲目同义词换装，容易篡改专有名词与断言关系 | **润色与翻译严格遵循信息守恒**，支持 `--source` 比对数字、型号与专有缩写 |
+| **文体节奏建模** | 依赖黑盒模型打分 | 制造不通顺语序逃避检测 | **纯标准库句长变异系数** ($CV_{len} \ge 0.28$) 与 **MATTR** (窗口 50)，完全透明可查 |
+| **词汇依据** | 通常不公开 | 通常不公开 | **公开 JSON 词表**，基于科学论文超额词实证文献与汉语形式动词闭集 |
+| **情感与语态选择** | 无 | 无 | 原创起草支持可选的**温感叙事模式**；严禁杜撰未提供的客观事实 |
+| **开发者生态** | Web 控制台或付费 API | 网页表单或付费订阅 | **零依赖 CLI**、**原生 MCP 服务**、**GitHub Action**、**Pre-commit 钩子** 与 **DPO 导出器** |
 
 ---
 
@@ -31,6 +35,9 @@
 
 > [!NOTE]
 > 完整 6 大场景实测案例详析、指标推导、语言学病理诊断与复现指南请参阅：**[全量实测对比与基准评测报告 (docs/BENCHMARK_REPORT.zh-CN.md)](docs/BENCHMARK_REPORT.zh-CN.md)**。
+
+> [!IMPORTANT]
+> **如何看待这些评测数据**：`tests/fixtures/` 中的“加载前”与“加载后”样本文本为**人工构造的标准诊断用例（exemplars）**，旨在展示规则集与门禁对典型 AI 腔调（套话、欧化、单调节奏）的确定性拦截与区分能力，**并非**测量具体商业大模型的输出跑分。若要评估特定大模型在加载本技能前后的实际改善幅度，请使用相同提示词分别在加载前、后生成文本，并运行质检门禁（`anti-ai-lint out.md --format json`）。
 
 基于项目内置的 6 大核心中英双语标准测试场景（`tests/fixtures/`，涵盖学术论文、商业管理备忘录、英文顶会论文、国家科研基金申报、前沿科普专栏与社交数码实测），智能体加载 `anti-ai-copywriting` 前后的量化实测对比如下：
 
@@ -50,14 +57,20 @@
 
 ---
 
-## 3. 核心架构与 AI 前沿方法学
+## 3. 核心能力与 AI 工程架构
 
+- **任务分流、信息守恒与温感交互协议**（`skill/anti-ai-copywriting/SKILL.md` 第 0 节）：
+  - 智能体首先对任务进行四分流：起草 (Drafting)、润色 (Polishing)、翻译 (Translation) 或评审 (Review)。
+  - **润色与翻译场景严格遵循信息守恒**：事实权归原文所有。零增添事实（不杜撰数字、专名、情绪、背景细节）、零遗漏核心事实、断言强度不变、语体对齐原文。温感与母语感纯粹源于“意合化”语法解压与去欧化，绝不靠虚构细节煽情。
+  - **经验叙事类起草场景支持温感交互**：面向散文、专栏、数码实测、品牌故事或演讲等经验性文体，若用户未明确语调且处于交互式会话，智能体主动出具 A/B 示例供用户选择（A. 客观克制 vs. B. 温感叙事）。温感模式仅使用用户提供的真实细节；若缺乏细节，必须以 `[待补充细节: ...]` 占位，严禁自行杜撰。
+  - 学术论文、基金申报、技术方案、商业备忘、润色、翻译以及非交互式批量运行默认直接采用客观克制语调，绝不触发提问。
+- **信息守恒确定性门禁**：`anti-ai-lint out.md --source original.md`，对输出文本相对于原文的事实锚点（纯数字、字母开头的型号代码如 `H100`、全大写缩写）进行双向比对。若输出中出现原文不存在的新增锚点（`fidelity_added`），即使未超总分阈值亦强制拦截；若原文重要锚点缺失（`fidelity_dropped`），每项扣 3.0 分。
 - **信息论节奏感度量（Burstiness & UID 均匀信息密度假说）**：
   - 基于纯 Python 标准库实现句长变异系数（Coefficient of Variation, $CV_{len} = \sigma / \mu$）。
   - 当段落句数 $\ge 6$ 且 $CV_{len} < 0.28$ 时，自动判定为 `rhythmic_monotony`（节奏呆滞单调，扣 3.5 分），打破大模型常见的 20 词/30 字匀速机器嗡鸣感。
   - 引入滑动窗口词汇丰富度（MATTR / Moving-Average Type-Token Ratio，窗口 50），避免传统 TTR 受文本长度影响的问题。
-- **Kobak et al. 2024 Nature/Science Advances 科学论文超额词频突变模型**：
-  - 基于 PubMed 1400 万篇论文摘要实证统计，建立基于对数优势比（Log-Odds Ratio）的动态惩罚分级：
+- **科学论文超额词频突变词表**（参考 Kobak et al., 2025, *Science Advances*）：
+  - 依据该文献追踪 1500 万篇 PubMed 论文摘要得出的风格词异动，提炼高危词表。分级扣分为本项目启发式规则设定，非文献原始统计值：
     - **Tier S（极高跃升，扣 5.0 分）**：`delve`, `delve into`, `delving into`, `tapestry of`, `intricate tapestry`, `meticulously`, `testament to`。
     - **Tier A（中高跃升，扣 3.5 分）**：`realm`, `realm of`, `intricate`, `pivotal role`, `pivotal`, `beacon of`, `commendable`, `foster`, `navigating complexities`, `unwavering`。
     - **Tier B（高频通用，扣 2.0 分）**：`comprehensive`, `robust`, `leverage`, `utilize`, `seamless integration`, `seamless`, `seamlessly`, `multifaceted`, `myriad`, `revolutionize`。
@@ -190,7 +203,7 @@ jobs:
 ```yaml
 repos:
   - repo: https://github.com/CalebChen941028/anti-ai-copywriting
-    rev: v0.4.0
+    rev: v0.5.0
     hooks:
       - id: anti-ai-lint
         args: ["--format", "hook", "--genre", "general"]
@@ -212,7 +225,30 @@ anti-ai-lint guide.md --genre plain --format agent
 
 # GitHub Action 模式（输出 PR 行内报错与警告标记）
 anti-ai-lint docs/ --format github
+
+# 润色或翻译场景：对比原文进行信息守恒事实锚点核验
+anti-ai-lint polished.md --source original.md --format hook
 ```
+
+### 5.1 润色与翻译场景：信息守恒事实核验（`--source`）
+
+`--source` 参数将受检文本与原文的**事实锚点**进行严格比对：纯数字（如 `1,200` 自动等价于 `1200`）、字母开头的型号代码（如 `H100`、`CASP14`）以及全大写英文缩写。任何仅在输出文本中出现而在原文中不存在的锚点（`fidelity_added`），无论 `--max-score` 阈值设定为多少，均将直接判定为门禁失败；若原文中的关键数字或型号在译文/润色稿中丢失（`fidelity_dropped`），每项扣除 3.0 分。
+
+来自 `tests/workflow_cases/` 目录的真实评测结果（可使用表格末列命令复现）：
+
+| 测试案例 | 原文文件 | 输出文本文件 | 门禁判定与结果 |
+| :--- | :--- | :--- | :--- |
+| 中文润色（严格忠实） | `polish/source.md` | `polish/faithful.md` | ✅ PASS，扣分 0.0 |
+| 中文润色（杜撰细节） | `polish/source.md` | `polish/fabricated.md`（虚构了“3周”与“36%”） | ❌ FAIL，2 处 `fidelity_added`，扣分 10.0 |
+| 英译中（严格忠实） | `translate/source.en.md` | `translate/faithful.zh.md` | ✅ PASS，扣分 0.0 |
+| 英译中（杜撰细节） | `translate/source.en.md` | `translate/fabricated.zh.md`（虚构了“87%”） | ❌ FAIL，1 处 `fidelity_added`，扣分 5.0 |
+
+```bash
+anti-ai-lint tests/workflow_cases/polish/fabricated.md --source tests/workflow_cases/polish/source.md --format hook
+```
+
+> [!WARNING]
+> **锚点核验的边界与局限**：该检查仅能精准捕获数字、型号代码与大写缩写等离散锚点。若润色或翻译中凭空杜撰了不包含此类锚点的形容词、场景、心理活动或情绪描述（例如“在绝望的深夜”、“令人窒息的重压”），或篡改了因果逻辑语义，门禁无法自动识别。中文汉字数字（如“三个通宵”）暂不在比对范围内。因此，通过门禁仅代表“未检出无根据的事实锚点”，并不等同于绝对忠实，关键专业文案仍须保留人工审校。
 
 ### 输出格式说明（`--format`）
 
@@ -224,18 +260,22 @@ anti-ai-lint docs/ --format github
 
 ---
 
-## 6. 学术参考文献（APA 规范）
+## 6. 学术参考文献与标准依据
 
-`anti-ai-copywriting` 所采用的指标建模与语法特征分析具有严谨的学术与实证基础：
+本项目的架构设计参考了以下学术研究与行业标准。其中 AI 检测类论文（第 3–5 项）仅作为节奏感与变异度度量的理论背景：本项目不包含任何基于模型的概率检测器。第 9–12 项标准与规范则构成了润色与翻译场景下“信息守恒”准则的基石。
 
-1. **Kobak, D., González-Márquez, R., Horvát, E. Á., & Schulz, C. (2024)**. Monitoring the footprint of large language models in scientific writing. *Nature/Science Advances* (arXiv:2406.07016).
-2. **Meister, C., Leszczynski, M., Aji, A. F., & Cotterell, R. (2021)**. Uniform information density and language generation. In *Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing (EMNLP)*.
-3. **Mitchell, E., Yoon, J., Miao, N., Finn, C., & Manning, C. D. (2023)**. DetectGPT: Zero-shot machine-generated text detection using probability curvature. In *International Conference on Learning Representations (ICLR 2023)*.
-4. **Hans, A., Schwarzschild, A., Cherepanova, V., Bansal, H., Saha, S., Jain, A., ... & Goldblum, M. (2024)**. Spotting LLMs with Binoculars: Zero-shot detection of machine-generated text. In *International Conference on Learning Representations (ICLR 2024)*.
-5. **Li, W., et al. (2024)**. RAID: A shared benchmark for robust evaluation of machine-generated text detectors. In *Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (ACL 2024)*.
-6. **朱德熙. (1982)**. *语法讲义*. 商务印书馆.（关于汉语形式动词结构与名物化语法分析）.
+1. **Kobak, D., González-Márquez, R., Horvát, E.-Á., & Lause, J. (2025)**. Delving into LLM-assisted writing in biomedical publications through excess vocabulary. *Science Advances, 11*(27), eadt3813. https://doi.org/10.1126/sciadv.adt3813 (arXiv:2406.07016).
+2. **Meister, C., Pimentel, T., Haller, P., Jäger, L., Cotterell, R., & Levy, R. (2021)**. Revisiting the uniform information density hypothesis. In *Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing (EMNLP)* (arXiv:2109.11635).
+3. **Mitchell, E., Lee, Y., Khazatsky, A., Manning, C. D., & Finn, C. (2023)**. DetectGPT: Zero-shot machine-generated text detection using probability curvature. In *Proceedings of the 40th International Conference on Machine Learning (ICML)* (arXiv:2301.11305).
+4. **Hans, A., Schwarzschild, A., Cherepanova, V., Kazemi, H., Saha, A., Goldblum, M., Geiping, J., & Goldstein, T. (2024)**. Spotting LLMs with Binoculars: Zero-shot detection of machine-generated text. In *Proceedings of the 41st International Conference on Machine Learning (ICML)* (arXiv:2401.12070).
+5. **Dugan, L., Hwang, A., Trhlik, F., Ludan, J. M., Zhu, A., Xu, H., Ippolito, D., & Callison-Burch, C. (2024)**. RAID: A shared benchmark for robust evaluation of machine-generated text detectors. In *Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (ACL)* (arXiv:2405.07940).
+6. **朱德熙. (1982)**. *语法讲义*. 商务印书馆.（关于汉语形式动词结构与名物化。）
 7. **ASD-STE100 规范**. 欧洲航空航天与防务工业协会（ASD）. 简化技术英语规范.
-8. **Google Research (2024)**. Harness²: Agentic Evaluation, Specification, and Guardrail Protocols.
+8. **Xu, R., et al. (2026)**. Harness^2: Recursive agent harnessing for an open world. arXiv:2610.14224.
+9. **ISO 17100:2015**. *Translation services — Requirements for translation services*. 国际标准化组织.
+10. **ISO 18587:2017**. *Translation services — Post-editing of machine translation output — Requirements*. 国际标准化组织.
+11. **GB/T 19363.1-2008**. 翻译服务 译文质量要求 第1部分：笔译. 中国国家标准化管理委员会.
+12. **严复. (1898)**. 《天演论》译例言（“信、达、雅”原则）.
 
 ---
 

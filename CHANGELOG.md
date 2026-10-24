@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-10-24
+
+### Added
+- **Task Routing Architecture**:
+  - Explicitly routes text generation into four distinct workflows: `Drafting` (起草), `Polishing` (润色), `Translation` (翻译), and `Review` (评审).
+  - Documented protocol in `skill/anti-ai-copywriting/SKILL.md` (Section 0), `rules/AGENTS.snippet.*.md`, and `sub_agents/copywriting-editor/AGENT.md`.
+- **Information Conservation Axioms (信息守恒四公理)**:
+  - Formulated strict factual conservation laws for Polishing and Translation: zero added facts, zero dropped facts, unchanged assertion strength, and register matching.
+  - Anchored naturalness and expressiveness in *syntactic decompression* (意合化、去欧化、名物化还原) instead of inventing emotional scenes or background trivia.
+- **Deterministic Information-Conservation Gate (`fidelity.py` & `--source`)**:
+  - Added pure standard library factual anchor extractor in `lint/anti_ai_lint/fidelity.py` tracking normalized numbers, letter-led codes (e.g. `H100`, `CASP14`), and uppercase acronyms with token count preservation.
+  - Integrated hard-failure violation `fidelity_added` (+5.0 penalty, non-bypassable) and `fidelity_dropped` (+3.0 penalty) in `detector.py`.
+  - Added `--source <path>` flag to CLI (`anti_ai_lint.cli`) with validation preventing directory or multi-target runs.
+  - Integrated `source_text` and `source_path` inputs to MCP server tool `lint_prose`, with style contracts updated in `get_style_contract`.
+- **Warm Human-Touch Protocol for Original Drafting (温感叙事交互协议)**:
+  - Added interactive one-time prompt protocol for experiential/narrative drafting (columns, essays, social reviews, speeches, brand stories) presenting A/B options (`A. 客观克制` vs. `B. 温感叙事`) with concrete examples.
+  - Enforced strict anti-hallucination constraint on warm mode: uses only user-provided physical details and sensory observations, inserting explicit `[待补充细节: ...]` / `[TODO: ...]` placeholders when details are absent.
+  - Excluded academic papers, grant proposals, technical documentation, business memos, polishing, translation, and non-interactive scripts from prompting (defaulting to objective mode).
+- **Comprehensive Workflow Test Fixtures & Unit Tests**:
+  - Created real-world test cases in `tests/workflow_cases/` for polishing, translation, and warm drafting.
+  - Added `tests/test_workflow.py` with 27 unit tests validating anchor extraction, CLI `--source` execution, MCP tool contracts, warm-tone criteria, and cross-file documentation synchronization.
+- **Academic References & Translation Standards Harmonization**:
+  - Corrected Kobak et al. citation to peer-reviewed publication: *Science Advances*, 11(27), eadt3813 (2025).
+  - Integrated translation and post-editing standards (ISO 17100:2015, ISO 18587:2017, GB/T 19363.1-2008, Yan Fu 1898) across documentation and benchmark reports.
+
 ## [0.4.0] - 2026-10-24
 
 ### Added

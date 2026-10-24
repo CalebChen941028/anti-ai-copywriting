@@ -4,6 +4,7 @@
 
 Provides standard JSON-RPC 2.0 stdio tools for AI coding agents:
 - lint_prose: Analyze text or files for AI clichés, light verbs, and rhythm monotony.
+  Optional ``source_text``/``source_path`` enables the polishing/translation fidelity check.
 - remediate_violation: Get actionable rewrite guidance for specific violations.
 - get_style_contract: Retrieve genre-specific natural style contracts.
 """
@@ -57,6 +58,24 @@ STYLE_CONTRACTS: Dict[str, Dict[str, str]] = {
             "2. 杜绝模糊量词：严禁使用「若干」、「一些」、「等等」，必须使用具体阿拉伯数字或精确定义。\n"
             "3. 表述平实顺向：按时序展开事实，杜绝倒装与层层嵌套的长前饰定语。"
         ),
+        "warm": (
+            "# 温感叙事公理 (Chinese Warm Human-Touch Contract，仅适用于原创起草)\n\n"
+            "1. 情感只来自真实细节：具体体感、时间、距离、等待分钟数、真实取舍；不用情绪形容词与感叹号替代细节。\n"
+            "2. 严禁杜撰：用户没有提供的经历、数字、人物、引语一律不得编造；缺细节时先向用户索取，或写【待补：…】占位。\n"
+            "3. 直面代价与不完美：不说满话，直陈两难与遗憾；结论与感慨留给读者。\n"
+            "4. 继续封锁合成情绪：不仅是……更是……、质的飞跃、时代浪潮、深远意义。\n"
+            "5. 润色与翻译不适用本公理：语域与情感强度一律对标原文。"
+        ),
+        "fidelity": (
+            "# 信息守恒公理 (Chinese Information-Conservation Contract，润色与翻译)\n\n"
+            "1. 零新增事实：不得增加原文没有的数字、人物、场景、因果、情绪细节。\n"
+            "2. 零误删事实：数字、型号、参数、专名、引文不得丢失；只允许删除无信息量的客套与套话。\n"
+            "3. 断言强度不变：原文的限定语（可能、关联、初步）若体现真实不确定性必须保留，不得把“关联”升级为“导致”。\n"
+            "4. 语域对标：原文多冷就多冷，原文多温就多温；不额外煽情，也不抹平作者的语气。\n"
+            "5. 温度来自句法解压：化解欧化长句、形式动词与翻译腔，按母语意合语序改写，而不是增生细节。\n"
+            "6. 术语、数字、单位与专名前后一致；拿不准处保留原文并向用户标注待确认。\n"
+            "7. 校验：anti-ai-lint <输出文件> --source <原文文件>。"
+        ),
     },
     "en": {
         "general": (
@@ -80,6 +99,24 @@ STYLE_CONTRACTS: Dict[str, Dict[str, str]] = {
             "1. Strict Sentence Length: Sentences must not exceed 25 words. Split complex sentences into independent declarative clauses.\n"
             "2. Zero Vague Quantifiers: Ban 'several', 'and so on', 'etc.'. State exact numbers or operational specifications.\n"
             "3. Active Voice & Direct Nouns: Use straightforward agent-action phrasing."
+        ),
+        "warm": (
+            "# Warm Human-Touch Contract (English, original drafting only)\n\n"
+            "1. Warmth comes from real detail: concrete sensations, times, distances, minutes waited, genuine trade-offs. Never substitute mood adjectives or exclamation marks for detail.\n"
+            "2. Never fabricate: experiences, numbers, people, or quotes the user did not supply must not be invented. Ask for them, or insert [TODO: ...] placeholders.\n"
+            "3. State costs and imperfections plainly; leave the feeling to the reader.\n"
+            "4. Keep banning synthetic emotion: 'not only ... but also' uplift, 'quantum leap', 'testament to', 'profound significance'.\n"
+            "5. Does not apply to polishing or translation: register and emotional intensity follow the source."
+        ),
+        "fidelity": (
+            "# Information-Conservation Contract (English, polishing and translation)\n\n"
+            "1. Zero added facts: no numbers, people, scenes, causal claims, or emotional detail absent from the source.\n"
+            "2. Zero dropped facts: numbers, model names, parameters, proper nouns, and citations survive. Only padding with no information may be deleted.\n"
+            "3. Preserve assertion strength: keep hedges that express real uncertainty; never upgrade 'associated with' to 'causes'.\n"
+            "4. Match register: as cold or as warm as the source, no extra drama, no flattening of the author's voice.\n"
+            "5. Warmth comes from syntax, not invention: unpack nominalizations and translationese into native word order.\n"
+            "6. Keep terminology, numbers, units, and names consistent. Where unsure, keep the source wording and flag it for the user.\n"
+            "7. Verify with: anti-ai-lint <output-file> --source <source-file>."
         ),
     },
 }
@@ -114,6 +151,14 @@ TOOLS_SPEC = [
                     "type": "number",
                     "description": "Optional maximum penalty score per 1,000 words.",
                 },
+                "source_text": {
+                    "type": "string",
+                    "description": "Original text for polishing or translation. Enables the information-conservation check (added or dropped numbers, codes, acronyms).",
+                },
+                "source_path": {
+                    "type": "string",
+                    "description": "Optional path of the original file (read from disk if source_text is omitted).",
+                },
             },
         },
     },
@@ -147,9 +192,9 @@ TOOLS_SPEC = [
             "properties": {
                 "genre": {
                     "type": "string",
-                    "enum": ["general", "academic", "plain"],
+                    "enum": ["general", "academic", "plain", "warm", "fidelity"],
                     "default": "general",
-                    "description": "Style genre: 'general', 'academic', or 'plain'.",
+                    "description": "Style contract: 'general', 'academic', 'plain', 'warm' (original drafting with real-detail warmth), or 'fidelity' (polishing and translation information conservation).",
                 },
                 "lang": {
                     "type": "string",
@@ -198,12 +243,32 @@ def handle_tool_call(name: str, args: Dict[str, Any]) -> Dict[str, Any]:
                 except (ValueError, TypeError):
                     max_norm = None
 
+            source_text = args.get("source_text")
+            source_path = args.get("source_path")
+            if source_text is None and source_path:
+                sp = Path(str(source_path))
+                if not sp.is_file():
+                    return {
+                        "content": [{"type": "text", "text": f"Error: source file not found: {source_path}"}],
+                        "isError": True,
+                    }
+                try:
+                    source_text = sp.read_text(encoding="utf-8", errors="replace")
+                except OSError as err:
+                    return {
+                        "content": [{"type": "text", "text": f"Error reading source file {source_path}: {err}"}],
+                        "isError": True,
+                    }
+            if source_text is not None:
+                source_text = str(source_text)
+
             report = analyze_text(
                 text=text,
                 file_path=file_path,
                 max_score=max_score,
                 max_normalized_score=max_norm,
                 genre=genre,
+                source_text=source_text,
             )
             data = report.to_dict()
             return {

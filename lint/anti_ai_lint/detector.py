@@ -12,6 +12,11 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+try:
+    from .fidelity import check_fidelity
+except (ImportError, ValueError):
+    from anti_ai_lint.fidelity import check_fidelity
+
 
 @dataclass
 class LintViolation:
@@ -169,6 +174,8 @@ def get_remediation_suggestion(category: str, match_text: str, context: str = ""
         "table_formula_academic": "学术呈现规范：数值结果单独成句紧贴解释，避免套话引出表格（如‘如表所示’）",
         "empty_self_praise_academic": "学术语态规范：删去空洞自夸，客观陈述实证结果与应用场景",
         "rhythmic_monotony": "打破AI单调节奏（Monotonous Drone）：大幅调整句子长短波动，穿插5~10字/词短促斩截句与论述长句，提升文本信息起伏与节奏感（Burstiness）",
+        "fidelity_added": "信息守恒：润色与翻译不得新增原文没有的数字、代号或细节；核对原文后删除，或还原原文数值",
+        "fidelity_dropped": "信息守恒：核对是否误删原文事实；数字、型号、参数不得在润色或翻译中丢失",
     }
     return cat_map.get(category, "遵循自然语态重塑规则，消除机器生成痕迹")
 
@@ -586,11 +593,17 @@ def analyze_text(
     max_normalized_score: Optional[float] = None,
     genre: str = "general",
     wordlists_dir: Optional[str] = None,
+    source_text: Optional[str] = None,
 ) -> LintReport:
     """
     Analyze text for AI buzzwords, punctuation abuse, particle density, and clichés.
     Supports code block masking, bilingual sentence splitting, genre-specific rules,
     span deduplication, and normalized score per 1,000 words/characters.
+
+    When ``source_text`` is given (polishing or translation), the output is also checked
+    for information conservation: numbers, codes, and acronyms that appear only in the
+    output are penalized as possible fabrication, and numbers or codes that vanish from
+    the output are penalized as possible omission. Any added anchor fails the gate outright.
     """
     genre = (genre or "general").strip().lower()
     if genre not in ("general", "academic", "plain"):
@@ -981,6 +994,20 @@ def analyze_text(
     # Deduplicate overlapping or subsumed text span violations
     violations = deduplicate_violations(raw_violations)
 
+    if source_text is not None:
+        for issue in check_fidelity(source_text, text):
+            violations.append(
+                LintViolation(
+                    category=f"fidelity_{issue.kind}",
+                    message=issue.message,
+                    line=issue.line,
+                    column=issue.column,
+                    context=issue.context,
+                    penalty=issue.penalty,
+                    suggestion=issue.suggestion,
+                )
+            )
+
     # 5. Global metrics penalties
     # Excessive dashes: > 2 per 500 characters / words
     word_basis = cjk_count if cjk_count > 0 else total_words
@@ -1056,6 +1083,9 @@ def analyze_text(
     passed = penalty_sum <= max_score
     if max_normalized_score is not None:
         passed = passed and (normalized_score <= max_normalized_score)
+    # An unsupported fact anchor is a hard failure regardless of the score threshold.
+    if any(v.category == "fidelity_added" for v in violations):
+        passed = False
 
     return LintReport(
         file_path=file_path,

@@ -526,10 +526,15 @@ python3 scripts/export_dpo_pairs.py --format dpo --output dpo_pairs.json
 
 ## 7. Academic References
 
-1. **Kobak, D., González-Márquez, R., Horvát, E. Á., & Schulz, C. (2024)**. Monitoring the footprint of large language models in scientific writing. *Nature/Science Advances* (arXiv:2406.07016).
-2. **Meister, C., Leszczynski, M., Aji, A. F., & Cotterell, R. (2021)**. Uniform information density and language generation. In *Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing (EMNLP)*.
-3. **Mitchell, E., Yoon, J., Miao, N., Finn, C., & Manning, C. D. (2023)**. DetectGPT: Zero-shot machine-generated text detection using probability curvature. In *International Conference on Learning Representations (ICLR 2023)*.
-4. **Hans, A., Schwarzschild, A., Cherepanova, V., Bansal, H., Saha, S., Jain, A., ... & Goldblum, M. (2024)**. Spotting LLMs with Binoculars: Zero-shot detection of machine-generated text. In *International Conference on Learning Representations (ICLR 2024)*.
-5. **Zhu, D. (1982)**. *Lectures on Chinese Grammar*. Commercial Press. (Foundational analysis of Chinese Light Verb Constructions and Nominalizations).
-6. **ASD-STE100 Specification**. Aerospace, Security and Defence Industries Association of Europe. Simplified Technical English.
-7. **Google Research (2024)**. Harness²: Agentic Evaluation, Specification, and Guardrail Protocols.
+1. **Kobak, D., González-Márquez, R., Horvát, E.-Á., & Lause, J. (2025)**. Delving into LLM-assisted writing in biomedical publications through excess vocabulary. *Science Advances, 11*(27), eadt3813. https://doi.org/10.1126/sciadv.adt3813 (arXiv:2406.07016).
+2. **Meister, C., Pimentel, T., Haller, P., Jäger, L., Cotterell, R., & Levy, R. (2021)**. Revisiting the uniform information density hypothesis. In *Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing (EMNLP)* (arXiv:2109.11635).
+3. **Mitchell, E., Lee, Y., Khazatsky, A., Manning, C. D., & Finn, C. (2023)**. DetectGPT: Zero-shot machine-generated text detection using probability curvature. In *Proceedings of the 40th International Conference on Machine Learning (ICML)* (arXiv:2301.11305).
+4. **Hans, A., Schwarzschild, A., Cherepanova, V., Kazemi, H., Saha, A., Goldblum, M., Geiping, J., & Goldstein, T. (2024)**. Spotting LLMs with Binoculars: Zero-shot detection of machine-generated text. In *Proceedings of the 41st International Conference on Machine Learning (ICML)* (arXiv:2401.12070).
+5. **Dugan, L., Hwang, A., Trhlik, F., Ludan, J. M., Zhu, A., Xu, H., Ippolito, D., & Callison-Burch, C. (2024)**. RAID: A shared benchmark for robust evaluation of machine-generated text detectors. In *Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (ACL)* (arXiv:2405.07940).
+6. **Zhu, D. X. (朱德熙). (1982)**. *语法讲义* [Lectures on grammar]. Commercial Press. (Chinese light verb constructions and nominalization.)
+7. **ASD-STE100 Specification**. Aerospace, Security and Defence Industries Association of Europe (ASD). Simplified Technical English Specification.
+8. **Xu, R., et al. (2026)**. Harness^2: Recursive agent harnessing for an open world. arXiv:2610.14224.
+9. **ISO 17100:2015**. *Translation services — Requirements for translation services*. International Organization for Standardization.
+10. **ISO 18587:2017**. *Translation services — Post-editing of machine translation output — Requirements*. International Organization for Standardization.
+11. **GB/T 19363.1-2008**. 翻译服务 译文质量要求 第1部分：笔译 [Translation services — Specification for translation quality — Part 1: Translation]. Standardization Administration of China.
+12. **Yan, F. (严复). (1898)**. 《天演论》译例言 [Translator's preface to *Evolution and Ethics*] (the "faithfulness, expressiveness, elegance" principle).

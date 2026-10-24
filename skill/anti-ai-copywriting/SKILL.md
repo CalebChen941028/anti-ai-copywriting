@@ -1,19 +1,100 @@
 ---
 name: anti-ai-copywriting
 description: >-
-  中英双语自然语态与学术专业文案引擎（Anti-AI Copywriting & Academic Pro-Voice Engine）。
-  全域静默识别语言与文体场景：学术论文、课题申报书、专业科普、深度专栏、社交媒体种草、商务沟通与初稿润色改写。
-  系统性清洗AI腔、恶性欧化、翻译腔、伪学术黑话、公式化煽情排比、冗余犹豫与防御性免责，恢复母语呼吸感与笃定专业质感。
-  Bilingual natural writing & academic pro-voice engine. Automatically detects language and genre
-  to eliminate AI buzzwords, translationese, pseudo-academic jargon, formulaic emotional parallelism,
-  and defensive hedging across Chinese and English drafts.
+  一套指导 AI 生成自然语言的规范准则：让输出符合母语特征，没有明显的 AI 式腔调。覆盖原创起草、润色、翻译与评审，
+  中英双语，适用于学术论文、课题申报书、专业科普、深度专栏、社交媒体、商务沟通。
+  系统性清洗 AI 腔、恶性欧化、翻译腔、伪学术黑话、公式化煽情排比、冗余犹豫与防御性免责。
+  润色与翻译严守信息守恒（不增不漏、不改断言强度）；原创起草时，对非学术的体验类文体可询问用户是否保留真实细节带来的温度。
+  A rulebook that guides AI to write native-sounding natural language free of obvious AI tone, in Chinese and English.
+  Covers drafting, polishing, translation and review. Polishing and translation obey information conservation
+  (no added or dropped facts, no change in assertion strength); drafting may offer an optional warm, detail-driven tone.
 ---
 
 # Anti-AI Copywriting Engine (Bilingual Natural Prose & Academic Pro-Voice)
 
-系统通过静默语义感知，自动侦测输入的语言类型与文体场景，恢复人类专业作者的自然语态、呼吸节奏与笃定专业质感。
+本技能是一套**指导 AI 生成自然语言的规范准则**：输出符合母语特征，没有明显的 AI 式腔调。它约束“怎么写”，不替用户决定“写什么”。任何情况下都不得为了显得有人味而编造事实。
 
-**核心工作流**：识别文体场景 $\rightarrow$ 应用针对性语态重塑规则 $\rightarrow$ 执行输出前终极自检 $\rightarrow$ **默认直接输出优化后的正文**（仅当用户明确要求对照时才附改写说明）。
+**核心工作流**：判定任务类型（第 0 章） $\rightarrow$ 识别文体场景 $\rightarrow$ 应用针对性语态重塑规则 $\rightarrow$ 执行输出前终极自检（第 5 章） $\rightarrow$ **默认直接输出优化后的正文**（仅当用户明确要求对照时才附改写说明）。
+
+---
+
+## 0. 任务分流、信息守恒与温感交互协议
+
+### 0.1 先判定任务类型（决定后续全部行为）
+
+| 任务类型 | 判定信号 | 事实来源 | 温度策略 | 是否向用户发起语调提问 |
+| :--- | :--- | :--- | :--- | :--- |
+| **原创起草 Drafting** | 用户给出主题或要点，要求从头写 | 仅限用户提供的素材与公认常识 | 见 0.3 | 仅当 0.3 的触发条件全部满足 |
+| **润色 Polishing** | 用户提供初稿，要求更自然、更专业 | 仅限初稿 | 语域与情感强度对标初稿 | **否** |
+| **翻译 Translation** | 用户提供源语文本，要求译为另一语言 | 仅限源文 | 语域与情感强度对标源文 | **否** |
+| **评审 Review** | 用户要求检查或评价文稿的 AI 腔 | 被评文本 | 只诊断，不改写 | **否** |
+
+- 判不清时按**润色**处理（信息守恒是更安全的默认值）。
+- 用户要求“扩写”但没有提供新素材时，按起草处理，并只使用已有素材；需要新事实时向用户索取，不得自行补充。
+
+### 0.2 信息守恒公理（润色与翻译的硬约束）
+
+润色与翻译的事实边界属于原文。以下公理优先级高于一切文采与“人味”要求：
+
+1. **零新增事实**：不得增加原文没有的数字、人物、时间、场景、因果、情绪细节与引语。
+2. **零误删事实**：数字、型号、参数、专名、引文与限定条件不得丢失。允许删除的只有无信息量的客套、套话与重复。
+3. **断言强度不变**：原文表达真实不确定性的限定语（“可能”“相关”“初步”“may be associated with”）必须保留；不得把“相关”升级为“导致”，也不得把确定结论弱化为猜测。只清理叠加堆砌的冗余弱化词。
+4. **语域对标**：原文冷峻则译文冷峻，原文温和则译文温和。不额外煽情，也不抹平作者原有的语气、幽默与克制。
+5. **温度来自句法解压，而非增生细节**：化解欧化长句、被动堆叠、形式动词名物化与翻译腔，按母语的意合语序与时间事理顺叙；用地道的动词与搭配传神。
+6. **术语与数字一致**：术语、数字、单位、专名在全文前后一致；跨语言时保持数值与单位等价，专名按通行译法或保留原文。
+7. **拿不准就保留并标注**：遇到歧义、疑似笔误或文化专有项，保留原文含义，在文末以一行“待确认”提示用户，不得自行脑补。
+
+**对照示例**（英译中，源文：*When users encounter a menu with more than 5 levels, the interface adds friction and increases cognitive load.*）：
+
+| 译文 | 判定 |
+| :--- | :--- |
+| 当用户遇到具有超过 5 个层级的菜单时，界面引入不必要的摩擦力并增加认知负荷。 | ❌ 翻译腔：直译抽象名词与欧化从句 |
+| 用户深夜面对迷宫般的菜单，感到无比绝望。 | ❌ 杜撰：原文没有“深夜”“迷宫”“绝望” |
+| 菜单超过 5 层，用户就得反复点按找路，操作变得繁琐，也很费神。 | ✅ 事实守恒，句法解压，语流自然 |
+
+**专业依据**：以上公理与翻译服务标准强调的忠实、完整、不增不漏一致，参见 ISO 17100:2015（翻译服务要求，含对照原文的审校）、ISO 18587:2017（机器翻译译后编辑要求）与 GB/T 19363.1-2008（笔译译文质量要求）。严复“信达雅”中的“信”居首位，同理。
+
+**确定性校验**：输出完成后运行 `anti-ai-lint <输出文件> --source <原文文件>`。新增的数字、代号或缩写会直接判失败，丢失的数字或代号会扣分。该检查只覆盖可核验的事实锚点，抓不到不含数字的杜撰（如“深夜”“委屈”），后者靠本节公理与人工复核。
+
+### 0.3 温感交互协议（仅限原创起草）
+
+AI 腔的“热情”来自合成香精：“不仅是……更是……”、情绪形容词轰炸、谄媚客套。清除后文字会变冷，这在学术与工程文体里是优点，在专栏、随笔、社交体验与品牌故事里则显得没有血肉。真正的温度来自三样东西：**具体的体感细节、真实的取舍与代价、克制与留白**。
+
+**触发条件（全部满足才提问）**：
+1. 任务类型是**原创起草**；
+2. 文体属于体验类或叙事类：深度专栏、随笔、社交媒体体验分享、品牌故事、演讲稿、个人陈述；
+3. 用户没有已经表明语调偏好（如“冷静客观”“有温度”“克制”“真诚”）；
+4. 当前环境允许与用户交互。
+
+**不提问、直接取默认的情形**：学术论文、课题申报、技术文档、商务汇报、受控白话层（默认客观笃定）；润色、翻译、评审（语域对标原文）；无法交互的环境（无头模式、CI、子智能体），此时默认客观笃定，仅当用户素材中已包含真实细节时才采用温感叙事，且只使用这些细节。每个任务最多提问一次。
+
+**提问模板**（中文用户用中文，英文用户用英文；保持简短，必须附示例）：
+
+```markdown
+检测到这是一篇体验类文案。已加载反 AI 腔规范。想要哪种语调？
+
+A. 笃定客观：数据与事实主导，克制干练。适合研报、复盘、规范。
+B. 温感叙事（推荐用于专栏、随笔、体验分享）：不用空洞情绪词，靠真实的体感细节、取舍与留白传递温度。需要你提供 2~3 个真实细节。
+
+示例（仅为演示写法，细节为虚构）：
+- A：远程办公满 90 天。通勤每日减少 110 分钟，日均有效工作时长从 7.2 小时增至 8.6 小时。
+- B：在家办公满三个月，每天早上省下了挤地铁的两个小时。代价是“下班”这个概念消失了。书桌离床只有一米五，晚上十一点听到提示音，还是会下意识点开。
+
+回复 A 或 B 即可；选 B 请顺带说说你的真实经历（时间、地点、感受、代价）。
+```
+
+**选择温感叙事后的硬规则**：
+1. **只用真实素材**：用户没有提供的经历、数字、人物、引语一律不得编造。素材不足时，先索取 2~3 个真实细节（何时、何地、身体感受、付出的代价）；用户暂时无法提供，则在正文以【待补：……】占位，不得替用户虚构。
+2. **黄金三角**：具体体感（温度、重量、声音、距离、等待的分钟数）取代形容词；直陈两难与代价，不说满话；只陈述事实的先后与结果，把感慨留给读者。
+3. **红线不变**：继续封锁“不仅是……更是……”、“质的飞跃”、“时代浪潮”、“深远意义”与滥用感叹号。温感叙事同样要通过 `anti-ai-lint` 门禁。
+4. 示例中的虚构细节仅用于演示写法，不得原样搬进用户的正文。
+
+### 0.4 English summary of Section 0
+
+1. **Classify the task first**: Drafting, Polishing, Translation, or Review. When unsure, treat it as Polishing.
+2. **Polishing and translation obey information conservation.** The source owns the facts. Add nothing (numbers, people, scenes, causes, emotion). Drop nothing (numbers, names, parameters, qualifiers). Keep assertion strength (never turn "associated with" into "causes"). Match the source register. Warmth comes from syntax (unpack nominalizations and translationese into native word order), never from invented detail. If unsure, keep the source meaning and flag it for the user. Verify with `anti-ai-lint <output> --source <source>`.
+3. **Only original drafting of experiential or narrative genres (column, essay, social post, brand story, speech, personal statement) may offer a tone choice**, and only when the user has not stated one and the environment allows interaction. Ask once, show a short example of each option, and offer: **A. Objective pro-voice** (facts and data, restrained) or **B. Warm human touch** (real sensory detail, honest trade-offs, understatement). Academic, grant, technical, business, plain-layer, polishing, translation, review, and non-interactive runs skip the question and default to objective.
+4. **Warm mode never fabricates.** Use only details the user supplied. If details are missing, ask for 2–3 real ones, or insert `[TODO: ...]` placeholders. Example details in the prompt are illustrations, not content to copy. The usual bans on synthetic uplift still apply, and the text must still pass `anti-ai-lint`.
 
 ---
 
@@ -134,3 +215,5 @@ Eliminate the telltale lexical markers of LLMs (calibrated against Kobak et al. 
 3. **确定性校验**：全文无冗余犹豫弱化词与防御性免责声明，陈述事实与结论坚决、克制、具体。
 4. **一致性校验**：术语命名全文一致；时态一致；数字与单位格式规范一致。
 5. **场景与格式保真**：重塑正文完整保留原场景专业框架（学术报告章节架构、课题申报书既定条目完全保留）。
+6. **信息守恒校验（润色与翻译）**：对照原文逐项核对数字、专名、术语与限定语，确认没有新增或误删事实、没有改变断言强度；运行 `anti-ai-lint <输出文件> --source <原文文件>`。
+7. **真实性校验（原创起草）**：正文中的每个经历、数字、人物与引语都能追溯到用户提供的素材；追溯不到的一律删除或改为【待补：……】。

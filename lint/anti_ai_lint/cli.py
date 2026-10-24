@@ -137,6 +137,15 @@ def main(argv: Optional[List[str]] = None) -> int:
         default="text",
         help="Output format: 'text' (human summary), 'json' (structured AST/report), 'hook' (compact git/tool hook), 'agent' (LLM tool feedback payload), or 'github' (GitHub Actions workflow annotations).",
     )
+    parser.add_argument(
+        "--source",
+        type=str,
+        default=None,
+        help=(
+            "Original text file for polishing or translation. Enables the information-conservation check: "
+            "numbers, codes, and acronyms added to or dropped from the checked text are penalized."
+        ),
+    )
     parser.add_argument("--mcp", action="store_true", help="Launch Model Context Protocol (MCP) server over stdio.")
     parser.add_argument("--wordlists", type=str, default=None, help="Path to custom wordlists directory.")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
@@ -149,6 +158,18 @@ def main(argv: Optional[List[str]] = None) -> int:
         except (ImportError, ValueError):
             from anti_ai_lint.mcp_server import run_mcp_server
         return run_mcp_server()
+
+    source_text: Optional[str] = None
+    if args.source is not None:
+        if len(args.paths) > 1 or (args.paths and Path(args.paths[0]).is_dir()):
+            parser.error("--source requires a single output file (or stdin), not multiple files or a directory")
+        src_path = Path(args.source)
+        if not src_path.is_file():
+            parser.error(f"--source file not found: {args.source}")
+        try:
+            source_text = src_path.read_text(encoding="utf-8", errors="replace")
+        except OSError as e:
+            parser.error(f"could not read --source file {args.source}: {e}")
 
     reports: List[LintReport] = []
     had_error = False
@@ -171,6 +192,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             max_normalized_score=args.max_normalized_score,
             genre=args.genre,
             wordlists_dir=args.wordlists,
+            source_text=source_text,
         )
         reports.append(rep)
     else:
@@ -201,6 +223,7 @@ def main(argv: Optional[List[str]] = None) -> int:
                             max_normalized_score=args.max_normalized_score,
                             genre=args.genre,
                             wordlists_dir=args.wordlists,
+                            source_text=source_text,
                         )
                         reports.append(rep)
                 if not found_any:
@@ -219,6 +242,7 @@ def main(argv: Optional[List[str]] = None) -> int:
                     max_normalized_score=args.max_normalized_score,
                     genre=args.genre,
                     wordlists_dir=args.wordlists,
+                    source_text=source_text,
                 )
                 reports.append(rep)
 

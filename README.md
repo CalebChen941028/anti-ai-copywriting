@@ -3,27 +3,31 @@
 [English](README.md) | [简体中文](README.zh-CN.md)
 
 [![CI](https://github.com/CalebChen941028/anti-ai-copywriting/actions/workflows/ci.yml/badge.svg)](https://github.com/CalebChen941028/anti-ai-copywriting/actions)
-[![Version: 0.4.0](https://img.shields.io/badge/version-0.4.0-green.svg)](CHANGELOG.md)
+[![Version: 0.5.0](https://img.shields.io/badge/version-0.5.0-green.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
 
-**Bilingual Natural Prose & Academic Pro-Voice Engine for AI Coding Agents and LLM Workflows.**
+**A rulebook that guides AI to write native-sounding natural language, free of obvious AI tone, in Chinese and English. Built for AI coding agents and LLM workflows.**
 
-Eliminates translationese, AI clichés, pseudo-academic buzzwords, formulaic emotional parallelism, and defensive hedging across both Chinese and English prose.
+It removes translationese, AI clichés, pseudo-academic buzzwords, formulaic emotional parallelism, and defensive hedging. It covers four tasks: drafting, polishing, translation, and review. Polishing and translation obey **information conservation** (nothing added, nothing dropped, assertion strength unchanged). Drafting can offer an optional **warm, detail-driven tone** that never invents facts.
 
 ---
 
 ## 1. System Positioning & Paradigm Comparison
 
-Most existing AI text tools operate as **post-hoc punitive detectors** or **destructive black-box humanizers**. In contrast, `anti-ai-copywriting` provides a **proactive, deterministic, and terminology-preserving** engine.
+Typical AI text tools fall into two categories: **post-hoc detectors** that score a finished text, and **rewriting "humanizers"** that paraphrase it. `anti-ai-copywriting` takes a third route: **proactive writing rules plus a deterministic in-loop gate**.
 
-| Dimension | Reactive Detectors<br>*(Turnitin, GPTZero, Copyleaks)* | Black-Box Humanizers<br>*(Undetectable AI, HIX Bypass)* | `anti-ai-copywriting`<br>*(This Project)* |
+> [!NOTE]
+> The table compares tool categories in general terms. It is not a benchmark of any named product, and no named product was tested.
+
+| Dimension | Post-hoc detectors (category) | Rewriting humanizers (category) | `anti-ai-copywriting` |
 | :--- | :--- | :--- | :--- |
-| **Intervention Point** | Post-hoc assessment; flags submissions after drafting | Blind post-generation rewrite | **Proactive prior conditioning** (`<auto_trigger>`) + **In-loop deterministic gating** |
-| **Terminology & Rigor** | N/A (assessment only) | Destroys domain terms and causal links via naive synonym swapping | **Preserves strict terminology discipline** (e.g. Mendelian randomization, ecological validity) |
-| **Statistical Cadence** | Black-box proprietary perplexity/burstiness | Induces ungrammatical anomalies | **Pure stdlib Burstiness CV** ($CV_{len} \ge 0.28$) & **MATTR** (window 50) |
-| **Lexical Empirical Basis** | Opaque heuristic models | Arbitrary substitution lists | **Nature 2024 PubMed excess vocabulary** & **朱德熙形式动词闭集 (LVC)** |
-| **Developer Ecosystem** | Web dashboards / paid API quotas | Web forms & subscription paywalls | **Zero-dependency CLI**, **native MCP server**, **GitHub Action**, & **DPO exporter** |
+| **Intervention point** | After drafting; scores a finished text | After generation; paraphrases it | **Before and during writing** (`<auto_trigger>` rules) plus an **in-loop deterministic gate** |
+| **Facts and terminology** | Not applicable (assessment only) | Synonym swaps can alter terms and claims | **Information conservation** for polishing and translation, with a `--source` check on numbers, codes, and acronyms |
+| **Rhythm** | Usually opaque scoring | Often unspecified | **Stdlib-only** sentence-length variation (`CV_len`) and **MATTR** (window 50), documented and inspectable |
+| **Word lists** | Usually undisclosed | Usually undisclosed | **Open JSON word lists** informed by the excess-vocabulary literature and Chinese light-verb grammar |
+| **Tone choice** | None | None | Optional **warm human-touch mode** for original drafting; never fabricates detail |
+| **Developer ecosystem** | Web dashboards or paid APIs | Web forms or subscriptions | **Zero-dependency CLI**, **MCP server**, **GitHub Action**, **pre-commit hook**, **DPO exporter** |
 
 ---
 
@@ -32,7 +36,10 @@ Most existing AI text tools operate as **post-hoc punitive detectors** or **dest
 > [!NOTE]
 > For the comprehensive benchmark report, mathematical derivations, in-depth linguistic diagnoses across all 6 scenarios, and CLI reproduction commands, please consult: **[Full Benchmark & Evaluation Report (docs/BENCHMARK_REPORT.md)](docs/BENCHMARK_REPORT.md)**.
 
-Evaluated on the repository's 6 standardized bilingual test scenarios in `tests/fixtures/` (Academic Abstract, Business Memo, English Academic Paper, Research Grant Proposal, PopSci Column, and Consumer Tech Review), the quantitative metrics before and after activating `anti-ai-copywriting` demonstrate decisive optimization:
+> [!IMPORTANT]
+> **How to read these numbers.** The "before" and "after" texts in `tests/fixtures/` are **hand-written exemplars**, not measured outputs of any model. "Before" deliberately packs the typical AI tropes. "After" is a rewrite that follows the rules. The table therefore shows that the linter separates the two kinds of text reproducibly. It is **not** an estimate of how much a given LLM improves after loading the skill. To measure that for your model, run the same prompts with and without the skill and lint both outputs (`anti-ai-lint out.md --format json`).
+
+The 6 bilingual fixture pairs in `tests/fixtures/` (Academic Abstract, Business Memo, English Academic Paper, Research Grant Proposal, PopSci Column, and Consumer Tech Review) score as follows:
 
 | Scenario / Corpus | Genre Mode | Penalty (Before) | Penalty (After) | Score Delta | Violations Count | Particle "的" Density | Gate Verdict |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -52,12 +59,18 @@ Evaluated on the repository's 6 standardized bilingual test scenarios in `tests/
 
 ## 3. Key Capabilities & AI Engineering Architecture
 
+- **Task routing, information conservation, and optional warm tone** (`skill/anti-ai-copywriting/SKILL.md`, Section 0):
+  - The agent first classifies the task: drafting, polishing, translation, or review.
+  - **Polishing and translation**: the source owns the facts. No added numbers, people, scenes, or emotion; no dropped facts; assertion strength preserved; register matched to the source. Warmth comes from native syntax, never from invention.
+  - **Original drafting of experiential genres** (column, essay, social post, brand story, speech): if the user has not stated a tone and the agent can interact, it asks once, with short examples, whether to write **A. objective** or **B. warm human-touch**. Warm mode uses only details the user supplied and inserts `[TODO: ...]` placeholders instead of inventing any.
+  - Academic, grant, technical, business, polishing, translation, and non-interactive runs never trigger the question and default to objective.
+- **Information-conservation gate**: `anti-ai-lint out.md --source original.md` fails the run when a number, code (e.g. `H100`), or acronym appears in the output but not in the source, and penalizes numbers or codes that vanish.
 - **Information-Theoretic Cadence & Rhythm (Burstiness & UID)**:
   - Measures sentence length variation via the Coefficient of Variation ($CV_{len} = \sigma / \mu$).
   - Automatically flags `rhythmic_monotony` (penalty 3.5) if $CV_{len} < 0.28$ across qualifying sentences ($\ge 6$), eliminating the uniform 20-word AI drone.
   - Implements Moving-Average Type-Token Ratio (MATTR) with a 50-token sliding window for unbiased lexical richness tracking.
-- **Kobak et al. 2024 Nature/Science Advances PubMed Excess Vocabulary**:
-  - Calibrated against 14M+ scientific abstracts with tiered log-odds penalties:
+- **Excess-vocabulary word list** (informed by Kobak et al., 2025, *Science Advances*):
+  - That study tracked vocabulary shifts across 15M+ PubMed abstracts. The word list follows its style words. The tier penalties below are this project's hand-set heuristics, not statistics from the paper:
     - **Tier S (5.0)**: `delve`, `delve into`, `delving into`, `tapestry of`, `intricate tapestry`, `meticulously`, `testament to`.
     - **Tier A (3.5)**: `realm`, `realm of`, `intricate`, `pivotal role`, `pivotal`, `beacon of`, `commendable`, `foster`, `navigating complexities`, `unwavering`.
     - **Tier B (2.0)**: `comprehensive`, `robust`, `leverage`, `utilize`, `seamless integration`, `seamless`, `seamlessly`, `multifaceted`, `myriad`, `revolutionize`.
@@ -189,7 +202,7 @@ jobs:
 ```yaml
 repos:
   - repo: https://github.com/CalebChen941028/anti-ai-copywriting
-    rev: v0.4.0
+    rev: v0.5.0
     hooks:
       - id: anti-ai-lint
         args: ["--format", "hook", "--genre", "general"]
@@ -211,7 +224,30 @@ anti-ai-lint guide.md --genre plain --format agent
 
 # GitHub Actions format (produces workflow annotations)
 anti-ai-lint docs/ --format github
+
+# Polishing or translation: verify information conservation against the original
+anti-ai-lint polished.md --source original.md --format hook
 ```
+
+### 5.1 Polishing & Translation: Information-Conservation Check
+
+`--source` compares the **fact anchors** of the checked text with the original: plain numbers (`1,200` equals `1200`), letter-led codes (`H100`, `CASP14`), and all-caps acronyms. Anchors that appear only in the output fail the gate regardless of `--max-score`. Numbers or codes missing from the output cost 3.0 points each.
+
+Real results from `tests/workflow_cases/` (reproduce with the commands in the last column):
+
+| Case | Source | Output | Result |
+| :--- | :--- | :--- | :--- |
+| Polish, faithful | `polish/source.md` | `polish/faithful.md` | ✅ PASS, score 0.0 |
+| Polish, invented detail | `polish/source.md` | `polish/fabricated.md` (adds "3 weeks" and "36%") | ❌ FAIL, 2 × `fidelity_added`, score 10.0 |
+| Translate EN→ZH, faithful | `translate/source.en.md` | `translate/faithful.zh.md` | ✅ PASS, score 0.0 |
+| Translate EN→ZH, invented detail | `translate/source.en.md` | `translate/fabricated.zh.md` (adds "87%") | ❌ FAIL, 1 × `fidelity_added`, score 5.0 |
+
+```bash
+anti-ai-lint tests/workflow_cases/polish/fabricated.md --source tests/workflow_cases/polish/source.md --format hook
+```
+
+> [!WARNING]
+> **What the check cannot see.** It only verifies numbers, codes, and acronyms. Invented adjectives, scenes, or feelings that contain none of these (for example "at midnight, in despair") pass undetected, and so does a changed meaning. Chinese numerals such as 三个通宵 are not tracked. A clean result means "no unsupported anchors found", not "faithful". Keep human review for anything that matters.
 
 ### Output Formats (`--format`)
 
@@ -225,16 +261,20 @@ anti-ai-lint docs/ --format github
 
 ## 6. Academic References & Citations
 
-The methodologies and metrics implemented in `anti-ai-copywriting` are grounded in the following academic research:
+The design draws on the research and standards below. The detection papers (items 3–5) are background for the burstiness idea only: this tool implements no model-based detector. Items 9–12 underpin the information-conservation rules for polishing and translation.
 
-1. **Kobak, D., González-Márquez, R., Horvát, E. Á., & Schulz, C. (2024)**. Monitoring the footprint of large language models in scientific writing. *Nature/Science Advances* (arXiv:2406.07016).
-2. **Meister, C., Leszczynski, M., Aji, A. F., & Cotterell, R. (2021)**. Uniform information density and language generation. In *Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing (EMNLP)*.
-3. **Mitchell, E., Yoon, J., Miao, N., Finn, C., & Manning, C. D. (2023)**. DetectGPT: Zero-shot machine-generated text detection using probability curvature. In *International Conference on Learning Representations (ICLR 2023)*.
-4. **Hans, A., Schwarzschild, A., Cherepanova, V., Bansal, H., Saha, S., Jain, A., ... & Goldblum, M. (2024)**. Spotting LLMs with Binoculars: Zero-shot detection of machine-generated text. In *International Conference on Learning Representations (ICLR 2024)*.
-5. **Li, W., et al. (2024)**. RAID: A shared benchmark for robust evaluation of machine-generated text detectors. In *Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (ACL 2024)*.
-6. **Zhu, D. X. (朱德熙). (1982)**. *Grammar Notes (语法讲义)*. Commercial Press. (Regarding Chinese Light Verb Constructions and Nominalization).
+1. **Kobak, D., González-Márquez, R., Horvát, E.-Á., & Lause, J. (2025)**. Delving into LLM-assisted writing in biomedical publications through excess vocabulary. *Science Advances, 11*(27), eadt3813. https://doi.org/10.1126/sciadv.adt3813 (arXiv:2406.07016).
+2. **Meister, C., Pimentel, T., Haller, P., Jäger, L., Cotterell, R., & Levy, R. (2021)**. Revisiting the uniform information density hypothesis. In *Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing (EMNLP)* (arXiv:2109.11635).
+3. **Mitchell, E., Lee, Y., Khazatsky, A., Manning, C. D., & Finn, C. (2023)**. DetectGPT: Zero-shot machine-generated text detection using probability curvature. In *Proceedings of the 40th International Conference on Machine Learning (ICML)* (arXiv:2301.11305).
+4. **Hans, A., Schwarzschild, A., Cherepanova, V., Kazemi, H., Saha, A., Goldblum, M., Geiping, J., & Goldstein, T. (2024)**. Spotting LLMs with Binoculars: Zero-shot detection of machine-generated text. In *Proceedings of the 41st International Conference on Machine Learning (ICML)* (arXiv:2401.12070).
+5. **Dugan, L., Hwang, A., Trhlik, F., Ludan, J. M., Zhu, A., Xu, H., Ippolito, D., & Callison-Burch, C. (2024)**. RAID: A shared benchmark for robust evaluation of machine-generated text detectors. In *Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (ACL)* (arXiv:2405.07940).
+6. **Zhu, D. X. (朱德熙). (1982)**. *语法讲义* [Lectures on grammar]. Commercial Press. (Chinese light verb constructions and nominalization.)
 7. **ASD-STE100 Specification**. Aerospace, Security and Defence Industries Association of Europe (ASD). Simplified Technical English Specification.
-8. **Google Research (2024)**. Harness²: Agentic Evaluation, Specification, and Guardrail Protocols.
+8. **Xu, R., et al. (2026)**. Harness^2: Recursive agent harnessing for an open world. arXiv:2610.14224.
+9. **ISO 17100:2015**. *Translation services — Requirements for translation services*. International Organization for Standardization.
+10. **ISO 18587:2017**. *Translation services — Post-editing of machine translation output — Requirements*. International Organization for Standardization.
+11. **GB/T 19363.1-2008**. 翻译服务 译文质量要求 第1部分：笔译 [Translation services — Specification for translation quality — Part 1: Translation]. Standardization Administration of China.
+12. **Yan, F. (严复). (1898)**. 《天演论》译例言 [Translator's preface to *Evolution and Ethics*] (the "faithfulness, expressiveness, elegance" principle).
 
 ---
 

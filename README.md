@@ -241,7 +241,7 @@ jobs:
 ```yaml
 repos:
   - repo: https://github.com/CalebChen941028/anti-ai-copywriting
-    rev: v0.7.0
+    rev: v0.8.0
     hooks:
       - id: anti-ai-lint
         args: ["--format", "hook", "--genre", "general"]

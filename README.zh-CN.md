@@ -3,7 +3,7 @@
 [English](README.md) | [简体中文](README.zh-CN.md)
 
 [![CI](https://github.com/CalebChen941028/anti-ai-copywriting/actions/workflows/ci.yml/badge.svg)](https://github.com/CalebChen941028/anti-ai-copywriting/actions)
-[![Version: 0.6.0](https://img.shields.io/badge/version-0.6.0-green.svg)](CHANGELOG.md)
+[![Version: 0.7.0](https://img.shields.io/badge/version-0.7.0-green.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
 
@@ -73,6 +73,21 @@
 | **对抗性大厂战略黑话清洗** (`adversarial_cliche`) | 10+处空洞动词与黑话套话清洗（赋能/抓手/闭环/组合拳） | 2.5 分 / 1 处违规 | **2.5 分 / 1 处违规** | ✅ 通关 -> **✅ 通关** | 黑话全部拔除还原为落地行动，仅残留极少样式加粗 |
 | **诱导性学术论述评述** (`multiturn_remediation`) | 诱导性宏大叙事与空洞自夸高风险提示 | 11.0 分 / 3 处违规 | **0.0 分 / 0 处违规** | ❌ 拦截 -> **✅ 通关** | 先验免疫（Pre-conditioning）阻断违规，首轮零分 |
 
+### 2.3 四大极限深水区压力实测：deepseek-v4.1-flash（代码公式隔离、反伪口语化、多源综合守恒与长篇英文）
+
+> [!NOTE]
+> 针对代码混排、过度反AI口语化反噬、跨文件多源事实张冠李戴以及长篇英文句首套话四大深水区，构建了极限前沿基准评测。详细审计记录见 [tests/fixtures_extreme/BENCHMARK_REPORT.md](tests/fixtures_extreme/BENCHMARK_REPORT.md)。
+
+> [!IMPORTANT]
+> **真实 API 审计保障**：全部调用通过 OpenCode Go 网关（`https://opencode.ai/zen/go/v1/chat/completions`，会话：`session-deepseek-extreme-benchmark-2026`）直连模型 **`deepseek-v4.1-flash`** 完成。累计 **12 次真实 HTTP POST（含 1 次截断安全重试）全部返回 200 OK**（平均时延 28,095 ms），消耗 **45,156 tokens**（Prompt 12,129 + Completion 33,027，其中 Reasoning 26,112 tokens），每条均含网关签发唯一 `response_id`。全部产物存档于 `tests/fixtures_extreme/`，可通过 `python3 scripts/run_extreme_benchmark.py` 一键无 Mock 复现。
+
+| 极限深水区场景 | 核心挑战考察点 | 单一模型 (Solo) | 模型+技能门禁 (After) | 门禁判定 | 闭环机制与实证发现 |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| **代码与LaTeX公式密集型** (`code_math_interleave`) | DPDK用户态网络白皮书，检验围栏代码块内部符号、端口号与数学公式隔离 | 42.0 分 / 9 处违规 | **12.5 分 / 3 处违规** | ❌ 拦截 -> **✅ 显著收敛** | 代码块内部符号零误报；自愈轮由 65.0 分大幅收敛至 12.5 分，终稿主动识别量纲瑕疵 |
+| **反伪口语化与碎句断气** (`anti_camouflage_colloquial`) | 严厉诱导“使用大白话、像聊天一样”，检验严肃公文语体失范 | 2.5 分 / 1 处违规 | **3.5 分 / 1 处违规** | ✅ 通关 -> **✅ 通关** | 裸模型落入陷阱，被 `inappropriate_colloquialism` 命中「说白了」；技能组恢复庄重语态 |
+| **多源事实综合守恒** (`multi_source_synthesis`) | 跨架构、性能与财务 3 份独立分册，检验联合事实锚点池与防张冠李戴 | 37.5 分 / 8 处违规 | **0.0 分 / 0 处违规** | ❌ 拦截 -> **✅ 完美通关** | 裸模型跨册数字过度复述（7处违规）；技能组经环内自愈（40.0分 -> 0.0分），数字严丝合缝 |
+| **长篇英文前沿白皮书** (`long_english_whitepaper`) | 600-900 词技术 Position Paper，检验句首分词短语连用与论述转折副词堆叠 | 0.0 分 / 0 处违规 | **3.0 分 / 1 处违规** | ✅ 通关 -> **✅ 通关** | 两组全文节奏均优良（$CV \ge 0.40$）；技能组因破折号残留得 3.0 分，反例透明披露 |
+
 ---
 
 ## 3. 核心能力与 AI 工程架构
@@ -82,13 +97,16 @@
   - **润色与翻译场景严格遵循信息守恒**：事实权归原文所有。零增添事实（不杜撰数字、专名、情绪、背景细节）、零遗漏核心事实、断言强度不变、语体对齐原文。温感与母语感纯粹源于“意合化”语法解压与去欧化，绝不靠虚构细节煽情。
   - **经验叙事类起草场景支持温感交互**：面向散文、专栏、数码实测、品牌故事或演讲等经验性文体，若用户未明确语调且处于交互式会话，智能体主动出具 A/B 示例供用户选择（A. 客观克制 vs. B. 温感叙事）。温感模式仅使用用户提供的真实细节；若缺乏细节，必须以 `[待补充细节: ...]` 占位，严禁自行杜撰。
   - 学术论文、基金申报、技术方案、商业备忘、润色、翻译以及非交互式批量运行默认直接采用客观克制语调，绝不触发提问。
-- **信息守恒确定性门禁与语义量纲等价引擎**：
-  - `anti-ai-lint out.md --source original.md`，对输出文本相对于原文的事实锚点进行双向比对。
-  - 支持物理时间（`ms ↔ 秒`、`min ↔ 分钟`、`h ↔ 小时`、`day ↔ 天`）、存储容量（`B ↔ KB ↔ MB ↔ GB ↔ TB`）与中文金融计数级（`万 ↔ 亿`、`3000万元 ↔ 3千万元`）的语义等价识别，杜绝合理单位转换误报。
-  - 严打衍生虚构：若输出中出现原文未依据的新增锚点或百分比衍生计算（`fidelity_added`），即使未超总分阈值亦强制拦截；若原文重要锚点缺失（`fidelity_dropped`），每项扣 3.0 分。
-- **信息论节奏感度量与长文段落局部呆滞检测**：
+- **信息守恒确定性门禁、多源事实联合池与语义量纲等价引擎**：
+  - `anti-ai-lint out.md --source original.md [source2.md ...]`，对输出文本相对于原文的事实锚点进行双向比对。
+  - **多源事实联合守恒池**：支持接收多份源文件构建联合事实池，在综合提炼中严格阻断任何源文件未记载的衍生数据（`fidelity_added`），同时豁免对背景冗余细节的合理精简。
+  - **代码与公式底层符号隔离保护**：自动识别并隔离围栏代码块（Fenced Code Blocks）与展示公式（Display Math），防止代码内部的端口号、内存地址与公式运算符污染正文事实；行内代码（`` `850ns` ``）与行内公式自动剥离包裹符号，确保技术硬核指标正常接受严格守恒核验。
+  - **精密量纲语义等价识别**：支持物理时间（`ms ↔ 秒`、`min ↔ 分钟`、`h ↔ 小时`、`day ↔ 天`）、存储容量（`B ↔ KB ↔ MB ↔ GB ↔ TB`）与中文金融计数级（`万 ↔ 亿`、`3000万元 ↔ 3千万元`）的语义等价识别，杜绝合理单位转换误报。
+- **信息论节奏感度量、反伪口语化与长文段落局部呆滞检测**：
   - 基于纯 Python 标准库实现全局句长变异系数（Coefficient of Variation, $CV_{len} = \sigma / \mu$）。全局 $CV_{len} < 0.28$ 判定为 `rhythmic_monotony`（扣 3.5 分）。
   - **长文本段落级局部节奏呆滞检测**（`localized_rhythmic_monotony`）：对 $\ge 600$ 字符长文自动扫描各自然段，若非枚举段落内连续 $\ge 5$ 句的局部变异系数 $CV < 0.20$，施加 2.5 分惩罚并指导穿插短促句，打破长篇大段中等长 AI 腔。
+  - **严肃文体反伪口语化与碎句断气拦截**：`inappropriate_colloquialism` 拦截在专业/学术/公文中出现的聊天垫字（「说白了」「你猜怎么着」等）；`staccato_overfragmentation` 捕捉连续 $\ge 3$ 个极短碎片句（如“对。没错。就是它。”），防止恶意刷高方差。
+  - **长篇英文句首套话与副词机械堆叠纠偏**：识别英文句首现在分词短语连用（`english_participial_fronting`，如连续句首使用 `Leveraging...` / `Delving...`）与句首论述转折副词堆叠（`english_sentence_head_stacking`，如 `Crucially,` / `Notably,`）。
   - 引入滑动窗口词汇丰富度（MATTR / Moving-Average Type-Token Ratio，窗口 50），避免传统 TTR 受文本长度影响的问题。
 - **科学论文超额词频突变词表**（参考 Kobak et al., 2025, *Science Advances*）：
   - 依据该文献追踪 1500 万篇 PubMed 论文摘要得出的风格词异动，提炼高危词表。分级扣分为本项目启发式规则设定，非文献原始统计值：
@@ -224,7 +242,7 @@ jobs:
 ```yaml
 repos:
   - repo: https://github.com/CalebChen941028/anti-ai-copywriting
-    rev: v0.6.0
+    rev: v0.7.0
     hooks:
       - id: anti-ai-lint
         args: ["--format", "hook", "--genre", "general"]

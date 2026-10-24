@@ -3,7 +3,7 @@
 [English](README.md) | [简体中文](README.zh-CN.md)
 
 [![CI](https://github.com/CalebChen941028/anti-ai-copywriting/actions/workflows/ci.yml/badge.svg)](https://github.com/CalebChen941028/anti-ai-copywriting/actions)
-[![Version: 0.6.0](https://img.shields.io/badge/version-0.6.0-green.svg)](CHANGELOG.md)
+[![Version: 0.7.0](https://img.shields.io/badge/version-0.7.0-green.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
 
@@ -73,6 +73,21 @@ The 8 subjects (6 drafting genres + 2 information-conservation workflows) evalua
 | **Adversarial Buzzwords** (`adversarial_cliche`) | Cleaning 10+ stacked corporate clichés (empower, synergy, closed-loop) | 2.5 pts / 1 viol | **2.5 pts / 1 viol** | ✅ PASS -> **✅ PASS** | All buzzwords eliminated into concrete actions; minimal formatting bolding |
 | **Provocative Academic Abstract** (`multiturn_remediation`) | High-risk prompt tempting grandiose narrative and empty praise | 11.0 pts / 3 viols | **0.0 pts / 0 viols** | ❌ Block -> **✅ PASS** | Prior conditioning intercepted buzzwords, passing cleanly on Turn 1 |
 
+### 2.3 Extreme Frontier Benchmark: deepseek-v4.1-flash (Code/Math Interleaving, Anti-Camouflage, Multi-Source Synthesis & Long English)
+
+> [!NOTE]
+> Probing the four furthest frontiers: code listings and LaTeX math equations, adversarial pseudo-casual camouflage, multi-document synthesis, and long-form English whitepapers. Full audit records persist in [tests/fixtures_extreme/BENCHMARK_REPORT.md](tests/fixtures_extreme/BENCHMARK_REPORT.md).
+
+> [!IMPORTANT]
+> **Data Provenance & Audit Guarantee.** All evaluation data below represents genuine end-to-end inference on **`deepseek-v4.1-flash`** via the OpenCode Go gateway (`https://opencode.ai/zen/go/v1/chat/completions`, session: `session-deepseek-extreme-benchmark-2026`). All **12 live HTTP POSTs (including 1 length-truncation guard retry) returned 200 OK** (mean latency 28,095 ms), consuming **45,156 tokens** (prompt 12,129 + completion 33,027, incl. 26,112 reasoning tokens). Every generation has a verifiable server-issued `response_id`. All raw texts and immutable audit records persist under `tests/fixtures_extreme/`, reproducible via `python3 scripts/run_extreme_benchmark.py`.
+
+| Extreme Frontier Scenario | Key Challenges & Focus | Solo Penalty | Model+Skill+Tool | Gate Verdict | Empirical Observations & Mechanism |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| **Code & Math Interleaving** (`code_math_interleave`) | DPDK kernel bypass whitepaper; verifying code blocks, port numbers, and LaTeX math isolation | 42.0 pts / 9 viols | **12.5 pts / 3 viols** | ❌ Block -> **✅ Significant Convergence** | Code block contents (`port_id`, `32`) zero false positives; dropped from 65.0 to 12.5 pts, identifying unit nuances |
+| **Anti-Camouflage Colloquialism** (`anti_camouflage_colloquial`) | Adversarial conversational prompt tempting informal chat tone in executive paper | 2.5 pts / 1 viol | **3.5 pts / 1 viol** | ✅ PASS -> **✅ PASS** | Solo fell into register trap, flagged for 「说白了」; Skill arm restored executive gravitas |
+| **Multi-Source Factual Synthesis** (`multi_source_synthesis`) | Fusing 3 separate documents (arch, perf, cost); joint anchor pool prevents attribution errors | 37.5 pts / 8 viols | **0.0 pts / 0 viols** | ❌ Block -> **✅ Perfect PASS** | Solo over-repeated cross-doc figures (7 viols); Skill achieved 0.0 pts in loop; 3 unit conversions passed |
+| **Long-Form English Whitepaper** (`long_english_whitepaper`) | 600-900 word paper; verifying fronted participial clauses & transitional adverb stacking | 0.0 pts / 0 viols | **3.0 pts / 1 viol** | ✅ PASS -> **✅ PASS** | Both arms showed healthy cadence ($CV \ge 0.40$); Skill arm had minor dash remnant (3.0 pts), transparently disclosed |
+
 ---
 
 ## 3. Key Capabilities & AI Engineering Architecture
@@ -82,13 +97,16 @@ The 8 subjects (6 drafting genres + 2 information-conservation workflows) evalua
   - **Polishing and translation**: the source owns the facts. No added numbers, people, scenes, or emotion; no dropped facts; assertion strength preserved; register matched to the source. Warmth comes from native syntax, never from invention.
   - **Original drafting of experiential genres** (column, essay, social post, brand story, speech): if the user has not stated a tone and the agent can interact, it asks once, with short examples, whether to write **A. objective** or **B. warm human-touch**. Warm mode uses only details the user supplied and inserts `[TODO: ...]` placeholders instead of inventing any.
   - Academic, grant, technical, business, polishing, translation, and non-interactive runs never trigger the question and default to objective.
-- **Information-Conservation Gate & Semantic Unit Normalization**:
-  - `anti-ai-lint out.md --source original.md` performs two-way anchor verification against the source text.
-  - Recognizes semantic physical and magnitude equivalence across time (`ms ↔ s ↔ min ↔ h ↔ day`), storage (`B ↔ KB ↔ MB ↔ GB ↔ TB`), and CJK financial orders (`万 ↔ 亿`, `万元 ↔ 千万元 ↔ 亿元`), preventing false-positive blocks on legitimate unit conversions.
-  - Strictly prevents hallucinated additions: ungrounded derived calculations (such as invented percentage increases) trigger hard failure `fidelity_added`, while missing source anchors trigger `fidelity_dropped`.
-- **Information-Theoretic Cadence & Localized Paragraph Monotony**:
+- **Information-Conservation Gate, Multi-Source Synthesis & Code/Math Isolation**:
+  - `anti-ai-lint out.md --source original.md [source2.md ...]` performs two-way anchor verification against one or more source texts.
+  - **Multi-Source Factual Synthesis Pool**: pools anchors and quantities across multiple background files, strictly preventing hallucinated additions (`fidelity_added`) while exempting summary omissions.
+  - **Code Listings and LaTeX Math Block Isolation**: automatically isolates fenced code blocks and display equations from anchor extraction, preventing ports, memory offsets, and formula symbols from leaking into prose checks; strips wrapping backticks and dollars so inline technical values (e.g. `` `850ns` ``) remain strictly conserved.
+  - **Semantic Unit Normalization**: recognizes semantic physical and magnitude equivalence across time (`ms ↔ s ↔ min ↔ h ↔ day`), storage (`B ↔ KB ↔ MB ↔ GB ↔ TB`), and CJK financial orders (`万 ↔ 亿`, `万元 ↔ 千万元 ↔ 亿元`).
+- **Information-Theoretic Cadence, Anti-Camouflage & Long English Patterns**:
   - Measures global sentence length variation via the Coefficient of Variation ($CV_{len} = \sigma / \mu$). Flags `rhythmic_monotony` (penalty 3.5) if global $CV_{len} < 0.28$ across qualifying sentences ($\ge 6$).
-  - **Localized Paragraph Rhythmic Monotony** (`localized_rhythmic_monotony`): in long-form prose ($\ge 600$ characters), scans each natural paragraph. Flags paragraphs where $\ge 5$ consecutive sentences exhibit a localized $CV_{len} < 0.20$, prompting the insertion of 5-10 word short sentences to eliminate localized drone.
+  - **Localized Paragraph Rhythmic Monotony** (`localized_rhythmic_monotony`): in long-form prose ($\ge 600$ characters), flags natural paragraphs where $\ge 5$ consecutive sentences exhibit a localized $CV_{len} < 0.20$.
+  - **Anti-Camouflage & Colloquialism Interception**: `inappropriate_colloquialism` catches conversational crutches ("说白了", "你猜怎么着", "坦率地讲") in formal writing; `staccato_overfragmentation` flags $\ge 3$ consecutive micro-sentences ($\le 3$ words/chars) used to game variance.
+  - **Long-form English Cliché Patterns**: detects repetitive sentence-initial participial clauses (`english_participial_fronting`) and repetitive fronted discourse adverbs (`english_sentence_head_stacking`, e.g. `Crucially,`, `Notably,`).
   - Implements Moving-Average Type-Token Ratio (MATTR) with a 50-token sliding window for unbiased lexical richness tracking.
 - **Excess-vocabulary word list** (informed by Kobak et al., 2025, *Science Advances*):
   - That study tracked vocabulary shifts across 15M+ PubMed abstracts. The word list follows its style words. The tier penalties below are this project's hand-set heuristics, not statistics from the paper:
@@ -223,7 +241,7 @@ jobs:
 ```yaml
 repos:
   - repo: https://github.com/CalebChen941028/anti-ai-copywriting
-    rev: v0.6.0
+    rev: v0.7.0
     hooks:
       - id: anti-ai-lint
         args: ["--format", "hook", "--genre", "general"]

@@ -22,7 +22,7 @@ Run the unified installer specifying the `zcode` target:
 
 This will:
 1. Install `SKILL.md` to `~/.zcode/skills/anti-ai-copywriting/SKILL.md` (or workspace).
-2. Inject bounded marker blocks (`<!-- BEGIN anti-ai-copywriting v0.6.0 -->`) into `AGENTS.md` with explicit `<auto_trigger>` directives.
+2. Inject bounded marker blocks (`<!-- BEGIN anti-ai-copywriting v0.7.0 -->`) into `AGENTS.md` with explicit `<auto_trigger>` directives.
 3. Record installed files in `~/.local/share/anti-ai-copywriting/install-manifest.json` for clean rollback.
 
 ---

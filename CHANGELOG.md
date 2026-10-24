@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-10-25
+
+### Added
+- **Multi-Source Factual Synthesis Gate (`fidelity.py` & `cli.py`)**:
+  - Upgraded `--source` CLI argument to accept multiple files (e.g. `--source arch.md perf.md cost.md`).
+  - Implemented multi-document joint anchor pooling: tracks anchors and quantities across all source documents simultaneously.
+  - Automatically identifies cross-document quantity equivalence and strictly prevents fabricated ungrounded data (`fidelity_added`) while exempting background detail omissions in summarization.
+- **Code Listings and LaTeX Math Block Isolation (`fidelity.py`)**:
+  - Implemented automatic isolation of fenced code blocks (```` ```...``` ````) and display equations (`$$...$$`, `\[...\]`).
+  - Strips inline backticks and math dollar signs, cleanly exposing inline technical numerals (e.g. `` `850ns` ``) without allowing code internals (ports, hex memory addresses) to pollute prose factual anchors.
+- **Inappropriate Colloquialism & Anti-Camouflage Gate (`detector.py`)**:
+  - Added `inappropriate_colloquialism` detection (penalty 2.5) for formal academic and general writing: intercepts cheap conversational fillers (e.g., "说白了", "你猜怎么着", "坦率地讲", "咱就是说", "老实说") inserted by models attempting to bypass AI detection via pseudo-casual tone.
+  - Added `staccato_overfragmentation` detection (penalty 2.5): flags 3 or more consecutive micro-sentences ($\le 3$ characters/words) attempting to artificially game sentence length variance.
+- **Long-form English Cliché & Sentence-Head Patterns (`detector.py`)**:
+  - Added `english_participial_fronting` detection (penalty 2.5): flags repetitive sentence-starting participial clauses (e.g. `Leveraging...`, `Having established...`, `Delving into...`).
+  - Added `english_sentence_head_stacking` detection (penalty 2.5): flags repetitive fronted discourse adverbs (`Crucially,`, `Notably,`, `Strikingly,`, `Importantly,`).
+- **DeepSeek v4.1-Flash Extreme Frontier Benchmark (`scripts/run_extreme_benchmark.py`)**:
+  - Live empirical dual-blind A/B testing suite on `deepseek-v4.1-flash` via OpenCode Go gateway (`https://opencode.ai/zen/go/v1/chat/completions`).
+  - 12 real HTTP calls, 45,156 tokens, 100% 200 OK (with live truncation guard handling).
+  - Evaluated 4 cutting-edge frontier challenges: code/math interleave, anti-camouflage colloquialism, multi-source synthesis, and long English whitepaper.
+  - Persisted live audit records to `tests/fixtures_extreme/`.
+- **Test Suite Expanded to 106 Tests**:
+  - Added unit tests for multi-source fidelity, code block isolation, colloquialism detection, staccato fragmentation, and English fronting. All 106 tests passing.
+
 ## [0.6.0] - 2026-10-24
 
 ### Added

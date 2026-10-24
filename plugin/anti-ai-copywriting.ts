@@ -141,7 +141,7 @@ export async function postToolExecution(event: ToolExecutionEvent): Promise<stri
 
 export default {
   name: "anti-ai-copywriting",
-  version: "0.6.0",
+  version: "0.7.0",
   description: "Deterministic in-loop prose quality gate for OpenCode agents.",
   postToolExecution,
 };

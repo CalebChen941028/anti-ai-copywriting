@@ -32,6 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Academic References & Translation Standards Harmonization**:
   - Corrected Kobak et al. citation to peer-reviewed publication: *Science Advances*, 11(27), eadt3813 (2025).
   - Integrated translation and post-editing standards (ISO 17100:2015, ISO 18587:2017, GB/T 19363.1-2008, Yan Fu 1898) across documentation and benchmark reports.
+- **GLM-5.3 Empirical DPO Preference Dataset Export**:
+  - Added preference dataset export (`data/glm5_dpo.jsonl`, `data/glm5_dpo_chatml.jsonl`, `data/glm5_dpo_sharegpt.jsonl`) generated directly from empirical dual-blind outputs.
+  - Enhanced `scripts/export_dpo_pairs.py` to auto-ingest `tests/fixtures_glm5/` with `benchmark_results.json` metadata integration.
 
 ### Changed
 - **Replaced demonstration benchmark reports with real GLM-5.3 measurements**:

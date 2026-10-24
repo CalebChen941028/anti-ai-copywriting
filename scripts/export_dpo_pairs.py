@@ -63,38 +63,56 @@ PROMPT_TEMPLATES: Dict[str, Dict[str, str]] = {
 
 def load_fixture_pairs(fixtures_dir: Path) -> List[Dict[str, Any]]:
     pairs: List[Dict[str, Any]] = []
+    
+    # Try loading metadata from benchmark_results.json if present
+    bench_json = fixtures_dir / "benchmark_results.json"
+    bench_data: Dict[str, Any] = {}
+    if bench_json.exists():
+        try:
+            bench_data = json.loads(bench_json.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+
     for sc_dir in sorted(fixtures_dir.iterdir()):
         if not sc_dir.is_dir():
             continue
         sc_name = sc_dir.name
-        before_files = sorted(sc_dir.glob("*.before.md"))
-        after_files = sorted(sc_dir.glob("*.after.md"))
+        before_files = sorted(list(sc_dir.glob("*.before.md")) + list(sc_dir.glob("*before*.md")))
+        after_files = sorted(list(sc_dir.glob("*.after.md")) + list(sc_dir.glob("*after*.md")))
+        # Deduplicate
+        before_files = sorted(list(set(before_files)))
+        after_files = sorted(list(set(after_files)))
         if not before_files or not after_files:
             continue
 
-        meta = PROMPT_TEMPLATES.get(sc_name, {
+        meta_from_bench = bench_data.get(sc_name, {})
+        default_meta = PROMPT_TEMPLATES.get(sc_name, {
             "genre": "general",
             "lang": "zh" if sc_name != "en_academic" else "en",
             "prompt": f"Write natural, professional prose for scenario: {sc_name}.",
         })
+
+        genre = meta_from_bench.get("genre", default_meta.get("genre", "general"))
+        lang = meta_from_bench.get("lang", default_meta.get("lang", "zh"))
+        prompt = meta_from_bench.get("prompt", default_meta.get("prompt", ""))
 
         for b_file, a_file in zip(before_files, after_files):
             rejected_text = b_file.read_text(encoding="utf-8").strip()
             chosen_text = a_file.read_text(encoding="utf-8").strip()
             pairs.append({
                 "scenario": sc_name,
-                "genre": meta.get("genre", "general"),
-                "lang": meta.get("lang", "zh"),
-                "prompt": meta["prompt"],
+                "genre": genre,
+                "lang": lang,
+                "prompt": prompt,
                 "rejected": rejected_text,
                 "chosen": chosen_text,
-                "rejected_file": str(b_file.relative_to(_repo_root)),
-                "chosen_file": str(a_file.relative_to(_repo_root)),
+                "rejected_file": str(b_file.resolve().relative_to(_repo_root)),
+                "chosen_file": str(a_file.resolve().relative_to(_repo_root)),
             })
     return pairs
 
 
-def validate_pairs(pairs: List[Dict[str, Any]], verbose: bool = False) -> bool:
+def validate_pairs(pairs: List[Dict[str, Any]], verbose: bool = False, min_rejected_score: float = 10.0) -> bool:
     all_valid = True
     for item in pairs:
         genre = item.get("genre", "general")
@@ -106,7 +124,7 @@ def validate_pairs(pairs: List[Dict[str, Any]], verbose: bool = False) -> bool:
         item["score_margin"] = round(rep_rejected.score - rep_chosen.score, 2)
 
         # Rejected should fail or have high penalty; chosen should pass
-        if rep_rejected.score < 10.0:
+        if rep_rejected.score < min_rejected_score:
             sys.stderr.write(f"Warning: Rejected draft for {item['scenario']} has low penalty score: {rep_rejected.score}\n")
             all_valid = False
         if not rep_chosen.passed or rep_chosen.score > 5.0:
@@ -191,6 +209,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--output", "-o", type=str, default=None, help="Output JSONL filepath.")
     parser.add_argument("--format", choices=["dpo", "chatml", "sharegpt"], default="dpo", help="Target preference format.")
     parser.add_argument("--validate", "--verify", dest="validate", action="store_true", help="Validate score margin between rejected and chosen.")
+    parser.add_argument("--min-rejected-score", type=float, default=0.0, help="Minimum penalty score for rejected draft during validation.")
 
     args = parser.parse_args(argv)
 
@@ -199,7 +218,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         sys.stderr.write("No before/after fixture pairs found.\n")
         return 1
 
-    valid = validate_pairs(pairs, verbose=True)
+    valid = validate_pairs(pairs, verbose=True, min_rejected_score=args.min_rejected_score)
     if not valid:
         sys.stderr.write("Validation failed on one or more fixture pairs.\n")
         return 1

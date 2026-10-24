@@ -25,9 +25,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Comprehensive Workflow Test Fixtures & Unit Tests**:
   - Created real-world test cases in `tests/workflow_cases/` for polishing, translation, and warm drafting.
   - Added `tests/test_workflow.py` with 27 unit tests validating anchor extraction, CLI `--source` execution, MCP tool contracts, warm-tone criteria, and cross-file documentation synchronization.
+- **Real GLM-5.3 End-to-End Benchmark (Solo Model vs. Model + Skill + Tool Gate)**:
+  - Introduced `scripts/run_glm5_benchmark.py`: a dual-blind evaluation harness comparing bare GLM-5.3 native generation against GLM-5.3 + skill rule injection + `anti-ai-lint` in-loop deterministic gate (with one remediation pass), across 6 drafting scenarios and 2 information-conservation workflows (polish/translate under `--source`).
+  - Persisted genuine model outputs and metrics under `tests/fixtures_glm5/` (per-scenario `solo_before.md` / `skill_tool_after.md` + `benchmark_results.json`); hardened the runner against empty response bodies, thinking-token budget exhaustion, and provider 429 rate limits.
+  - Headline measured results (8 subjects): mean penalty 8.50 -> 1.88 (-77.9%), mean violations 2.25 -> 0.62 (-72.2%), gate pass rate 75.0% -> 100%, fabricated fact anchors 7 -> 0; conservation subset (polish/translate) penalty 25.25 -> 1.75 (-93.1%) with both solo runs hard-blocked by `fidelity_added`.
 - **Academic References & Translation Standards Harmonization**:
   - Corrected Kobak et al. citation to peer-reviewed publication: *Science Advances*, 11(27), eadt3813 (2025).
   - Integrated translation and post-editing standards (ISO 17100:2015, ISO 18587:2017, GB/T 19363.1-2008, Yan Fu 1898) across documentation and benchmark reports.
+
+### Changed
+- **Replaced demonstration benchmark reports with real GLM-5.3 measurements**:
+  - Rewrote `docs/BENCHMARK_REPORT.zh-CN.md` and `docs/BENCHMARK_REPORT.md` end to end: all scoreboards, the full 8-subject quantitative matrix, and all side-by-side case studies now quote verbatim GLM-5.3 generations from `tests/fixtures_glm5/`, including honest disclosures (residual style violations, one popsci counter-example where the solo model scored 0.0).
+  - Updated `README.zh-CN.md` and `README.md` Section 2 tables and data-provenance notes to the same real measurements; the hand-written exemplars in `tests/fixtures/` remain for deterministic regression tests.
 
 ## [0.4.0] - 2026-10-24
 

@@ -1,0 +1,9 @@
+**Memory Bandwidth Overhead and Latency Trade-offs in Speculative Decoding**
+
+Autoregressive inference in large language models is fundamentally memory-bandwidth-bound: each generated token requires a full pass over model weights, yielding low arithmetic intensity. Speculative decoding (Leviathan et al., 2023; Chen et al., 2023) exploits this by having a lightweight draft model propose k tokens that the target model verifies in a single forward pass. Because verification parallelizes attention and feed-forward computation across the k+1 positions, the marginal FLOP cost is negligible, while the bandwidth cost of loading target weights is amortized across multiple accepted tokens—converting latency from per-token to per-chunk weight traffic.
+
+The trade-off hinges on the acceptance rate τ. The expected yield per cycle is (1−τ^(k+1))/(1−τ), so net speedup requires that amortized bandwidth savings exceed the draft model's own latency and memory traffic, which add serially to the critical path. Low τ or excessive k degrades throughput, as rejected tokens waste both verification compute and KV-cache writes. Moreover, the draft model competes for HBM capacity and bandwidth, and dynamic adjustment of k introduces scheduling latency.
+
+Optimal configurations therefore depend on workload-dependent acceptance distributions and hardware bandwidth-to-compute ratios. Under high τ and draft overhead below roughly 10–20% of target latency, speculative decoding achieves near-lossless acceleration; otherwise, the bandwidth amortization is offset by speculative overhead, making adaptive drafting length essential.
+
+(~210 words)

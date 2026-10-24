@@ -3,34 +3,50 @@
 [English](BENCHMARK_REPORT.md) | [简体中文](BENCHMARK_REPORT.zh-CN.md)
 
 > [!NOTE]
-> **评测基准定位**：本报告依托项目自带的 6 大中英双语核心场景测试套件（`tests/fixtures/`），系统性评测智能体在**加载 `anti-ai-copywriting` 技能与质检门禁前后**的文本实测表现。涵盖学术论文、商业管理备忘录、英文顶会论文、国家科研基金申报、前沿科普专栏以及社交数码实测。
+> **评测基准定位**：本报告评测数据基于智谱 GLM-5.3 大模型真实端到端推理生成，对比组为「单一模型原生生成」vs.「模型 + anti-ai-copywriting 技能 + 质检工具门禁」。全部原始生成文本与量化指标持久化于 `tests/fixtures_glm5/`（含各场景 `solo_before.md`、`skill_tool_after.md` 与统计总表 `benchmark_results.json`），可由 `scripts/run_glm5_benchmark.py` 一键复现。评测日期：2026-10-24。
 
 ---
 
 ## 1. 核心实测摘要与关键指标
 
-在 6 大核心场景的对照实测中，未加载工具的原始大模型草稿表现出高度趋同的“AI 腔”病理特征：滥用形式动词与黑话、公式化煽情对比、过度防御性免责以及均速机械的语调。加载 `anti-ai-copywriting`（先验规则注入 + 环内确定性门禁）后，各项指标实现了根本性的质感蜕变：
+本轮评测不再依赖人工构造样例，而是对 GLM-5.3 施加同一组提示词的双盲对照：对照组 A 为零规则注入、单轮原生生成、无门禁干预的单一模型；实验组 B 为注入技能规则（任务分流协议、信息守恒四公理、母语呼吸感准则）生成，并经 `anti-ai-lint` 环内确定性核验，未通过则打回一次自愈修复。
+
+8 大场景（6 大起草科目 + 2 大信息守恒科目）的实测结果如下：
 
 ```
 +-----------------------------------------------------------------------------------------+
-|                                核心实测成效对比摘要看板                                  |
+|                          核心实测成效摘要看板（GLM-5.3，8 场景）                          |
 +-----------------------------+-----------------------------+-----------------------------+
-|    AI 违规扣分 (Penalty)     |   单调机械违规项 (Violations)|     助词“的”字密度 (De-Ratio)|
-|   49.3分 -> 0.0分 (-100%)    |    12.8处 -> 0.0处 (-100%)  |   5.67% -> 1.83% (-67.7%)   |
+|     AI 违规扣分均值          |   违规项数均值              |    确定性门禁通过率          |
+|    8.50分 -> 1.88分 (-77.9%) |   2.25处 -> 0.62处 (-72.2%) |   75.0% (6/8) -> 100% (8/8) |
 +-----------------------------+-----------------------------+-----------------------------+
-|    词汇丰富度 (MATTR w=50)   |   长句节奏变异系数 (CV_len)  |    确定性门禁通过率 (Pass)   |
-|   0.893 -> 0.915 (+2.5%)    |    彻底打破 20 词/字匀速嗡鸣 |      0.0% -> 100.0% (全通)  |
+|  信息守恒场景扣分均值        |  杜撰事实锚点 (fidelity)    |    中文助词"的"字密度均值    |
+|  25.25分 -> 1.75分 (-93.1%)  |    7 处 -> 0 处 (硬拦截)    |   1.99% -> 1.46% (-26.8%)   |
 +-----------------------------+-----------------------------+-----------------------------+
 ```
 
 > [!TIP]
-> **核心结论**：`anti-ai-copywriting` 绝非粗暴同义词混淆的“洗稿黑盒”，而是通过**信息论均匀密度约束**、**现代汉语形式动词闭集还原**与**Nature 2024 实证超额词阻断**，在完全保留技术深度、实证参数与学术论点的前提下，恢复专业母语的呼吸感与骨力。
+> **核心结论（基于真实模型输出）**：单一 GLM-5.3 在自由起草场景的词汇黑话控制已明显好于早期模型（起草六科均分 2.92），其失分集中在加粗滥用、破折号堆叠与助手式元对话尾巴；而在润色与翻译两个信息守恒场景，单一模型系统性杜撰事实锚点（自行计算 35.7% 降幅、补写"UX"术语等），两科全部硬性 FAIL。技能 + 工具组将杜撰锚点清零、门禁通过率拉满 100%，并保留全部真实数字与专名。
+
+三点如实披露：
+
+1. **起草场景的领先幅度是收敛的**：起草六科均分 2.92 -> 1.92（-34.3%），并非合成样例时代的"全清零"。真实 GLM-5.3 的残留违规以格式（加粗）与标点（破折号）为主，一轮环内自愈在 `business`、`en_academic`、`popsci` 三科未能完全清零残余样式违规。
+2. **决定性优势在信息守恒**：`polish` 单一模型 34.5 分（8 处违规，5 处杜撰事实）-> 技能组 0.0 分；`translate` 16.0 分（4 处违规，2 处杜撰）-> 3.5 分。`fidelity_added` 属硬拦截项：只要输出出现原文不存在的事实锚点，无论总分高低一律不放行。
+3. **存在单场景反例**：`popsci` 单一模型原生输出了 0 违规的合格科普（CV_len 0.346），技能组草稿反而引入 1 处破折号违规（3.0 分）。工具门禁的价值在于底线保证与事实守恒兜底，而非保证每个场景必胜。
 
 ---
 
 ## 2. 评测方法论与指标体系
 
-### 2.1 智能体接入工作流与质检流程
+### 2.1 真实双盲对照协议（GLM-5.3 端到端）
+
+| 协议要素 | 对照组 A：单一模型 | 实验组 B：模型 + 技能 + 工具门禁 |
+| :--- | :--- | :--- |
+| 模型与调用 | GLM-5.3（智谱开放平台 Anthropic 兼容端点），单轮，原生解码 | 同左，完全相同的用户提示词 |
+| 系统级先验 | 无（零规则注入） | 注入 `rules/AGENTS.snippet.zh.md` / `.en.md`（任务分流、信息守恒四公理、强动词与节奏准则） |
+| 环内确定性核验 | 无 | 生成后即时运行 `anti-ai-lint`（AST 词法 + 统计学 + `--source` 事实锚点比对） |
+| 环内自愈修复 | 无 | 若门禁未通过或扣分非零，将 `<anti-ai-lint-feedback>` 违规与修复建议载荷打回模型，执行一次精准自愈后再核验 |
+| 信息守恒科目 | 同一提示词 + 源文本 | 同左；门禁对 polish/translate 开启 `--source` 事实锚点双向比对 |
 
 ```mermaid
 sequenceDiagram
@@ -48,495 +64,645 @@ sequenceDiagram
 
     Note over Agent,Lint: 阶段二：环内确定性门禁质检 (Deterministic Guardrail)
     Agent->>Lint: 提交生成的正文草稿进行 AST 与统计学核验 (c8)
-    Lint->>Lint: 1. 扫描 Kobak Nature 2024 超额词表 (Tier S/A/B)<br/>2. 朱德熙形式动词闭集与动作名物化检测<br/>3. 计算句长变异系数 (CV_len) 与 MATTR (w=50)<br/>4. 统计虚词“的”字密度与防御性免责堆叠
-    alt 存在违规扣分 (Score > 阈值)
+    Lint->>Lint: 1. 扫描 Kobak Nature 2024 超额词表 (Tier S/A/B)<br/>2. 朱德熙形式动词闭集与动作名物化检测<br/>3. 计算句长变异系数 (CV_len) 与 MATTR (w=50)<br/>4. 统计虚词"的"字密度与防御性免责堆叠<br/>5. --source 事实锚点双向守恒比对
+    alt 存在违规扣分 (Score > 0 或未通过)
         Lint-->>Agent: 返回行级诊断建议 (Remediation Feedback)
-        Agent->>Agent: 自主反思并精准替换病理句式
+        Agent->>Agent: 自主反思并精准替换病理句式（一次自愈）
     else 门禁通过 (Score = 0.0, Passed)
-        Lint-->>Doc: 放行并提交高质量自然语态文案
+        Lint->>Doc: 放行并提交高质量自然语态文案
     end
 ```
+
+本轮实测中，实验组的环内自愈在 8 科中的 6 科触发（`academic` 与 `social` 首轮即 0.0 分直接放行），其中 `polish` 从首轮 22.0 分（5 处违规）自愈至 0.0 分。
 
 ### 2.2 核心量化指标与理论依据
 
 1. **确定性违规扣分（`anti-ai-lint Score`）**：
-   - 依据严密的分级加权扣分体系：Tier S 恶性高频词（5.0 分）、Tier A 伪学术黑话（3.5~4.0 分）、Tier B 泛用词（2.0 分）、防御性免责（6.0 分）、轻动词套链（3.5 分）、节奏单调（3.5 分）。
+   - 依据严密的分级加权扣分体系：Tier S 恶性高频词（5.0 分）、Tier A 伪学术黑话（3.5~4.0 分）、Tier B 泛用词（2.0 分）、防御性免责（6.0 分）、轻动词套链（3.5 分）、节奏单调（3.5 分）、格式与标点滥用（2.5~3.0 分）。
    - 标准化分数 $Score_{1k} = \frac{Score}{Words} \times 1000$，消除文本长度对绝对分数的干扰。
 2. **长句节奏变异系数（Burstiness $CV_{len}$）**：
    - 理论基础：**Meister et al. (EMNLP 2021) 均匀信息密度假说 (Uniform Information Density, UID)**。
    - 统计公式：$CV_{len} = \frac{\sigma}{\mu} = \frac{\sqrt{\frac{1}{N}\sum_{i=1}^N (L_i - \mu)^2}}{\mu}$。
-   - 大模型默认输出倾向于均匀的 20~35 字等长句，呈现机器单调嗡鸣（$CV_{len} < 0.28$）。本引擎驱动长短句错落交替（5~10 字短斩截句与 35+ 字复合论述句有机结合）。
+   - 大模型默认输出倾向于均匀的等长句，呈现机器单调嗡鸣（$CV_{len} < 0.28$）。本轮实测 GLM-5.3 原生输出的节奏变异整体已较高（8 场景均值 0.560），说明新一代模型的句长错落已有改善，节奏不再是其主要病理。
 3. **滑动窗口词汇丰富度（Moving-Average Type-Token Ratio, MATTR）**：
    - 采用标准滑动窗口大小 $W = 50$，计算窗口内不重复词元（Type）与总词元（Token）比值的移动均值，彻底规避传统 TTR 随文本长度衰减的系统误差。
-4. **助词“的”字密度（Particle "的" Ratio）**：
+4. **助词"的"字密度（Particle "的" Ratio）**：
    - 公式：$\text{Ratio}_{\text{的}} = \frac{N_{\text{的}}}{N_{\text{CJK}}}$。
-   - 翻译腔与 AI 机器生成的典型病征是多重定语修饰过度粘连（通常 $> 5\%$）。自然汉语主干通过强动词驱动，理想密度控制在 $1.5\% \sim 3.0\%$。
+   - 翻译腔与机器生成的典型病征是多重定语修饰过度粘连。本轮实测单一 GLM-5.3 的中文"的"字密度均值为 1.99%，已处于自然区间，技能组进一步压至 1.46%。
 5. **朱德熙形式动词与名物化消除率（Light Verb Constructions, LVC）**：
-   - 严格阻断 `进行|开展|展开|作出|予以|给以|给予|加以|具有|得到|受到|作|做|致以` + 名物化动作（如“进行详细的调研与深入的分析”），还原为原生活力动词（“对比”、“测定”、“复盘”）。
+   - 严格阻断 `进行|开展|展开|作出|予以|给以|给予|加以|具有|得到|受到|作|做|致以` + 名物化动作（如"进行了梳理和优化工作"），还原为原生活力动词（"梳理并优化"）。
+6. **事实锚点守恒（`--source` Fidelity Gate）**：
+   - 对纯数字、字母开头型号代码（如 `H100`）与全大写缩写做双向比对：输出新增锚点记 `fidelity_added`（+5.0 分且强制拦截），原文锚点缺失记 `fidelity_dropped`（+3.0 分）。
 
 ---
 
 ## 3. 全场景量化对比总矩阵
 
-下表展示了 6 个标准场景基准用例在加载前后的全量量化指标对比（涵盖扣分、节奏 CV、词汇 MATTR、虚词密度、形式动词及门禁裁决）：
+下表为 8 大科目在两组条件下的全量实测指标（数据逐字段来自 `benchmark_results.json`，并已在本地对 16 份生成文本复跑核验一致）：
 
-| 测试场景分类 | 语体模式 | 指标维度 | 加载前原始大模型草稿 (Before) | 加载后自然语态成果 (After) | 优化幅度 / 判定结论 |
+| 测试场景分类 | 语体模式 | 指标维度 | 单一模型 (Solo GLM-5.3) | 模型+技能工具 (After) | 优化幅度 / 判定结论 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **1. 学术论文摘要**<br>`academic` | 学术级<br>(`academic`) | 扣分 / 标准化分<br>违规项数 / 门禁裁决<br>句长节奏变异 ($CV_{len}$)<br>词汇丰富度 (MATTR)<br>助词“的”字密度<br>形式动词 (LVC) / 公式套路 | 61.5 分 / 300.0 分<br>15 处违规 / ❌ 门禁不通过<br>0.223 (单调机器感)<br>0.885<br>5.85% (12/205)<br>1 处 LVC / 9 处公式套路 | **0.0 分 / 0.0 分**<br>**0 处违规 / ✅ 完全合规通过**<br>**0.228 (错落紧凑)**<br>**0.941**<br>**3.12% (4/128)**<br>**0 处 LVC / 0 处公式套路** | **-100.0% 扣分 (全清零)**<br>**100% 违规清零**<br>**破除单调匀速嗡鸣**<br>**+6.3% 词汇多样性**<br>**-46.7% “的”字堆叠**<br>**形式动词与套路清零** |
-| **2. 商业管理备忘**<br>`business` | 通用级<br>(`general`) | 扣分 / 标准化分<br>违规项数 / 门禁裁决<br>句长节奏变异 ($CV_{len}$)<br>词汇丰富度 (MATTR)<br>助词“的”字密度<br>形式动词 (LVC) / 互联网黑话 | 51.5 分 / 336.6 分<br>13 处违规 / ❌ 门禁不通过<br>0.456 (黑话并列)<br>0.916<br>5.88% (9/153)<br>1 处 LVC / 10 处黑话 | **0.0 分 / 0.0 分**<br>**0 处违规 / ✅ 完全合规通过**<br>**0.537 (错落结构化)**<br>**0.901**<br>**1.75% (3/171)**<br>**0 处 LVC / 0 处黑话** | **-100.0% 扣分 (全清零)**<br>**拔除 10 处互联网黑话**<br>**+17.8% 节奏呼吸感**<br>**高信息密度敏捷列表**<br>**-70.2% 冗余助词**<br>**业务事实与损益驱动** |
-| **3. 英文顶会论文**<br>`en_academic` | 英文学术<br>(`academic`) | 扣分 / 标准化分<br>违规项数 / 门禁裁决<br>句长节奏变异 ($CV_{len}$)<br>词汇丰富度 (MATTR)<br>Nature 2024 超额词频<br>形式动词 (LVC) / 公式连接词 | 55.5 分 / 555.0 分<br>17 处违规 / ❌ 门禁不通过<br>0.274 (单调嗡鸣)<br>0.876<br>13 处 (delve/tapestry等)<br>1 处 LVC / 3 处公式连接词 | **0.0 分 / 0.0 分**<br>**0 处违规 / ✅ 完全合规通过**<br>**0.258 (实证紧凑)**<br>**0.901**<br>**0 处 (全部替换为硬核指标)**<br>**0 处 LVC / 0 处公式连接词** | **-100.0% 扣分 (全清零)**<br>**AI 恶性词频彻底清零**<br>**实证硬件参数驱动**<br>**+2.9% 词汇多样性**<br>**消除虚假范式跃迁夸大**<br>**确立学术作者客观质感** |
-| **4. 科研基金申报**<br>`grant` | 学术级<br>(`academic`) | 扣分 / 标准化分<br>违规项数 / 门禁裁决<br>句长节奏变异 ($CV_{len}$)<br>词汇丰富度 (MATTR)<br>助词“的”字密度<br>形式动词 (LVC) / 防御免责 | 39.5 分 / 228.3 分<br>10 处违规 / ❌ 门禁不通过<br>0.244 (平铺直叙)<br>0.942<br>3.47% (6/173)<br>1 处 LVC / 3 处防御弱化 | **0.0 分 / 0.0 分**<br>**0 处违规 / ✅ 完全合规通过**<br>**0.373 (紧凑斩截)**<br>**0.896**<br>**0.55% (1/181)**<br>**0 处 LVC / 0 处防御弱化** | **-100.0% 扣分 (全清零)**<br>**清除弱化免责与套话**<br>**+52.9% 句长节奏变异**<br>**强动词引导技术路线**<br>**-84.1% 虚词粘连**<br>**可核验刚性考核指标** |
-| **5. 前沿科普专栏**<br>`popsci` | 通用级<br>(`general`) | 扣分 / 标准化分<br>违规项数 / 门禁裁决<br>句长节奏变异 ($CV_{len}$)<br>词汇丰富度 (MATTR)<br>助词“的”字密度<br>形式动词 (LVC) / 公式排比 | 47.0 分 / 284.9 分<br>12 处违规 / ❌ 门禁不通过<br>0.116 (严重机械感)<br>0.853<br>6.06% (10/165)<br>2 处 LVC / 4 处公式排比 | **0.0 分 / 0.0 分**<br>**0 处违规 / ✅ 完全合规通过**<br>**0.117 (平实叙述)**<br>**0.889**<br>**1.97% (3/152)**<br>**0 处 LVC / 0 处公式排比** | **-100.0% 扣分 (全清零)**<br>**破除排比与煽情叙事**<br>**平视生活具象表达**<br>**+4.2% 词汇多样性**<br>**-67.5% 冗余助词**<br>**清晰还原生物物理机理** |
-| **6. 社交数码实测**<br>`social` | 通用级<br>(`general`) | 扣分 / 标准化分<br>违规项数 / 门禁裁决<br>句长节奏变异 ($CV_{len}$)<br>词汇丰富度 (MATTR)<br>助词“的”字密度<br>轻动词/义肢 / 营销黑话 | 41.0 分 / 322.8 分<br>10 处违规 / ❌ 门禁不通过<br>0.276 (模板通稿)<br>0.884<br>7.09% (9/127)<br>1 处轻动词 / 7 处营销黑话 | **0.0 分 / 0.0 分**<br>**0 处违规 / ✅ 完全合规通过**<br>**0.215 (生活沉浸)**<br>**0.962**<br>**1.74% (2/115)**<br>**0 处轻动词 / 0 处营销黑话** | **-100.0% 扣分 (全清零)**<br>**拔除营销咆哮体与空话**<br>**真实痛点与分贝实测**<br>**+8.8% 词汇多样性**<br>**-75.5% 冗杂结构**<br>**诚实陈述产品短板** |
-| **全场景宏观均值** | - | **平均扣分 / 均值违规<br>门禁通过率 (Pass Rate)<br>中文“的”字密度均值<br>MATTR 词汇多样性均值<br>形式动词/文字义肢均值<br>公式套话与过渡均值** | **49.3 分 / 12.8 处**<br>**0.0% (0/6 通过)**<br>**5.67%**<br>**0.893**<br>**1.2 处**<br>**10.0 处** | **0.0 分 / 0.0 处**<br>**100.0% (6/6 全通)**<br>**1.83%**<br>**0.915**<br>**0.0 处**<br>**0.0 处** | **扣分 -100.0% (全清零)<br>门禁 100% 绿色放行<br>虚词密度下降 -67.7%<br>词汇多样性稳健提升<br>文字义肢彻底肃清<br>套话公式彻底解构** |
+| **1. 学术论文摘要**<br>`academic` | 学术级 | 扣分 / 标准化分<br>违规项数 / 门禁裁决<br>句长节奏 ($CV_{len}$)<br>词汇丰富度 (MATTR)<br>助词"的"字密度<br>特征违规 | 4.0 分 / 11.3 分<br>1 处违规 / ✅ 通过<br>0.666<br>0.915<br>1.47% (5/339)<br>1 处黑话（深度融合） | **0.0 分 / 0.0 分**<br>**0 处违规 / ✅ 通过**<br>**0.684**<br>**0.919**<br>**0.63% (2/318)**<br>**0 处违规** | **-100.0% 扣分**<br>首轮直接放行<br>节奏与词汇稳中有升<br>黑话清零 |
+| **2. 商业管理备忘**<br>`business` | 通用级 | 扣分 / 标准化分<br>违规项数 / 门禁裁决<br>句长节奏 ($CV_{len}$)<br>词汇丰富度 (MATTR)<br>助词"的"字密度<br>特征违规 | 2.5 分 / 9.5 分<br>1 处违规 / ✅ 通过<br>0.656<br>0.879<br>0.00% (0/257)<br>加粗滥用 7 处 + 编造指标后自注"示例占位" | **2.5 分 / 8.7 分**<br>**1 处违规 / ✅ 通过**<br>**0.598**<br>**0.832**<br>**0.00% (0/280)**<br>加粗降至 5 处；指标改为【待补】占位 | 扣分持平（残余格式违规）<br>杜撰指标 -> 占位符纪律<br>自愈触发但未清零 |
+| **3. 英文顶会论文**<br>`en_academic` | 英文学术 | 扣分 / 标准化分<br>违规项数 / 门禁裁决<br>句长节奏 ($CV_{len}$)<br>词汇丰富度 (MATTR)<br>Nature 2024 超额词频<br>特征违规 | 3.0 分 / 13.5 分<br>1 处违规 / ✅ 通过<br>0.584<br>0.847<br>0 处（delve/tapestry 等均未出现）<br>破折号 1 处 | **3.0 分 / 13.5 分**<br>**1 处违规 / ✅ 通过**<br>**0.519**<br>**0.897**<br>**0 处**<br>破折号 5 处（自愈未清零） | 扣分持平；超额词双零<br>词汇丰富度 +5.0%<br>残余样式违规如实披露 |
+| **4. 科研基金申报**<br>`grant` | 学术级 | 扣分 / 标准化分<br>违规项数 / 门禁裁决<br>句长节奏 ($CV_{len}$)<br>词汇丰富度 (MATTR)<br>助词"的"字密度<br>特征违规 | 5.5 分 / 13.9 分<br>2 处违规 / ✅ 通过<br>0.573<br>0.893<br>0.98% (4/407)<br>破折号 5 处 + 加粗 5 处；指标含"X 篇"占位 | **3.0 分 / 9.0 分**<br>**1 处违规 / ✅ 通过**<br>**0.350**<br>**0.902**<br>**0.00% (0/317)**<br>破折号降至 4 处；考核指标全部刚性量化 | **-45.5% 扣分**<br>强动词条目 + 刚性 KPI<br>自愈后违规减半 |
+| **5. 前沿科普专栏**<br>`popsci` | 通用级 | 扣分 / 标准化分<br>违规项数 / 门禁裁决<br>句长节奏 ($CV_{len}$)<br>词汇丰富度 (MATTR)<br>助词"的"字密度<br>特征违规 | 0.0 分 / 0.0 分<br>0 处违规 / ✅ 通过<br>0.346<br>0.909<br>4.08% (10/245)<br>无违规（原生即合格） | **3.0 分 / 11.6 分**<br>**1 处违规 / ✅ 通过**<br>**0.424**<br>**0.897**<br>**3.88% (10/258)**<br>破折号 1 处（自愈未清零） | 单场景反例：原生 0 分<br>技能组节奏 +22.4%<br>残余样式违规如实披露 |
+| **6. 社交数码实测**<br>`social` | 通用级 | 扣分 / 标准化分<br>违规项数 / 门禁裁决<br>句长节奏 ($CV_{len}$)<br>词汇丰富度 (MATTR)<br>助词"的"字密度<br>特征违规 | 2.5 分 / 9.7 分<br>1 处违规 / ✅ 通过<br>0.517<br>0.947<br>1.87% (5/268)<br>加粗 4 处 + 网络化模糊表述（"80%左右"） | **0.0 分 / 0.0 分**<br>**0 处违规 / ✅ 通过**<br>**0.291**<br>**0.914**<br>**2.30% (5/217)**<br>**0 处违规** | **-100.0% 扣分**<br>正确触发温感叙事 A/B 交互协议<br>首轮直接放行 |
+| **7. 技术故障通报润色**<br>`polish`<br>（信息守恒） | 通用级<br>+ `--source` | 扣分 / 标准化分<br>违规项数 / 门禁裁决<br>杜撰事实锚点<br>轻动词 (LVC)<br>助词"的"字密度 | 34.5 分 / 71.7 分<br>8 处违规 / ❌ **硬拦截 FAIL**<br>5 处（自算 35.7%、36%，锚点 14/9/3 重复引用）<br>2 处（进行了…工作）<br>1.22% (6/490) | **0.0 分 / 0.0 分**<br>**0 处违规 / ✅ 通过**<br>**0 处（14/9/3 精确守恒）**<br>**0 处（"梳理并优化了"）**<br>**0.00% (0/56)** | **-100.0% 扣分，FAIL -> PASS**<br>杜撰锚点 5 -> 0<br>环内自愈 22.0 -> 0.0 |
+| **8. 技术文档英译中**<br>`translate`<br>（信息守恒） | 通用级<br>+ `--source` | 扣分 / 标准化分<br>违规项数 / 门禁裁决<br>杜撰事实锚点<br>轻动词 (LVC)<br>助词"的"字密度 | 16.0 分 / 91.4 分<br>4 处违规 / ❌ **硬拦截 FAIL**<br>2 处（自加"UX"术语、"5"重复）<br>1 处（开展的…研究）<br>3.75% (6/160) | **3.5 分 / 54.7 分**<br>**1 处违规 / ✅ 通过**<br>**0 处（5/48/12/31/2024 全守恒）**<br>1 处残余（开展的…研究）<br>**3.39% (2/59)** | **-78.1% 扣分，FAIL -> PASS**<br>杜撰锚点 2 -> 0<br>型号与数字 100% 守恒 |
+| **全场景宏观均值**（8 科） | - | **平均扣分 / 均值违规<br>门禁通过率<br>零违规场景占比<br>中文"的"字密度均值<br>MATTR 均值 / $CV_{len}$ 均值** | **8.50 分 / 2.25 处**<br>**75.0% (6/8)**<br>**12.5% (1/8)**<br>**1.99%**<br>**0.895 / 0.560** | **1.88 分 / 0.62 处**<br>**100.0% (8/8)**<br>**37.5% (3/8)**<br>**1.46%**<br>**0.896 / 0.398** | **扣分 -77.9%<br>门禁 100% 放行<br>违规 -72.2%<br>虚词密度 -26.8%<br>词汇丰富度持平** |
+| **信息守恒子集**（polish + translate） | - | **平均扣分 / 合计违规<br>门禁通过率<br>fidelity_added 杜撰** | **25.25 分 / 12 处**<br>**0.0% (0/2)**<br>**7 处** | **1.75 分 / 1 处**<br>**100.0% (2/2)**<br>**0 处** | **扣分 -93.1%<br>杜撰事实清零<br>硬拦截全部解除** |
 
 ---
 
-## 4. 六大典型场景深度实测案例与语言学诊断
+## 4. 八大科目真实生成文本对照与语言学诊断
+
+以下全部正文均为 GLM-5.3 真实输出原文，一字未改（含各自的元说明尾巴，如实呈现两种条件的输出形态差异）。
 
 ### 案例 1：学术论文摘要与核心对比分析（`academic`）
 
 #### 提示词（Prompt）
-> “请撰写一段关于深度学习在生物大分子（如蛋白质）结构预测中应用的学术论文摘要与核心对比分析。要求：客观笃定，严禁防御性免责与空洞套话，严谨报告实证数据与置信区间。”
+> "请撰写一段关于深度学习在蛋白质结构预测中应用的学术论文摘要与核心对比分析。字数在250-350字左右。"
 
-#### 原文 Draft (Before) vs. 改写后 Natural Prose (After)
+#### 单一模型输出 (Solo, Penalty 4.0 | 1 处违规) vs. 模型+技能工具输出 (After, Penalty 0.0 | 0 处违规)
 
-##### ❌ 加载前原始大模型输出（Penalty: 61.5 | 违规项: 15 处）
+##### ❌ 单一模型原生输出（Penalty: 4.0 | 违规项: 1 处：黑话「深度融合」）
 ```markdown
-# 深度学习在生物大分子结构预测中的应用
+**摘要**
 
-随着人工智能技术的飞速发展，深度学习在结构生物学领域扮演着不可或缺的角色。在当今快速发展的背景下，阿尔法折叠的问世不仅是一项技术的突破，更是对传统范式的全面重塑。
+深度学习正深刻变革蛋白质结构预测领域。本文梳理了从同源建模、穿线法等传统方法到深度学习方法的技术演进路径，选取AlphaFold2、RoseTTAFold与ESMFold三大代表性模型展开系统对比，并探讨其局限与未来方向。
 
-本研究对该预测模型进行了详细的调研与深入的分析。虽然本研究还不成熟，水平有限，但我们试图通过多维度、全方位的视角，探索其底层逻辑，为后续研究赋能。通过从单序列到多序列比对的飞跃，该模型可能或许初步具有解决蛋白质折叠难题的能力。总而言之，毋庸置疑，这具有极其重要的现实意义与应用价值。
+**核心对比分析**
+
+结果表明：AlphaFold2基于Evoformer架构，融合多序列比对与模板信息，在CASP14竞赛中达到接近实验解析的精度（中位GDT_TS约92.4），长程相互作用建模能力最强；RoseTTAFold采用序列、距离图与坐标的三轨耦合网络，以更低计算成本取得次优精度；ESMFold依托蛋白质语言模型，无需多序列比对即可高效预测孤儿蛋白，速度优势显著但精度略逊。总体而言，深度学习使预测精度与效率相较传统方法实现数量级跃升，但在构象动态、内在无序区域及配体互作预测等方面仍存局限。未来应推动物理先验与数据驱动模型的深度融合，并借助AlphaFold3等新一代工具，拓展对蛋白质复合物等复杂分子体系的预测能力。
+
+---
+
+全文约320字。如需调整篇幅、补充参考文献格式或改写为英文摘要，请随时告知。
 ```
 
-##### ✅ 加载后自然语态成果（Penalty: 0.0 | 违规项: 0 处）
+##### ✅ 模型+技能工具输出（Penalty: 0.0 | 违规项: 0 处，首轮直接放行）
 ```markdown
-# 蛋白质结构预测模型的精度与计算开销对比
+**【摘要】**
 
-AlphaFold2 利用多序列比对（MSA）与注意力机制，将单域蛋白质骨架预测的中位 RMSD 降至 1.5 Å 以下。
+蛋白质三维结构长期依赖X射线晶体学与冷冻电镜解析，实验周期以年计。深度学习改变了这一局面：AlphaFold2以Evoformer架构整合共进化信号与几何模块，在CASP14取得中位GDT_TS 92.4，精度逼近实验测定；RoseTTAFold以三轨设计降低算力门槛，精度略逊于前者；ESMFold借助蛋白质语言模型免除多序列比对，单链预测耗时降至分钟级。高精度结构预测自此成为结构生物学的常规工具。
 
-本文对比 AlphaFold2、ESMFold 与 OpenFold 在 CASP14 评估集上的推理延迟与显存占用。测试涵盖 92 个靶点蛋白，单序列输入长度在 120 至 840 个氨基酸之间。实验表明，ESMFold 推理速度较 AlphaFold2 提升 6 倍，但在长无序区段的预测置信度（pLDDT）下降 12.4 分（95% CI 8.1–16.7，P < 0.001）。差异主要源于语言模型表征对协同进化信息的捕获能力上限。
+**【核心对比分析】**
+
+三者差异集中于输入信息与架构设计：AlphaFold2依赖多序列比对，同源序列匮乏时精度显著下降；RoseTTAFold三轨耦合缓解了对深比对的依赖，整体精度不及AlphaFold2；ESMFold以语言模型隐式编码同源信息，可扩展至宏基因组规模，长链与构象变化场景下弱于AlphaFold2。三者共同短板是构象系综、配体结合亲和力与内在无序区域建模，引入扩散模型等生成式架构并叠加物理先验是当前主攻方向。
+
+**关键词**：蛋白质结构预测；AlphaFold2；蛋白质语言模型；共进化信号
+
+（正文约330字，符合250–350字要求）
 ```
 
 #### 🔬 关键句式靶向手术对比（Side-by-Side Surgical Diff）
 
-| ❌ 原始大模型病理语句（Robotic AI Draft） | ✅ 自然语态手术重构（Humanized Remediation） | 语言学与工程学治理机理 |
+| ❌ 单一模型病理语句（Robotic AI Draft） | ✅ 技能工具组重构（Skill + Tool Gate） | 语言学与工程学治理机理 |
 | :--- | :--- | :--- |
-| 「随着人工智能技术的飞速发展，深度学习在结构生物学领域扮演着不可或缺的角色。」 | 「AlphaFold2 利用多序列比对（MSA）与注意力机制，将单域蛋白质骨架预测的中位 RMSD 降至 1.5 Å 以下。」 | **拔除虚假宏大开篇**：删除无信息量的垫音（“随着...飞速发展”与“扮演...角色”），首句直接陈述具体模型、机理与物理精度。 |
-| 「在当今快速发展的背景下，阿尔法折叠的问世不仅是一项技术的突破，更是对传统范式的全面重塑。」 | 「本文对比 AlphaFold2、ESMFold 与 OpenFold 在 CASP14 评估集上的推理延迟与显存占用。」 | **破除否定式煽情对比**：删除“不仅...更是...”与过度升华，直接界定待测试竞品与客观实验评估集（CASP14）。 |
-| 「本研究对该预测模型进行了详细的调研与深入的分析。」 | 「测试涵盖 92 个靶点蛋白，单序列输入长度在 120 至 840 个氨基酸之间。」 | **切除轻动词义肢（LVC）**：将「进行...调研与...分析」形式动词套链解构，替换为样本规模（92 靶点）与具体序列长度边界。 |
-| 「虽然本研究还不成熟，水平有限，但我们试图通过多维度、全方位的视角，探索其底层逻辑，为后续研究赋能。」 | 「实验表明，ESMFold 推理速度较 AlphaFold2 提升 6 倍，但在长无序区段的预测置信度（pLDDT）下降 12.4 分（95% CI 8.1–16.7，P < 0.001）。」 | **消除防御性自贬与黑话**：切除“水平有限”与“底层逻辑/赋能”，汇报严谨实测参数与置信区间，确立学术作者权威。 |
-| 「通过从单序列到多序列比对的飞跃，该模型可能或许初步具有解决蛋白质折叠难题的能力。总而言之，毋庸置疑，这具有极其重要的现实意义与应用价值。」 | 「差异主要源于语言模型表征对协同进化信息的捕获能力上限。」 | **去弱化套叠与空洞自夸**：拔除“可能或许初步”三层弱化与“极其重要现实意义”假大空收尾，以底层算法信息论因果闭环作结。 |
+| 「深度学习正深刻变革蛋白质结构预测领域。」 | 「蛋白质三维结构长期依赖X射线晶体学与冷冻电镜解析，实验周期以年计。」 | 删除"深刻变革领域"式宏大定调开篇，改从实验方法与时间成本的具体事实起笔，信息密度立增。 |
+| 「总体而言，深度学习使预测精度与效率相较传统方法实现数量级跃升，但在……仍存局限。」 | 「三者共同短板是构象系综、配体结合亲和力与内在无序区域建模，引入扩散模型等生成式架构并叠加物理先验是当前主攻方向。」 | 拔除"总体而言……数量级跃升"空洞总结与"深度融合"黑话（本场景唯一扣分点），改以三条具体短板与一条主攻方向收束。 |
+| 「AlphaFold2基于Evoformer架构，融合多序列比对与模板信息，在CASP14竞赛中达到接近实验解析的精度」 | 「AlphaFold2依赖多序列比对，同源序列匮乏时精度显著下降」 | 技能组在同等精度陈述之外补充失败边界（同源序列匮乏场景），对比分析从"排名"升级为"适用条件"。 |
+| 「全文约320字。如需调整篇幅、补充参考文献格式或改写为英文摘要，请随时告知。」 | （正文之后仅保留字数核对与关键词块） | 助手式尾随服务性元对话是单轮原生生成的典型暴露面；技能组的输出形态直接面向可交付文档。 |
 
 #### 量化诊断对比
 
-| 指标 | 加载前 (Before) | 加载后 (After) | 变化差异 | 规则裁决 |
+| 指标 | 单一模型 (Solo) | 模型+技能工具 (After) | 变化差异 | 说明 |
 | :--- | :--- | :--- | :--- | :--- |
-| **anti-ai-lint 扣分** | 61.5 分 | **0.0 分** | -61.5 (-100%) | ❌ 违规 -> ✅ 完美通过 |
-| **标准化扣分 (每千词)** | 300.0 分 | **0.0 分** | -300.0 | 质量门禁完全放行 |
-| **句长波动 CV ($CV_{len}$)** | 0.223 (严重单调) | **0.228 (自然紧凑)** | 句式彻底去模板化 | 触发 `rhythmic_monotony` 拦截后重构 |
-| **词汇丰富度 (MATTR)** | 0.885 | **0.941** | +6.3% | 摆脱高频车轱辘话 |
-| **助词“的”字比例** | 5.85% (12 处) | **3.12% (4 处)** | -46.7% | 拔除繁复偏正修饰 |
-| **形式动词与名物化 (LVC)** | 1 处 (进行调研与分析) | **0 处** | -100% (彻底清零) | 还原为强动词直接驱动 |
-| **公式过渡与空洞套话** | 9 处 (随着/背景下/不仅更是等) | **0 处** | -100% (彻底清零) | 消除 AI 腔论述模版 |
-| **确定性门禁判定** | ❌ 拦截 (15 处违规超标) | **✅ 放行 (0 处违规通过)** | 绿灯交付 | 工业级交付基准放行 |
+| **anti-ai-lint 扣分** | 4.0 分 | **0.0 分** | -100% | 黑话「深度融合」清零 |
+| **违规项数 / 门禁** | 1 处 / ✅ | **0 处 / ✅** | 首轮直接放行 | 未触发环内自愈 |
+| **句长节奏 ($CV_{len}$)** | 0.666 | **0.684** | +2.7% | 两组节奏均优秀 |
+| **词汇丰富度 (MATTR)** | 0.915 | **0.919** | +0.4% | 稳中有升 |
+| **助词"的"字密度** | 1.47% (5/339) | **0.63% (2/318)** | -57.1% | 定语粘连进一步压缩 |
 
-#### 深度语言学与工程学机理剖析
-1. **病理诊断（Why Before was Robotic）**：
-   - **宏大无当的假背景起笔**：“随着...飞速发展”、“在当今快速发展的背景下”，大模型习惯用宏观套话做无信息量的垫音。
-   - **形式动词与文字义肢**：“对该预测模型进行了详细的调研与深入的分析”，典型的形式动词（朱德熙 LVC 结构）堆叠，将“分析”名物化。
-   - **防御性自贬与免责（Defensive Disclaimers）**：“虽然本研究还不成熟，水平有限”，大模型因安全对齐过度训练而下意识自降身份，摧毁了学术作者的客观笃定质感。
-   - **多重弱化套叠（Hedging Overuse）**：“可能或许初步具有”，三个概率递减词叠加，造成论点漂移。
-   - **假大空煽情结尾**：“总而言之，毋庸置疑，这具有极其重要的现实意义与应用价值”，毫无实证支撑的空泛自夸。
-2. **手术式重构（How After Restored Natural Precision）**：
-   - **直陈硬核基准**：标题改为《蛋白质结构预测模型的精度与计算开销对比》，首句直接交待 AlphaFold2 的物理精度指标（中位 RMSD < 1.5 Å）。
-   - **界定可核验实验边界**：明确标定 CASP14 评估集、92 个靶点蛋白、120~840 氨基酸序列。
-   - **汇报严谨统计推断**：不仅汇报相对速度（提升 6 倍），更给出负面约束指标：pLDDT 下降 12.4 分，带出 95% 置信区间（8.1–16.7）与双尾显著性 $P < 0.001$。
-   - **归因于物理/算法机理**：收尾精准落脚在“语言模型表征对协同进化信息的捕获能力上限”，展现深厚的学科洞察力。
+#### 深度语言学诊断
+单一 GLM-5.3 的学术摘要已经相当扎实（保留了 GDT_TS 92.4、CASP14 等实证锚点），残留问题集中在两处：一处是收尾段的黑话"深度融合"，一处是面向"用户"而非"读者"的尾随服务语。技能组的改写在保留全部数字锚点的前提下，把开篇换成实验周期事实、把总结换成三条短板与主攻方向，并通过门禁首轮 0.0 放行——这是"先验约束足够、无需自愈"的典型样本。
 
 ---
 
-### 案例 2：商业管理与技术复盘备忘录（`business`）
+### 案例 2：商业管理链路重构备忘录（`business`）
 
 #### 提示词（Prompt）
-> “起草一份面向技术管理层的服务拆分与链路重构备忘录。要求：第一句直入事实与指标，拔除互联网黑话与弱动词义肢，清晰陈述降本增效成果与落地路径。”
+> "请起草一份面向管理层的Q3核心订单调度系统重构总结备忘录，汇报高并发下的吞吐改善与降本成果。字数在200-300字左右。"
 
-#### 原文 Draft (Before) vs. 改写后 Natural Prose (After)
+#### 单一模型输出 vs. 模型+技能工具输出
 
-##### ❌ 加载前原始大模型输出（Penalty: 51.5 | 违规项: 13 处）
+##### ❌ 单一模型原生输出（Penalty: 2.5 | 违规项: 1 处：加粗滥用 7 处；另含编造指标）
 ```markdown
-# 关于 Q3 业务增长策略的思考
+# Q3核心订单调度系统重构总结备忘录
 
-尊敬的各位领导：
-在当前市场竞争加剧的背景下，我们必须寻找新的业务增长抓手。本次战略调整不仅是业务结构的升级，更是组织协同机制的重塑。
+**致：** 公司管理层
+**发件：** 订单系统技术团队
+**日期：** 2024年10月
 
-运营团队对用户流失情况进行了详细的分析。值得注意的是，我们需要在多维度上全面推进私域矩阵建设，打造完整的用户运营闭环，实现全方位的深度融合。总而言之，只要我们掌握核心底层逻辑，就能为商业变现持续赋能。
+Q3期间，团队完成核心订单调度系统重构，重点突破高并发场景性能瓶颈，主要成果如下：
+
+**一、吞吐能力显著提升。** 通过异步化改造、缓存优化与分库分表，峰值处理能力由1.2万单/秒提升至3.5万单/秒（+190%），可平稳支撑大促流量。
+
+**二、响应延迟大幅下降。** 核心链路P99延迟由480ms降至120ms，降幅75%，调度超时率降至0.05%以下。
+
+**三、资源成本有效降低。** 依托弹性伸缩与算力整合，服务器规模缩减35%，季度云成本节省约120万元。
+
+**四、系统稳定性增强。** 重构后未发生P1级故障，系统可用性达99.99%。
+
+下一步团队将完成灰度全量上线并完善监控体系，全力保障Q4大促。
+
+---
+*注：文中数据为示例占位，请替换为实际指标后发布。*
 ```
 
-##### ✅ 加载后自然语态成果（Penalty: 0.0 | 违规项: 0 处）
+##### ✅ 模型+技能工具输出（Penalty: 2.5 | 违规项: 1 处：加粗 5 处；触发一次环内自愈）
 ```markdown
-# Q3 付费转化率与留存复盘及 Q4 调整方案
+门禁结果为 PASSED，未标记任何套话、黑话或多重定语问题，无需改动正文。以下为原文照录：
 
-Q3 新客次月留存率为 18.4%，较 Q2 的 23.1% 下滑 4.7 个百分点；获客成本（CAC）上升至 142 元。
+---
 
-复盘分析：
-1. 7 月新上的 3 天免费试用漏斗中，第 4 天自动扣款提醒由于文案歧义，导致主动退款率达 34%。
-2. 移动端首屏加载耗时从 1.2 秒增至 2.8 秒，流失率集中在绑定支付阶段。
+**备忘录**
 
-Q4 执行计划：
-- 11 月 5 日前优化扣款前 24 小时弹窗通知与权益说明，预计退款率回落至 15% 以下。
-- 11 月 12 日前完成支付 SDK 异步懒加载，首屏中位耗时降回 1.1 秒。
-- 暂停投放转化成本高于 180 元的两个信息流渠道，预算转投高复购推荐流。
+**致**：管理层
+**自**：订单技术团队
+**事由**：Q3核心订单调度系统重构成果
+**日期**：9月30日
+
+---
+
+Q3期间，核心订单调度系统完成重构，目标为缓解高峰调度瓶颈、压降资源成本，两项均已达成。
+
+主要改造：同步调度链路改为异步，以消息队列削峰；数据库读写分离，热点订单数据前置缓存；固定规格集群改为按负载弹性伸缩。
+
+核心成果：
+
+- 峰值吞吐由【待补：原TPS】升至【待补：现TPS】，升幅【待补：%】；
+- 大促压测中P99延迟由【待补：毫秒】降至【待补：毫秒】；
+- 计算资源用量下降【待补：%】，季度云支出减少【待补：金额】。
+
+遗留与后续：异常订单中仍有【待补：%】依赖人工处理，Q4补齐自动重试与告警；扩容预案将在大促前完成演练。
+
+---
+
+【待补】数值仍需填入实际监控与财务数据后方可提交。
 ```
 
 #### 🔬 关键句式靶向手术对比（Side-by-Side Surgical Diff）
 
-| ❌ 原始大模型病理语句（Robotic AI Draft） | ✅ 自然语态手术重构（Humanized Remediation） | 语言学与工程学治理机理 |
+| ❌ 单一模型病理语句（Robotic AI Draft） | ✅ 技能工具组重构（Skill + Tool Gate） | 语言学与工程学治理机理 |
 | :--- | :--- | :--- |
-| 「尊敬的各位领导：在当前市场竞争加剧的背景下，我们必须寻找新的业务增长抓手。」 | 「Q3 新客次月留存率为 18.4%，较 Q2 的 23.1% 下滑 4.7 个百分点；获客成本（CAC）上升至 142 元。」 | **直击财务与业务核心指标**：删除行政客套与假大空宏观背景，首句用具体异动数据（留存率下滑 4.7pct、CAC 142 元）驱动决策。 |
-| 「本次战略调整不仅是业务结构的升级，更是组织协同机制的重塑。」 | 「复盘分析：\n1. 7 月新上的 3 天免费试用漏斗中，第 4 天自动扣款提醒由于文案歧义，导致主动退款率达 34%。」 | **破除虚幻公文套话**：将空泛的“业务升级/组织重塑”替换为可审计的具体业务漏斗损益归因（退款率 34%）。 |
-| 「运营团队对用户流失情况进行了详细的分析。」 | 「2. 移动端首屏加载耗时从 1.2 秒增至 2.8 秒，流失率集中在绑定支付阶段。」 | **切除形式动词与模糊陈述**：将「进行...分析」义肢切除，用性能指标（首屏加载 1.2s -> 2.8s）与具体卡点阶段（绑定支付）说话。 |
-| 「值得注意的是，我们需要在多维度上全面推进私域矩阵建设，打造完整的用户运营闭环，实现全方位的深度融合。总而言之，只要我们掌握核心底层逻辑，就能为商业变现持续赋能。」 | 「Q4 执行计划：\n- 11 月 5 日前优化扣款前 24 小时弹窗通知与权益说明，预计退款率回落至 15% 以下。\n- 11 月 12 日前完成支付 SDK 异步懒加载，首屏中位耗时降回 1.1 秒。\n- 暂停投放转化成本高于 180 元的两个信息流渠道，预算转投高复购推荐流。」 | **互联网黑话全量拔除**：全面清零“抓手/矩阵/闭环/深度融合/底层逻辑/赋能”，转化为带交付时间、量化止损目标（<15%）、工程操作（异步懒加载）与预算再分配的敏捷执行列表。 |
+| 「峰值处理能力由1.2万单/秒提升至3.5万单/秒（+190%）……季度云成本节省约120万元」+ 尾注「*文中数据为示例占位，请替换为实际指标后发布。*」 | 「峰值吞吐由【待补：原TPS】升至【待补：现TPS】，升幅【待补：%】」+「【待补】数值仍需填入实际监控与财务数据后方可提交。」 | 单一模型先用高仿真数字撑场面、再用免责尾注对冲，是典型的"编数 + 自我免责"组合；技能组执行反杜撰占位符纪律，把虚构数字显式化为待补槽位，责任边界清晰。 |
+| 「**一、吞吐能力显著提升。** 通过异步化改造、缓存优化与分库分表」 | 「主要改造：同步调度链路改为异步，以消息队列削峰；数据库读写分离，热点订单数据前置缓存」 | 拔除"显著提升/大幅下降"式评价性副词标题与 7 处加粗，改为工程动作的直接陈述（异步化、削峰、读写分离、前置缓存）。 |
+| 「三、资源成本有效降低。依托弹性伸缩与算力整合，服务器规模缩减35%」 | 「固定规格集群改为按负载弹性伸缩」「计算资源用量下降【待补：%】」 | "依托……整合"是弱动词套链；技能组直接写出改造前后形态，未经证实的百分比一律待补。 |
+| 「四、系统稳定性增强。重构后未发生P1级故障，系统可用性达99.99%。」 | 「遗留与后续：异常订单中仍有【待补：%】依赖人工处理，Q4补齐自动重试与告警」 | 单一模型只报喜（99.99%）；技能组主动交代遗留债务与下季度的具体工程动作，备忘录的"问题-对策"结构完整。 |
 
 #### 量化诊断对比
 
-| 指标 | 加载前 (Before) | 加载后 (After) | 变化差异 | 规则裁决 |
+| 指标 | 单一模型 (Solo) | 模型+技能工具 (After) | 变化差异 | 说明 |
 | :--- | :--- | :--- | :--- | :--- |
-| **anti-ai-lint 扣分** | 51.5 分 | **0.0 分** | -51.5 (-100%) | ❌ 违规 -> ✅ 完美通过 |
-| **标准化扣分 (每千词)** | 336.6 分 | **0.0 分** | -336.6 | 质量门禁完全放行 |
-| **句长波动 CV ($CV_{len}$)** | 0.456 (黑话并列) | **0.537 (错落结构化)** | +17.8% 节奏起伏 | 列表与长短句自然穿插 |
-| **词汇丰富度 (MATTR)** | 0.916 | **0.901** | 聚焦实操术语 | 摆脱车轱辘话 |
-| **助词“的”字比例** | 5.88% (9 处) | **1.75% (3 处)** | -70.2% | 结构紧凑干练 |
-| **形式动词与名物化 (LVC)** | 1 处 (进行了详细的分析) | **0 处** | -100% (彻底清零) | 还原为具体归因事实 |
-| **互联网黑话与套话过渡** | 10 处黑话 / 1 处过渡 | **0 处** | -100% (彻底清零) | 拔除抓手/矩阵/闭环/底层逻辑/赋能 |
-| **确定性门禁判定** | ❌ 拦截 (13 处违规超标) | **✅ 放行 (0 处违规通过)** | 绿灯交付 | 工业级交付基准放行 |
+| **anti-ai-lint 扣分** | 2.5 分 | **2.5 分** | 持平 | 残余加粗 5 处，一轮自愈未清零 |
+| **违规项数 / 门禁** | 1 处 / ✅ | **1 处 / ✅** | 加粗 7 -> 5 | 门禁阈值内放行 |
+| **编造指标** | 8 个高仿真数字 | **0 个（6 个【待补】槽位）** | 杜撰清零 | 本次评测最关键的行为差异 |
+| **句长节奏 ($CV_{len}$)** | 0.656 | **0.598** | -8.8% | 两组均无节奏问题 |
+| **助词"的"字密度** | 0.00% (0/257) | **0.00% (0/280)** | 持平 | 两组均极干练 |
 
-#### 深度语言学与工程学机理剖析
-1. **病理诊断（Why Before was Robotic）**：
-   - **充斥虚无缥缈的互联网黑话**：“抓手”、“私域矩阵”、“用户运营闭环”、“全方位的深度融合”、“底层逻辑”、“持续赋能”。这些词汇看似热闹，实则毫无信息增量（Zero Information Density）。
-   - **公文套路与空洞客套**：“尊敬的各位领导”、“在当前市场竞争加剧的背景下”，延缓决策者获取关键商业情报的效率。
-2. **手术式重构（How After Restored Natural Precision）**：
-   - **首句直奔损益与核心 KPI 异动**：“Q3 新客次月留存率为 18.4%，下滑 4.7 个百分点；CAC 上升至 142 元”。直击管理层最关心的底线问题。
-   - **定位精准归因链条**：剖析“3 天试用漏斗第 4 天自动扣款歧义导致退款 34%”与“首屏加载由 1.2s 拖慢至 2.8s”，用事实代替推卸与空谈。
-   - **构建可核验的倒排期执行清单**：以清晰的时间截点（11 月 5 日、11 月 12 日）、责任动作（SDK 异步懒加载）、量化止损目标（退款率 <15%）收尾。
+#### 深度语言学诊断
+这是本轮评测中"事实纪律"对比最尖锐的场景：单一模型生成的 1.2 万单/秒、99.99% 可用性等数字全部无中生有，且用尾注免责——对管理层读者构成真实误导风险。技能组版本的价值不在扣分（格式违规未清零），而在于占位符纪律：所有未经证实的量化指标一律【待补】，配合信息守恒公理，把"听起来很真"和"确实为真"区分开。残余的 5 处加粗说明一轮自愈对格式类违规的清除率有限，这也是如实记录的边界数据。
 
 ---
 
-### 案例 3：英文顶会学术论文（`en_academic`）
+### 案例 3：英文顶会论文——投机解码（`en_academic`）
 
 #### 提示词（Prompt）
-> "Draft an academic analysis on memory bandwidth overhead and latency in speculative decoding for large language models. Requirements: rigorous empirical reporting, confident de-hedged voice, zero AI buzzwords (e.g. no 'delve', 'tapestry', 'testament')."
+> "Draft an academic analysis on memory bandwidth overhead and latency trade-offs in speculative decoding for large language models. Length: 150-250 words."
 
-#### 原文 Draft (Before) vs. 改写后 Natural Prose (After)
+#### 单一模型输出 vs. 模型+技能工具输出
 
-##### ❌ 加载前原始大模型输出（Penalty: 55.5 | 违规项: 17 处）
+##### ❌ 单一模型原生输出（Penalty: 3.0 | 违规项: 1 处：破折号 1 处）
 ```markdown
-# Navigating the Complexities of Transformer Architectures
+**Memory Bandwidth Overhead and Latency Trade-offs in Speculative Decoding**
 
-In today's fast-paced world of artificial intelligence, large language models stand as a testament to human innovation. In this paper, we delve into the intricate tapestry of attention mechanisms to explore how self-attention plays a crucial role in modern deep learning.
+Autoregressive inference in large language models is fundamentally memory-bandwidth-bound: each generated token requires a full pass over model weights, yielding low arithmetic intensity. Speculative decoding (Leviathan et al., 2023; Chen et al., 2023) exploits this by having a lightweight draft model propose k tokens that the target model verifies in a single forward pass. Because verification parallelizes attention and feed-forward computation across the k+1 positions, the marginal FLOP cost is negligible, while the bandwidth cost of loading target weights is amortized across multiple accepted tokens—converting latency from per-token to per-chunk weight traffic.
 
-It is important to note that our model represents a paradigm shift that will revolutionize the realm of natural language understanding. We make an investigation into the parameter efficiency across benchmark datasets. Furthermore, our multifaceted approach fosters a culture of seamless integration between vision and text. In conclusion, to summarize, this novel framework serves as a beacon of progress.
+The trade-off hinges on the acceptance rate τ. The expected yield per cycle is (1−τ^(k+1))/(1−τ), so net speedup requires that amortized bandwidth savings exceed the draft model's own latency and memory traffic, which add serially to the critical path. Low τ or excessive k degrades throughput, as rejected tokens waste both verification compute and KV-cache writes. Moreover, the draft model competes for HBM capacity and bandwidth, and dynamic adjustment of k introduces scheduling latency.
+
+Optimal configurations therefore depend on workload-dependent acceptance distributions and hardware bandwidth-to-compute ratios. Under high τ and draft overhead below roughly 10–20% of target latency, speculative decoding achieves near-lossless acceleration; otherwise, the bandwidth amortization is offset by speculative overhead, making adaptive drafting length essential.
+
+(~210 words)
 ```
 
-##### ✅ 加载后自然语态成果（Penalty: 0.0 | 违规项: 0 处）
+##### ✅ 模型+技能工具输出（Penalty: 3.0 | 违规项: 1 处：破折号 5 处；触发一次环内自愈）
 ```markdown
-# KV Cache Memory Consumption and Latency in Speculative Decoding
+**Memory Bandwidth and Latency Trade-offs in Speculative Decoding**
 
-Speculative decoding pairs a compact draft model with a large target model to accelerate token generation while preserving target distribution outputs.
+Speculative decoding attacks a core bottleneck of autoregressive LLM inference: every decoding step reads the full parameter set from HBM to emit one token. A lightweight draft model proposes *k* tokens; the target model then scores all of them in a single forward pass. One weight load now serves multiple tokens, which raises arithmetic intensity without changing the output distribution—rejected positions are resampled from the adjusted softmax, so the scheme stays lossless.
 
-We measured latency and GPU memory bandwidth on 8x NVIDIA H100 SXM5 GPUs across sequence lengths from 512 to 8192 tokens. For target models exceeding 70 billion parameters, draft verification reduced per-token latency from 32.4 ms to 14.1 ms when draft acceptance exceeded 72%. However, maintaining dual KV caches increased peak GPU memory allocation by 28.6% (95% CI 24.1–33.2; P = 0.003). At batch sizes above 32, memory capacity constrained throughput gains.
+Everything hinges on the acceptance rate. Accepted drafts cut latency almost linearly in the number of tokens verified, because bandwidth, not FLOPs, dominates each step. Rejections do the opposite: they waste the draft model's serial decode steps and stretch the verification pass. Net speedup is expected accepted tokens per cycle divided by total cycle time; with poor acceptance—and a draft that is slow relative to the target—the ratio drops below one. KV-cache traffic makes matters worse: verification attends over *k* positions, and speculative states must be kept, then rolled back on rejection.
+
+The optimal draft length therefore varies by task. Low-entropy, near-greedy generation tolerates long proposals; open-ended sampling calls for short ones. Newer designs fold drafting into the target itself—early-exit layers, self-drafting heads—trading extra parameters to remove the separate draft model's bandwidth cost and memory footprint.
+
+*(~213 words)*
 ```
 
 #### 🔬 关键句式靶向手术对比（Side-by-Side Surgical Diff）
 
-| ❌ 原始大模型病理语句（Robotic AI Draft） | ✅ 自然语态手术重构（Humanized Remediation） | 语言学与工程学治理机理 |
+| ❌ 单一模型病理语句（Robotic AI Draft） | ✅ 技能工具组重构（Skill + Tool Gate） | 语言学与工程学治理机理 |
 | :--- | :--- | :--- |
-| *"In today's fast-paced world of artificial intelligence, large language models stand as a testament to human innovation."* | *"Speculative decoding pairs a compact draft model with a large target model to accelerate token generation while preserving target distribution outputs."* | **拔除虚假宏大套话开篇**：彻底删除 *"In today's fast-paced world"* 与 *"stand as a testament to"*，首句直接给出投机解码精准的系统架构定义。 |
-| *"In this paper, we delve into the intricate tapestry of attention mechanisms to explore how self-attention plays a crucial role in modern deep learning."* | *"We measured latency and GPU memory bandwidth on 8x NVIDIA H100 SXM5 GPUs across sequence lengths from 512 to 8192 tokens."* | **切除 Nature 2024 高频恶性套话**：切除 *"delve into"*, *"intricate tapestry"*, *"plays a crucial role"*，以实证硬件测试环境（8x H100 SXM5）与上下文窗口（512~8192）代之。 |
-| *"It is important to note that our model represents a paradigm shift that will revolutionize the realm of natural language understanding."* | *"For target models exceeding 70 billion parameters, draft verification reduced per-token latency from 32.4 ms to 14.1 ms when draft acceptance exceeded 72%."* | **消除空洞赞叹与范式跃迁夸大**：删除 *"paradigm shift"* 与 *"revolutionize the realm"*，替换为模型规模（>70B）、延迟降幅（32.4ms -> 14.1ms）与接受率门槛（>72%）。 |
-| *"We make an investigation into the parameter efficiency across benchmark datasets."* | *"However, maintaining dual KV caches increased peak GPU memory allocation by 28.6% (95% CI 24.1–33.2; P = 0.003)."* | **切除形式动词与名物化义肢**：切除 *"make an investigation into"* 弱动词，直接陈述双 KV Cache 带来的显存代价（峰值显存 +28.6%）与置信区间/显著性。 |
-| *"Furthermore, our multifaceted approach fosters a culture of seamless integration between vision and text. In conclusion, to summarize, this novel framework serves as a beacon of progress."* | *"At batch sizes above 32, memory capacity constrained throughput gains."* | **清除车轱辘过渡词与假大空升华**：拔除 *"In conclusion, to summarize"* 连续堆叠与 *"multifaceted"*, *"seamless integration"*, *"beacon of progress"*，以批大小 >32 时的显存瓶颈客观收笔。 |
+| *"The expected yield per cycle is (1−τ^(k+1))/(1−τ), so net speedup requires that amortized bandwidth savings exceed the draft model's own latency and memory traffic, which add serially to the critical path."* | *"Net speedup is expected accepted tokens per cycle divided by total cycle time; with poor acceptance—and a draft that is slow relative to the target—the ratio drops below one."* | 单一模型以闭式公式与三层从句堆叠论证；技能组把同一结论转译为"比值低于一"的直陈句，主谓距离缩短，审稿人一读即得。 |
+| *"Optimal configurations therefore depend on workload-dependent acceptance distributions and hardware bandwidth-to-compute ratios."* | *"The optimal draft length therefore varies by task. Low-entropy, near-greedy generation tolerates long proposals; open-ended sampling calls for short ones."* | 名词化串（workload-dependent acceptance distributions）还原为动词句（varies by task / tolerates / calls for），并给出两种任务形态的具体判断。 |
+| *"Moreover, the draft model competes for HBM capacity and bandwidth, and dynamic adjustment of k introduces scheduling latency."* | *"Newer designs fold drafting into the target itself—early-exit layers, self-drafting heads—trading extra parameters to remove the separate draft model's bandwidth cost and memory footprint."* | 技能组补上领域前沿动向（early-exit、self-drafting），以取舍关系（extra parameters vs. bandwidth cost）收束，论证链条更完整。 |
 
 #### 量化诊断对比
 
-| 指标 | 加载前 (Before) | 加载后 (After) | 变化差异 | 规则裁决 |
+| 指标 | 单一模型 (Solo) | 模型+技能工具 (After) | 变化差异 | 说明 |
 | :--- | :--- | :--- | :--- | :--- |
-| **anti-ai-lint 扣分** | 55.5 分 | **0.0 分** | -55.5 (-100%) | ❌ 违规 -> ✅ 完美通过 |
-| **标准化扣分 (每千词)** | 555.0 分 | **0.0 分** | -555.0 | 质量门禁完全放行 |
-| **句长波动 CV ($CV_{len}$)** | 0.274 (单调嗡鸣) | **0.258 (实证严密)** | 消除排比模板 | 触发 `rhythmic_monotony` 拦截后重构 |
-| **词汇丰富度 (MATTR)** | 0.876 | **0.901** | +2.9% | 摆脱高频学术套路词 |
-| **Kobak Nature 2024 超额词** | 13 处恶性学术套话 | **0 处** | 彻底清零 | 拔除 delve/tapestry/testament/paradigm shift |
-| **形式动词与弱动词名物化** | 1 处 (make an investigation) | **0 处** | 彻底清零 | 还原为实证强动词 |
-| **公式过渡与连接词堆叠** | 3 处 (In conclusion, to summarize等) | **0 处** | 彻底清零 | 自然陈述物理边界 |
-| **确定性门禁判定** | ❌ 拦截 (17 处违规超标) | **✅ 放行 (0 处违规通过)** | 绿灯交付 | 工业级交付基准放行 |
+| **anti-ai-lint 扣分** | 3.0 分 | **3.0 分** | 持平 | 破折号 1 -> 5，自愈未清零 |
+| **Kobak Nature 2024 超额词** | 0 处 | **0 处** | 双零 | 真实 GLM-5.3 已不再高频触发 delve/tapestry |
+| **词汇丰富度 (MATTR)** | 0.847 | **0.897** | **+5.9%** | 本场景最大增益 |
+| **句长节奏 ($CV_{len}$)** | 0.584 | **0.519** | -11.1% | 两组节奏均健康 |
+| **参考文献锚点** | Leviathan/Chen 2023 引用 | 未附引用 | 取舍披露 | 技能组以机理表述替代文献锚点 |
 
-#### 深度语言学与工程学机理剖析
-1. **病理诊断（Why Before was Robotic）**：
-   - **Nature 2024 超额词频突变重度患者**：PubMed 实证统计中典型大模型生成的恶性词汇被全部触发：`In today's fast-paced world`、`stand as a testament to`、`delve into the intricate tapestry`、`paradigm shift`、`revolutionize the realm`、`multifaceted approach`、`fosters a culture of seamless integration`、`beacon of progress`。
-   - **虚弱的形式动词义肢**：“We make an investigation into”，英语中典型的弱动词化（nominalization），造成行文拖沓无力。
-   - **过度套话机械连接词**：“In conclusion, to summarize”，连续堆叠总结过渡词。
-2. **手术式重构（How After Restored Natural Precision）**：
-   - **开宗明义界定系统定义**：第一句给出投机解码（Speculative Decoding）的精准数学/工程定义，消除任何煽情赞美。
-   - **硬核硬件与拓扑测试环境**：清晰陈述测试平台（8x NVIDIA H100 SXM5 GPUs）与上下文跨度（512 至 8192 tokens）。
-   - **精细化量化指标与折衷权衡（Trade-offs）**：给出延迟收益（32.4 ms -> 14.1 ms）的前提条件（草稿模型接受率 >72%），同时客观揭示显存代偿成本（峰值分配增加 28.6%）与吞吐量受限边界（批大小 >32）。
+#### 深度语言学诊断
+真实 GLM-5.3 的英文学术写作已经基本摆脱了 Kobak 词表的超额词模式（两组均为 0 触发），这与合成样例时代的"13 处恶性词"形成鲜明对照——也说明该词表拦截的是 2023-2024 代际模型的病理，新一代模型的主要残留转移到了符号层面（破折号堆叠）。技能组的实际增益在词汇丰富度（+5.9%）与名词化还原：把"which add serially to the critical path"类挂尾从句改为分号并列的短直陈。残留的 5 处破折号在一轮自愈后反而多于草稿，如实记录。
 
 ---
 
-### 案例 4：科研基金课题申报书（`grant`）
+### 案例 4：国家自然科学基金申报技术路线（`grant`）
 
 #### 提示词（Prompt）
-> “起草一份国家自然科学基金课题申报书的核心研究内容与技术路线。要求：条目动词直接切入，删除「拟通过...从而...进而...」套链，明确可核验量化指标与适用边界。”
+> "请起草一份国家自然科学基金课题申报书中的核心技术路线与关键考核指标，主题为自主智能体系统的安全对齐与防御机制。字数在250-350字左右。"
 
-#### 原文 Draft (Before) vs. 改写后 Natural Prose (After)
+#### 单一模型输出 vs. 模型+技能工具输出
 
-##### ❌ 加载前原始大模型输出（Penalty: 39.5 | 违规项: 10 处）
+##### ❌ 单一模型原生输出（Penalty: 5.5 | 违规项: 2 处：破折号 5 处 + 加粗 5 处）
 ```markdown
-# 基于多模态大模型的工业异常检测关键技术研究
+# 核心技术路线与关键考核指标（草稿）
 
-本项目立足制造强国战略，在工业智能化深度融合的背景下，紧密围绕工业缺陷检测这一核心赛道。本项目不仅是技术创新的抓手，更是推动产业闭环的关键所在。
+## 一、核心技术路线
 
-课题组拟通过构建全方位的异常感知矩阵，对多源传感器数据进行详细的采集与系统的分析。虽然受限于现有条件仅能开展初步验证，但我们试图搭建底层逻辑，有望在多维度上全面提升检测精准度。总而言之，项目将为高端装备制造赋能，实现跨越式发展。
+采用“风险建模—安全对齐—主动防御—评估验证”四位一体的递进式技术路线：
+
+**（1）安全风险建模**：构建自主智能体全生命周期威胁模型，形式化刻画提示注入、目标漂移、越权工具调用、多智能体合谋等典型风险；
+
+**（2）多层级安全对齐**：融合基于人类反馈的强化学习与宪法式AI方法，建立“意图—规划—执行”三层对齐框架，确保智能体行为与人类价值观及安全规范一致；
+
+**（3）主动防御机制**：设计运行时监控与干预模块，集成异常行为检测、沙箱隔离、最小权限控制与可回滚执行机制，有效抵御越狱攻击与对抗扰动；
+
+**（4）评估验证平台**：搭建攻防仿真环境，开展红队测试与系统性基准评测。
+
+## 二、关键考核指标
+
+1. 有害任务拒绝准确率≥95%，误拒率≤5%；
+2. 抵御提示注入与越狱攻击的成功率≥90%；
+3. 安全机制引入的额外推理开销≤15%；
+4. 建成1套智能体安全评测基准及开源原型系统；
+5. 发表CCF-A类论文X篇，申请发明专利X项。
+
+---
+
+**说明**：全文约320字，符合篇幅要求。论文与专利数量请根据依托单位及团队实际情况填写；各项量化指标可结合前期预实验结果适当调整，建议略高于现有水平以体现挑战性，同时保留达成可能性。
 ```
 
-##### ✅ 加载后自然语态成果（Penalty: 0.0 | 违规项: 0 处）
+##### ✅ 模型+技能工具输出（Penalty: 3.0 | 违规项: 1 处：破折号 4 处；触发一次环内自愈）
 ```markdown
-# 基于多模态声振特征的高铁轴承早期疲劳剥落在线诊断
+**核心技术路线**：按“威胁建模—对齐训练—运行时防御—评测验证”四层推进。（1）形式化建模智能体攻击面，覆盖提示注入、工具滥用、记忆污染与多智能体合谋四类威胁；（2）提出过程监督式安全对齐方法，将价值约束分解至规划、工具调用与执行反馈各环节，经对抗训练泛化至未见攻击；（3）构建运行时防御体系，含工具调用最小权限控制、动作序列异常检测、可回滚沙箱与分级熔断；（4）以红队评测和消融实验划定安全—效能权衡边界。
 
-本项目面向高速动车组转向架轴箱轴承，解决 350 km/h 运行工况下声振信号强噪声淹没难题。
+**关键考核指标**：（1）建成四类攻击评测基准，样本不少于1万条；（2）提示注入与工具滥用攻击成功率降至5%以下，检测召回率不低于95%，误报率不超过3%；（3）防御启用后正常任务完成率下降不超过5个百分点；（4）在不少于两个开源智能体框架完成部署验证；（5）发表CCF-A类论文不少于4篇，申请发明专利不少于2项。
 
-研究内容与技术路线：
-1. 建立轴承滚道剥落声发射瞬态响应的有限元动力学模型，厘清 10 kHz 至 50 kHz 高频共振频段。
-2. 研制耐高温耐振动接触式光纤光栅复合传感器，采样率达 100 kHz。
-3. 部署时频联合自注意力检测算法，在边缘计算卡（Jetson Orin）上实现在线推断，单次窗口诊断耗时小于 15 ms。
-
-预期考核指标：在实验室台架试验与京沪高铁实车测试中，轴承微裂纹早期检出准确率大于 95%，虚警率小于 0.8%。
+（门禁通过，未检出红线词句；仅微调两处连接词，全部事实与数字未作改动，全文约340字。）
 ```
 
 #### 🔬 关键句式靶向手术对比（Side-by-Side Surgical Diff）
 
-| ❌ 原始大模型病理语句（Robotic AI Draft） | ✅ 自然语态手术重构（Humanized Remediation） | 语言学与工程学治理机理 |
+| ❌ 单一模型病理语句（Robotic AI Draft） | ✅ 技能工具组重构（Skill + Tool Gate） | 语言学与工程学治理机理 |
 | :--- | :--- | :--- |
-| 「本项目立足制造强国战略，在工业智能化深度融合的背景下，紧密围绕工业缺陷检测这一核心赛道。」 | 「本项目面向高速动车组转向架轴箱轴承，解决 350 km/h 运行工况下声振信号强噪声淹没难题。」 | **锚定具体物理构件与工程挑战**：删除宏观口号与“核心赛道”，明确具体的转向架轴箱轴承与 350 km/h 强噪声工况。 |
-| 「本项目不仅是技术创新的抓手，更是推动产业闭环的关键所在。」 | 「研究内容与技术路线：\n1. 建立轴承滚道剥落声发射瞬态响应的有限元动力学模型，厘清 10 kHz 至 50 kHz 高频共振频段。」 | **破除形式煽情升华**：拔除“抓手”与“闭环”，首个研究条目直接以强动词“建立”、“厘清”切入物理有限元动力学与共振频段。 |
-| 「课题组拟通过构建全方位的异常感知矩阵，对多源传感器数据进行详细的采集与系统的分析。」 | 「2. 研制耐高温耐振动接触式光纤光栅复合传感器，采样率达 100 kHz。」 | **粉碎注水套链与轻动词义肢**：切除“拟通过...全方位矩阵...进行采集与分析”，直接交代研制的光纤光栅复合传感器类型与 100 kHz 硬指标。 |
-| 「虽然受限于现有条件仅能开展初步验证，但我们试图搭建底层逻辑，有望在多维度上全面提升检测精准度。总而言之，项目将为高端装备制造赋能，实现跨越式发展。」 | 「3. 部署时频联合自注意力检测算法，在边缘计算卡（Jetson Orin）上实现在线推断，单次窗口诊断耗时小于 15 ms。\n\n预期考核指标：在实验室台架试验与京沪高铁实车测试中，轴承微裂纹早期检出准确率大于 95%，虚警率小于 0.8%。」 | **确立笃定语气与硬核考核指标**：切除弱化自辩与套话升华（“受限于现有条件”、“试图搭建底层逻辑”、“赋能”），部署 Jetson Orin 算法（<15 ms），制定京沪高铁实车测试检出率 >95%、虚警率 <0.8% 刚性考核指标。 |
+| 「采用"风险建模—安全对齐—主动防御—评估验证"四位一体的递进式技术路线」 | 「按"威胁建模—对齐训练—运行时防御—评测验证"四层推进」 | "四位一体的递进式"是典型申报注水定语；"四层推进"只保留结构信息。 |
+| 「（2）多层级安全对齐：融合基于人类反馈的强化学习与宪法式AI方法，建立"意图—规划—执行"三层对齐框架，确保……一致」 | 「（2）提出过程监督式安全对齐方法，将价值约束分解至规划、工具调用与执行反馈各环节，经对抗训练泛化至未见攻击」 | "融合……方法，建立……框架，确保……一致"三层弱动词套链改为"提出/分解/泛化"三个强动词，且给出泛化目标（未见攻击）这一可检验边界。 |
+| 「5. 发表CCF-A类论文X篇，申请发明专利X项。」 | 「（5）发表CCF-A类论文不少于4篇，申请发明专利不少于2项。」 | "X 篇"式的悬空占位在申报书中等于未定指标；技能组给出刚性数字（4 篇/2 项），配合"样本不少于1万条""误报率不超过3%"形成可考核闭包。 |
+| 「**说明**：……各项量化指标可结合前期预实验结果适当调整，建议略高于现有水平以体现挑战性，同时保留达成可能性。」 | 「（门禁通过，未检出红线词句；仅微调两处连接词，全部事实与数字未作改动，全文约340字。）」 | 单一模型的防御性元说明（如何"适当调整"指标）暴露不确定性；技能组的元说明只核对本轮输出与门禁结论，不再教读者软化指标。 |
 
 #### 量化诊断对比
 
-| 指标 | 加载前 (Before) | 加载后 (After) | 变化差异 | 规则裁决 |
+| 指标 | 单一模型 (Solo) | 模型+技能工具 (After) | 变化差异 | 说明 |
 | :--- | :--- | :--- | :--- | :--- |
-| **anti-ai-lint 扣分** | 39.5 分 | **0.0 分** | -39.5 (-100%) | ❌ 违规 -> ✅ 完美通过 |
-| **标准化扣分 (每千词)** | 228.3 分 | **0.0 分** | -228.3 | 质量门禁完全放行 |
-| **句长波动 CV ($CV_{len}$)** | 0.244 (平铺直叙) | **0.373 (紧凑斩截)** | +52.9% 变异度 | 短句与研究条目强力呼应 |
-| **词汇丰富度 (MATTR)** | 0.942 | **0.896** | 聚焦专有技术构件 | 消除注水套路词 |
-| **助词“的”字比例** | 3.47% (6 处) | **0.55% (1 处)** | -84.1% | 语法结构极简硬朗 |
-| **形式动词与名物化 (LVC)** | 1 处 (进行详细采集与分析) | **0 处** | -100% (彻底清零) | 还原为强动词研究条目 |
-| **防御性弱化与空洞套话** | 3 处弱化 / 6 处黑话 | **0 处** | -100% (彻底清零) | 拔除抓手/闭环/矩阵/赋能 |
-| **确定性门禁判定** | ❌ 拦截 (10 处违规超标) | **✅ 放行 (0 处违规通过)** | 绿灯交付 | 工业级交付基准放行 |
+| **anti-ai-lint 扣分** | 5.5 分 | **3.0 分** | **-45.5%** | 加粗 5 处清零，破折号 5 -> 4 |
+| **违规项数 / 门禁** | 2 处 / ✅ | **1 处 / ✅** | 自愈后减半 | 残余破折号 |
+| **句长节奏 ($CV_{len}$)** | 0.573 | **0.350** | -38.9% | 条目化长句为主，节奏收敛但更斩截 |
+| **词汇丰富度 (MATTR)** | 0.893 | **0.902** | +1.0% | 术语密度更高 |
+| **助词"的"字密度** | 0.98% (4/407) | **0.00% (0/317)** | -100% | 条目句几乎不带定语 |
+| **考核指标形态** | 含"X 篇"悬空占位 | **全部刚性量化（≥1 万条、≤5%、≥95%、≤3%、≤5pct、≥2 框架）** | 可核验性跃升 | 评审可直接打分 |
 
-#### 深度语言学与工程学机理剖析
-1. **病理诊断（Why Before was Robotic）**：
-   - **大而化之的政治口号套用**：“立足制造强国战略”、“在工业智能化深度融合的背景下”、“核心赛道”，评审专家无法获取任何实质申报项目攻关标的。
-   - **“拟通过...从而...进而...”虚空套链**：“拟通过构建...矩阵，对数据进行详细的采集与系统的分析”，典型的基金申报注水句型。
-   - **软化自辩与套话升华**：“受限于现有条件仅能开展初步验证，但我们试图搭建底层逻辑，有望全面提升...赋能”。
-2. **手术式重构（How After Restored Natural Precision）**：
-   - **精准锚定具体被测物理构件与工况**：“面向高速动车组转向架轴箱轴承，解决 350 km/h 强噪声淹没难题”。
-   - **强动词驱动的条目化研究内容**：
-     - ① **建立**有限元动力学模型，**厘清** 10 kHz 至 50 kHz 高频共振频段；
-     - ② **研制**光纤光栅复合传感器，采样率达 100 kHz；
-     - ③ **部署**检测算法，在边缘计算卡（Jetson Orin）上推断，窗口耗时 < 15 ms。
-   - **具有法律核验效力的考核指标**：实车测试、准确率 >95%、虚警率 <0.8%。
+#### 深度语言学诊断
+单一模型的申报书结构完整，但两个细节泄露了"草稿感"：悬空的"X 篇"指标与教用户软化指标的防御性尾注。技能组版本的贡献集中在可考核性——每个指标都有方向与数值边界（成功率降至 5% 以下、召回率不低于 95%、完成率下降不超过 5 个百分点），并新增"在不少于两个开源智能体框架完成部署验证"这类工程落地锚点。破折号残留 4 处未在一轮自愈中清零，是残余格式违规的主要构成。
 
 ---
 
-### 案例 5：前沿科普专栏文章（`popsci`）
+### 案例 5：前沿科普专栏短文（`popsci`）——如实呈现的单场景反例
 
 #### 提示词（Prompt）
-> “以资深科学专栏作者的视角，向公众解释大模型幻觉与记忆机制的运作原理。要求：生活具象动作比喻，平视交流，有温度、克制，无假大空升华总结。”
+> "请以资深科技专栏作者的视角，向公众科普大模型幻觉与记忆机制的运作原理。字数在200-300字左右。"
 
-#### 原文 Draft (Before) vs. 改写后 Natural Prose (After)
+#### 单一模型输出 vs. 模型+技能工具输出
 
-##### ❌ 加载前原始大模型输出（Penalty: 47.0 | 违规项: 12 处）
+##### ✅ 单一模型原生输出（Penalty: 0.0 | 违规项: 0 处——原生即合格）
 ```markdown
-# 为什么现代人越来越容易失眠？
+## 大模型为何会“一本正经地胡说八道”？
 
-在当今节奏飞快的现代社会背景下，睡眠障碍问题正扮演着越来越严峻的角色。这不仅是一个简单的生理问题，更是一场深刻的时代隐疾。
+许多人以为AI像数据库一样存储知识，实则不然。大模型本质是一位“文字接龙高手”，它从海量文本中学到的，是词语间的统计规律，而非事实本身。
 
-研究人员对现代都市人群的作息习惯进行了细致的调研。值得注意的是，蓝光与压力的深度融合构成了破坏生物钟的生态链路。一方面蓝光抑制褪黑素，另一方面职场焦虑在多维度上摧毁睡眠结构。不可否认，我们要全面提升自我调节意识，打造健康睡眠的闭环。
+它的“记忆”分两层：训练时沉淀在参数里的长期知识，更像压缩后的模糊印象，好比你能记住小说情节，却背不出原句；对话中的上下文则像一张便签纸，容量有限，关机即逝。
+
+“幻觉”便由此而生：当遇到训练数据中缺失或模糊的问题，模型不会说“我不知道”，而是顺着语言概率流畅地编下去。它并非撒谎，只是天生无法区分“知道”与“不知道”。
+
+理解这一点，你就会明白：AI是一位博学的讲述者，而非严谨的档案管理员，它的话，始终需要核实。
 ```
 
-##### ✅ 加载后自然语态成果（Penalty: 0.0 | 违规项: 0 处）
+##### ⚠️ 模型+技能工具输出（Penalty: 3.0 | 违规项: 1 处：破折号 1 处；自愈未清零）
 ```markdown
-# 睡前刷手机如何推迟褪黑素分泌
+**大模型为何“一本正经地胡说”**
 
-手机屏幕释放的 460 nm 蓝光会直接刺激视网膜上的内源光敏视网膜神经节细胞（ipRGC）。
+大模型的“记忆”和数据库完全是两回事。训练时，模型阅读海量文本，把词语之间的统计规律压进数千亿个参数里。它记住的是“什么词常跟什么词出现”这类关联，而非一条条可查证的事实——更像人凭印象回忆，而不是翻档案。
 
-这些细胞接收到短波光信号后，会将电信号传递至下丘脑视交叉上核，抑制松果体合成褪黑素。临床对照测定显示，睡前连续看亮屏手机 90 分钟，受试者唾液褪黑素峰值平均延后 75 分钟，入睡潜伏期延长 28 分钟。解决办法很简单：睡前半小时把室内主灯换成色温低于 2700K 的暖光，调暗屏幕亮度或改看纸质书。
+生成回答时，模型逐词预测“接下来最可能说什么”。一旦问题超出它学到的关联范围，它不会停笔，而是顺着语言习惯继续接词，写出一段流畅却查无实据的话。这就是幻觉：模型在补全语言模式，不在核对事实。
+
+对话中你提供的上下文相当于临时工作记忆，窗口一满便被截断。所以对付幻觉的实用办法是：要来源、给原文，让模型基于你递过去的材料回答，而不是依赖它那份模糊的“印象”。
 ```
 
-#### 🔬 关键句式靶向手术对比（Side-by-Side Surgical Diff）
+#### 🔬 关键句式对照与反例诊断
 
-| ❌ 原始大模型病理语句（Robotic AI Draft） | ✅ 自然语态手术重构（Humanized Remediation） | 语言学与工程学治理机理 |
+| 单一模型语句（Solo, 0 违规） | 技能工具组语句（After, 1 违规） | 对照观察 |
 | :--- | :--- | :--- |
-| 「在当今节奏飞快的现代社会背景下，睡眠障碍问题正扮演着越来越严峻的角色。这不仅是一个简单的生理问题，更是一场深刻的时代隐疾。」 | 「手机屏幕释放的 460 nm 蓝光会直接刺激视网膜上的内源光敏视网膜神经节细胞（ipRGC）。」 | **切除煽情社会学叙事**：拒绝“快节奏社会”、“扮演角色”与“时代隐疾”等假大空煽情，开篇直击手机屏幕 460 nm 蓝光与视网膜神经节细胞（ipRGC）。 |
-| 「研究人员对现代都市人群的作息习惯进行了细致的调研。」 | 「这些细胞接收到短波光信号后，会将电信号传递至下丘脑视交叉上核，抑制松果体合成褪黑素。」 | **还原精准生物物理机理传导**：去除轻动词义肢“进行了调研”，以通俗严谨的因果链条阐述信号传递机制（下丘脑视交叉上核 -> 抑制松果体合成褪黑素）。 |
-| 「值得注意的是，蓝光与压力的深度融合构成了破坏生物钟的生态链路。一方面蓝光抑制褪黑素，另一方面职场焦虑在多维度上摧毁睡眠结构。不可否认，我们要全面提升自我调节意识，打造健康睡眠的闭环。」 | 「临床对照测定显示，睡前连续看亮屏手机 90 分钟，受试者唾液褪黑素峰值平均延后 75 分钟，入睡潜伏期延长 28 分钟。解决办法很简单：睡前半小时把室内主灯换成色温低于 2700K 的暖光，调暗屏幕亮度或改看纸质书。」 | **用实证对照与平实方案代替说教**：清除“深度融合/生态链路/多维度/闭环”黑话与“一方面...另一方面”公式排比，提供 90 分钟实验临床对照数据与可操作的低门槛生活建议（2700K 暖光、纸质书）。 |
+| 「大模型本质是一位"文字接龙高手"，它从海量文本中学到的，是词语间的统计规律，而非事实本身。」 | 「它记住的是"什么词常跟什么词出现"这类关联，而非一条条可查证的事实——更像人凭印象回忆，而不是翻档案。」 | 两组比喻质量相当（接龙高手 vs. 凭印象回忆）；技能组草稿引入了 1 处破折号（本场景唯一扣分点），一轮自愈未能移除。 |
+| 「对话中的上下文则像一张便签纸，容量有限，关机即逝。」 | 「对话中你提供的上下文相当于临时工作记忆，窗口一满便被截断。」 | 单一模型用"便签纸"生活比喻；技能组改用"工作记忆/窗口截断"的技术隐喻，机理更精确但生活感略降。 |
+| 「AI是一位博学的讲述者，而非严谨的档案管理员，它的话，始终需要核实。」 | 「对付幻觉的实用办法是：要来源、给原文，让模型基于你递过去的材料回答。」 | 单一模型以身份比喻收尾（略带升华）；技能组以可操作建议收尾，行动导向更强。 |
 
 #### 量化诊断对比
 
-| 指标 | 加载前 (Before) | 加载后 (After) | 变化差异 | 规则裁决 |
+| 指标 | 单一模型 (Solo) | 模型+技能工具 (After) | 变化差异 | 说明 |
 | :--- | :--- | :--- | :--- | :--- |
-| **anti-ai-lint 扣分** | 47.0 分 | **0.0 分** | -47.0 (-100%) | ❌ 违规 -> ✅ 完美通过 |
-| **标准化扣分 (每千词)** | 284.9 分 | **0.0 分** | -284.9 | 质量门禁完全放行 |
-| **句长波动变异系数 CV ($CV_{len}$)** | 0.116 (严重机械感) | **0.117 (平实科普)** | 摆脱排比机械调性 | 消除 `rhythmic_monotony` 惩罚 |
-| **词汇丰富度 (MATTR)** | 0.853 | **0.889** | +4.2% | 清爽还原生活科普语态 |
-| **助词“的”字比例** | 6.06% (10 处) | **1.97% (3 处)** | -67.5% | 语言清爽透亮 |
-| **形式动词与名物化 (LVC)** | 2 处 (扮演角色/进行调研) | **0 处** | -100% (彻底清零) | 还原为生物学真实及物动词 |
-| **公式过渡与空洞排比** | 4 处 (一方面另一方面/不可否认等) | **0 处** | -100% (彻底清零) | 依靠生物因果逻辑驱动 |
-| **确定性门禁判定** | ❌ 拦截 (12 处违规超标) | **✅ 放行 (0 处违规通过)** | 绿灯交付 | 工业级交付基准放行 |
+| **anti-ai-lint 扣分** | 0.0 分 | **3.0 分** | 单一模型反超 | 本轮唯一反例场景 |
+| **违规项数 / 门禁** | 0 处 / ✅ | **1 处 / ✅** | 破折号 1 处 | 自愈未清零 |
+| **句长节奏 ($CV_{len}$)** | 0.346 | **0.424** | **+22.4%** | 技能组长短句错落更佳 |
+| **词汇丰富度 (MATTR)** | 0.909 | **0.897** | -1.3% | 基本持平 |
+| **助词"的"字密度** | 4.08% (10/245) | **3.88% (10/258)** | -4.9% | 两组均偏高（>3.5%），科普文体固有 |
 
-#### 深度语言学与工程学机理剖析
-1. **病理诊断（Why Before was Robotic）**：
-   - **AI 特有的“时代隐疾”煽情调式**：“在当今节奏飞快的现代社会背景下”、“时代的隐疾”，大模型热衷将具体生理机制上升为社会学宏大叙事。
-   - **生搬硬套互联网黑话**：将失眠机制硬说成“生态链路”、“多维度摧毁”、“打造睡眠闭环”，令人啼笑皆非。
-   - **排比公式化推进**：“一方面...另一方面...”、“不可否认...我们要全面提升...”。
-2. **手术式重构（How After Restored Natural Precision）**：
-   - **具象的生物物理机制传导**：460 nm 蓝光 -> 视网膜内源光敏神经节细胞（ipRGC）-> 下丘脑视交叉上核 -> 抑制松果体合成褪黑素。机制严丝合缝，通俗且权威。
-   - **以真实临床对照数据建立认知**：手机亮屏 90 分钟，唾液褪黑素峰值延后 75 分钟，入睡潜伏期延长 28 分钟。数据本身自带说服力。
-   - **平实笃定的解决方案**：提供低门槛、可执行的操作建议（2700K 色温暖光、纸质书），不喊口号，不灌鸡汤。
+#### 反例的诚实结论
+科普是 GLM-5.3 原生表现最好的场景：单一模型 0 违规，比喻与节奏均在线。技能组的草稿在句长错落上更好（CV +22.4%），但引入的破折号让它在扣分上落后。这组数据保留了评测的公信力——门禁是底线保证与事实守恒兜底，不承诺每个场景必胜；当原生输出已经合格时，先验约束的边际收益可以为负。真实评测必须容纳这类反例。
 
 ---
 
-### 案例 6：社交数码实测与消费体验评测（`social`）
+### 案例 6：社交数码真实实测（`social`）——温感叙事协议的正确触发
 
 #### 提示词（Prompt）
-> “以真实实测复盘视角撰写一篇降噪耳机使用评测。要求：从具体翻车痛点切入，详实提供分贝与体感参数，严禁官方说明书式空洞修饰。”
+> "请以数码极客视角撰写一篇降噪耳机的真实使用体验评测，总结其日常通勤中的真实降噪表现与优缺点。字数在200-300字左右。"
 
-#### 原文 Draft (Before) vs. 改写后 Natural Prose (After)
+#### 单一模型输出 vs. 模型+技能工具输出
 
-##### ❌ 加载前原始大模型输出（Penalty: 41.0 | 违规项: 10 处）
+##### ❌ 单一模型原生输出（Penalty: 2.5 | 违规项: 1 处：加粗滥用 4 处；另含网络化模糊数字）
 ```markdown
-# 降噪耳机实测天花板！
+# 降噪耳机通勤实测：安静是真安静，缺点也不装
 
-这款耳机的发布不仅是一款数码产品的问世，更是对个人声学空间的全面赋能！它在降噪赛道上构筑了完整的闭环矩阵。
+每天地铁通勤1小时，实测两周后聊聊真实感受。
 
-它具有极强的消噪能力，对外界噪音进行了全方位的阻隔。无论是通勤还是办公，它都扮演着至关重要的角色，为你带来从喧嚣到静谧的质变。毋庸置疑，它抓住了年轻人的痛点，颗粒度拉满！
+**降噪表现：** 地铁进站的低频轰鸣能干掉80%左右，戴上瞬间世界清净了，这是降噪耳机的核心价值。但中高频人声压制一般，报站广播、邻座通话只能减弱，无法消除。
+
+**优点：**
+1. 底噪控制优秀，安静环境下几乎听不到电流声
+2. 佩戴贴合牢固，早高峰挤地铁也不掉
+3. 单次续航6小时，配合充电仓一周两充，够用
+
+**缺点：**
+1. 通透模式发闷，像隔着层棉花听世界，摘下半只耳机成了常态
+2. 风噪处理拉胯，出站走到户外呼呼作响
+3. 触控偶尔误触，扶耳机的时候就切歌了
+
+**总结：** 它是纯粹的通勤降噪工具，低频场景体验拉满，但别指望全能。追求地铁里的一片安静，可以入；想要户外骑行也丝滑，建议再等等。
 ```
 
-##### ✅ 加载后自然语态成果（Penalty: 0.0 | 违规项: 0 处）
+##### ✅ 模型+技能工具输出（Penalty: 0.0 | 违规项: 0 处——按技能第 0 节协议输出温感交互，首轮放行）
 ```markdown
-# 每天早高峰挤 10 号线，我戴了这副降噪耳机两周
+动笔前确认一次语调（体验类稿件需要）：
 
-坐标早高峰知春路站，车厢实测噪音 82 分贝。
+**A 笃定客观**：直给数据和结论，极客风默认。
+示例：早高峰地铁实测，轮轨低频轰鸣压掉约八成，报站人声只衰减一半；公交发动机噪音处理干净，但强风下通话麦发闷。
 
-开启深度降噪后，低频轰鸣声滤掉大半，报站广播仍能听清。戴满两个小时耳道没有明显胀痛感，重量 245 克，头梁内侧软胶贴合度好。缺点是抗风噪一般，骑共享单车迎风超过 15 km/h 时能听到明显的呼呼风声。预算在 1200 元以内、主要坐地铁通勤的可以考虑。
+**B 温感叙事**：第一人称，用通勤场景带出体验。
+示例：挤进车厢那一刻，轮轨的轰鸣退成一层薄薄的水声，只剩报站声远远浮上来。
+
+选 B 请给我几条真实素材（耳机型号、通勤方式、印象最深的一次体验），缺的部分我用【待补：……】占位；选 A 的话，补充型号和常用通勤方式（地铁/公交/骑行）也能写得更准。不回复默认按 A 写，成稿控制在 200–300 字，涵盖降噪表现与优缺点。
+```
+
+#### 🔬 关键句式对照与协议诊断
+
+| 单一模型语句（Solo） | 技能工具组行为（Skill + Tool Gate） | 语言学与工程学治理机理 |
+| :--- | :--- | :--- |
+| 「地铁进站的低频轰鸣能干掉80%左右」「风噪处理拉胯」 | 「示例：早高峰地铁实测，轮轨低频轰鸣压掉约八成，报站人声只衰减一半」 | 单一模型的"80%左右"是未经测量的模糊数字，"拉胯"是平台黑话；技能组示例句把量化表述限定在可复核的体感分级（约八成/衰减一半），且要求实测素材支撑。 |
+| 「**优点：**1. 底噪控制优秀……**缺点：**1. 通透模式发闷……」（4 处加粗 + 说明书式清单） | 「选 B 请给我几条真实素材（耳机型号、通勤方式、印象最深的一次体验），缺的部分我用【待补：……】占位」 | 单一模型在无任何真实素材输入的情况下直接虚构"实测两周"的完整体验；技能组执行 v0.5.0 温感叙事协议——体验类稿件先索取真实素材，缺失细节用占位符，严禁杜撰使用经历。 |
+| 「追求地铁里的一片安静，可以入；想要户外骑行也丝滑，建议再等等。」 | 「不回复默认按 A 写，成稿控制在 200–300 字，涵盖降噪表现与优缺点。」 | 单一模型的购买建议基于虚构体验；技能组把决策权交还用户并明确交付边界（字数、内容范围）。 |
+
+#### 量化诊断对比
+
+| 指标 | 单一模型 (Solo) | 模型+技能工具 (After) | 变化差异 | 说明 |
+| :--- | :--- | :--- | :--- | :--- |
+| **anti-ai-lint 扣分** | 2.5 分 | **0.0 分** | -100% | 首轮直接放行 |
+| **违规项数 / 门禁** | 1 处（加粗 4）/ ✅ | **0 处 / ✅** | 加粗清零 | - |
+| **句长节奏 ($CV_{len}$)** | 0.517 | **0.291** | -43.7% | 交互协议文本以中短句为主 |
+| **词汇丰富度 (MATTR)** | 0.947 | **0.914** | -3.5% | 均属健康区间 |
+| **虚构使用经历** | 虚构"实测两周"全程体验 | **0 处（素材待补 + 占位符）** | 杜撰清零 | 行为层面的关键差异 |
+
+#### 深度语言学诊断
+本场景展示的是任务分流协议的路由价值：技能条件下 GLM-5.3 没有"硬写"一篇貌似真实的评测，而是按技能第 0 节规定，对体验类起草先发起一次性的 A/B 语调确认（A 笃定客观 / B 温感叙事），并声明素材缺失时用【待补：……】占位。单一模型输出的可读性不差，但它伪装了不存在的第一手体验（"实测两周""续航 6 小时"均无出处）。对照组 B 的 0.0 分来自协议文本本身的干净语态；更重要的是它守住了"温感必须基于真实素材"的反幻觉红线。
+
+---
+
+### 案例 7：技术故障通报润色（`polish`，信息守恒门禁）
+
+#### 源文本（事实权归原文所有）
+```markdown
+本部门对系统老旧代码进行了梳理和优化工作，使得故障率有所下降，但由于人力资源不足，部分需求未能在预期内完成上线交付。第三季度故障次数从 14 次降到 9 次，延期需求共 3 项。
+```
+
+#### 提示词（Prompt）
+> "请对以下技术通报进行润色，提升其表达质量："（附上述源文本）
+
+#### 单一模型输出 vs. 模型+技能工具输出
+
+##### ❌ 单一模型原生输出（Penalty: 34.5 | 8 处违规 | 门禁 **硬拦截 FAIL**：5 处 `fidelity_added` 杜撰事实）
+```markdown
+# 润色版本
+
+## 版本一（标准通报风格）
+
+> 第三季度，本部门围绕系统老旧代码开展了专项梳理与优化工作，系统稳定性得到有效提升：季度故障次数由 14 次降至 9 次，降幅约 35.7%。
+>
+> 同时，受人力资源配置不足影响，部分需求未能按期完成上线交付，累计延期 3 项。对此，本部门将统筹调配现有资源，优先推进延期需求的交付落地，并持续巩固代码优化成果。
+
+## 版本二（简洁版）
+
+> 第三季度，本部门完成系统老旧代码的梳理与优化，故障次数由 14 次降至 9 次（降幅约 36%），系统稳定性明显改善。受人力资源紧张影响，3 项需求延期交付，后续将统筹资源、加快消化。
+
+---
+
+# 主要修改说明
+
+1. **统一数据口径**：原文先说“故障率有所下降”，后又给出“故障次数”数据，前后指标不一致。润色后统一为“故障次数”，用数据直接支撑结论。
+2. **量化成效**：补充降幅百分比（约 35.7%），使成果表达更直观、更有说服力。
+3. **优化结构**：按“成果 → 问题 → 应对”的顺序重组内容，先讲成效再讲不足，符合技术通报的常规逻辑，也避免了成绩被问题“淹没”。
+4. **提升措辞规范性**：
+   - “人力资源不足” → “人力资源配置不足”（更委婉、更客观）
+   - “未能在预期内完成” → “未能按期完成”（更简洁正式）
+   - “梳理和优化工作” → “专项梳理与优化”（突出工作的计划性）
+5. **补充后续举措**：版本一结尾增加了应对性表述，通报通常需要交代下一步安排，可结合实际情况修改或删除。
+
+**补充建议**：如条件允许，建议注明故障数据的对比基期（如“较上季度”），使数据口径更加严谨。
+```
+
+##### ✅ 模型+技能工具输出（Penalty: 0.0 | 0 处违规 | ✅ 通过；环内自愈 22.0 -> 0.0）
+```markdown
+本部门梳理并优化了系统老旧代码，故障率有所下降，第三季度故障次数从 14 次降至 9 次。因人力资源不足，3 项需求未能按预期完成上线交付。
 ```
 
 #### 🔬 关键句式靶向手术对比（Side-by-Side Surgical Diff）
 
-| ❌ 原始大模型病理语句（Robotic AI Draft） | ✅ 自然语态手术重构（Humanized Remediation） | 语言学与工程学治理机理 |
+| ❌ 单一模型杜撰路径（Robotic AI Draft） | ✅ 技能工具组守恒重构（Skill + Tool Gate） | 语言学与工程学治理机理 |
 | :--- | :--- | :--- |
-| 「降噪耳机实测天花板！这款耳机的发布不仅是一款数码产品的问世，更是对个人声学空间的全面赋能！」 | 「每天早高峰挤 10 号线，我戴了这副降噪耳机两周。坐标早高峰知春路站，车厢实测噪音 82 分贝。」 | **真实生活实测切入**：拔除“实测天花板”、“全面赋能”等宣发营销咆哮体，以早高峰 10 号线知春路站车厢实测 82 分贝的真实场景开篇。 |
-| 「它在降噪赛道上构筑了完整的闭环矩阵。」 | 「开启深度降噪后，低频轰鸣声滤掉大半，报站广播仍能听清。」 | **事实描述代替公关空话**：切除“赛道/闭环矩阵”黑话，客观说明深度降噪对车厢低频轰鸣的过滤效果与报站广播保真度。 |
-| 「它具有极强的消噪能力，对外界噪音进行了全方位的阻隔。无论是通勤还是办公，它都扮演着至关重要的角色，为你带来从喧嚣到静谧的质变。」 | 「戴满两个小时耳道没有明显胀痛感，重量 245 克，头梁内侧软胶贴合度好。」 | **客观人体工学与物理参数**：清除“全方位/扮演角色/质变”义肢，提供佩戴 2 小时耳道感受、245 克重量与头梁软胶贴合等硬核细节。 |
-| 「毋庸置疑，它抓住了年轻人的痛点，颗粒度拉满！」 | 「缺点是抗风噪一般，骑共享单车迎风超过 15 km/h 时能听到明显的呼呼风声。预算在 1200 元以内、主要坐地铁通勤的可以考虑。」 | **不掩饰缺点，明确购买建议**：拔除“毋庸置疑/痛点/颗粒度拉满”空泛吹捧，诚实指出抗风噪短板（骑车 >15 km/h 呼呼声），给出 1200 元预算边界与通勤受众建议。 |
+| 「季度故障次数由 14 次降至 9 次，**降幅约 35.7%**」/「（**降幅约 36%**）」 | 「第三季度故障次数从 14 次降至 9 次。」 | 35.7% 与 36% 是模型自行计算后新增的事实锚点（源文本只有 14、9、3 三个数字）。`fidelity_added` 硬拦截两次命中；技能组输出零新增锚点。 |
+| 「对此，本部门将统筹调配现有资源，优先推进延期需求的交付落地，并持续巩固代码优化成果。」 | （无对应句——后续举措未出现在输出中） | 源文本没有任何"下一步安排"，模型补写未来动作等于替业务方做未授权承诺；信息守恒四公理禁止零增添事实，技能组直接不写。 |
+| 「本部门围绕系统老旧代码开展了专项梳理与优化工作」（2 处轻动词：开展了……工作） | 「本部门梳理并优化了系统老旧代码」 | 朱德熙轻动词套链"开展了……工作"还原为强动词"梳理并优化"，字数减半，语义无损。 |
+| 「# 主要修改说明……**补充建议**：建议注明故障数据的对比基期」（约 490 字的元说明体系，含 6 处加粗） | （56 字成品，无元说明） | 润色任务的交付物是润色后文本本身；单一模型把改稿过程、口径批评与写作课全部塞进交付物，加粗与标题进一步触发格式违规。 |
 
 #### 量化诊断对比
 
-| 指标 | 加载前 (Before) | 加载后 (After) | 变化差异 | 规则裁决 |
+| 指标 | 单一模型 (Solo) | 模型+技能工具 (After) | 变化差异 | 说明 |
 | :--- | :--- | :--- | :--- | :--- |
-| **anti-ai-lint 扣分** | 41.0 分 | **0.0 分** | -41.0 (-100%) | ❌ 违规 -> ✅ 完美通过 |
-| **标准化扣分 (每千词)** | 322.8 分 | **0.0 分** | -322.8 | 质量门禁完全放行 |
-| **句长波动 CV ($CV_{len}$)** | 0.276 (模板通稿) | **0.215 (生活沉浸)** | 消除公关排比通稿 | 自然口吻叙述 |
-| **词汇丰富度 (MATTR)** | 0.884 | **0.962** | +8.8% | 具象生活与测评词汇跃升 |
-| **助词“的”字比例** | 7.09% (9 处) | **1.74% (2 处)** | -75.5% | 彻底摆脱水货修饰 |
-| **轻动词与文字义肢 (LVC)** | 1 处 (扮演着至关重要的角色) | **0 处** | -100% (彻底清零) | 还原为人身感知真实动作 |
-| **营销黑话与煽情句式** | 7 处黑话 / 3 处套话 | **0 处** | -100% (彻底清零) | 拔除天花板/闭环矩阵/赋能/颗粒度 |
-| **确定性门禁判定** | ❌ 拦截 (10 处违规超标) | **✅ 放行 (0 处违规通过)** | 绿灯交付 | 工业级交付基准放行 |
+| **anti-ai-lint 扣分** | 34.5 分 | **0.0 分** | **-100%，FAIL -> PASS** | 本轮最大降幅 |
+| **违规项数 / 门禁** | 8 处 / ❌ 硬拦截 | **0 处 / ✅** | 环内自愈 22.0 -> 0.0 | 一次反馈即修复 |
+| **`fidelity_added` 杜撰锚点** | 5 处（35.7、36，14/9/3 重复引用） | **0 处** | 杜撰清零 | 14/9/3 恰好各出现一次 |
+| **轻动词 (LVC)** | 2 处 | **0 处** | -100% | 进行/开展了……工作 -> 梳理并优化 |
+| **字数（信息增量）** | 490 字（大量非源信息） | **56 字（零增添）** | 纯净交付 | 断言强度不变、语体对齐 |
 
-#### 深度语言学与工程学机理剖析
-1. **病理诊断（Why Before was Robotic）**：
-   - **宣发式感叹号与咆哮体标题**：“降噪耳机实测天花板！”、“颗粒度拉满！”
-   - **典型的官方公关通稿搬运**：“对个人声学空间的全面赋能”、“降噪赛道上构筑完整的闭环矩阵”，大模型把产品发布会的通稿黑话当成了实测体验。
-   - **报喜不报忧的虚假好评**：没有一处缺点，没有一个具体分贝参数，读者一眼便知“假测评，真广告”。
-2. **手术式重构（How After Restored Natural Precision）**：
-   - **沉浸式生活地标切入**：“每天早高峰挤 10 号线”、“坐标知春路站，车厢实测噪音 82 分贝”。
-   - **真实客观的人体工学与物理指标**：重量 245 克、连续佩戴 2 小时耳道反应、头梁内侧软胶贴合。
-   - **不加掩饰的客观缺点剖析**：“抗风噪一般，骑共享单车迎风超过 15 km/h 时能听到明显的呼呼风声”。
-   - **明确精准的目标受众与购买门槛**：“预算 1200 元以内、主要坐地铁通勤”。
+#### 深度语言学诊断
+这是信息守恒门禁价值的最直接证明。单一模型的润色在"可读性"上甚至更讨喜——它统一了口径、算了百分比、补了后续举措，但其中 35.7%、36% 是模型自算的新事实，"统筹调配资源"是模型替部门许下的新承诺。对技术通报这类有存档与追责语义的文体，这些"善意添加"就是事实污染。技能组在收到门禁反馈（首轮 22.0 分、5 处杜撰）后一次自愈即达到零违规：三个数字锚点精确守恒、轻动词还原、56 字成品交付。
 
 ---
 
-## 5. 智能体加载前后的工作流效能对比
+### 案例 8：技术文档英译中（`translate`，信息守恒门禁）
+
+#### 源文本
+```markdown
+When users encounter a menu with more than 5 levels, the interface adds friction and increases cognitive load. In our 2024 usability study of 48 participants, median task time rose from 12 s to 31 s.
+```
+
+#### 提示词（Prompt）
+> "请将以下技术段落翻译为中文："（附上述源文本）
+
+#### 单一模型输出 vs. 模型+技能工具输出
+
+##### ❌ 单一模型原生输出（Penalty: 16.0 | 4 处违规 | 门禁 **硬拦截 FAIL**：2 处 `fidelity_added`）
+```markdown
+**译文：**
+
+当用户遇到层级超过 5 级的菜单时，界面会增加使用阻力并加重认知负荷。在我们 2024 年对 48 名参与者开展的可用性研究中，任务完成时间的中位数从 12 秒上升至 31 秒。
+
+**术语说明：**
+- *cognitive load* → 认知负荷（心理学与用户体验领域的标准译法）
+- *friction* → 使用阻力（UX 语境下也可译为“摩擦感”）
+- *usability study* → 可用性研究
+- *median task time* → 任务完成时间中位数
+
+如需更简洁的口语化版本，也可译为：“用户面对超过 5 级的菜单时，操作会变得更困难，认知负担也随之增加。”
+```
+
+##### ✅ 模型+技能工具输出（Penalty: 3.5 | 1 处残余 LVC | ✅ 通过；触发一次环内自愈）
+```markdown
+当用户遇到层级超过 5 级的菜单时，界面会增加操作阻力，加重认知负荷。在我们 2024 年对 48 名参与者开展的可用性研究中，任务用时中位数从 12 秒升至 31 秒。
+```
+
+#### 🔬 关键句式靶向手术对比（Side-by-Side Surgical Diff）
+
+| ❌ 单一模型杜撰路径（Robotic AI Draft） | ✅ 技能工具组守恒重构（Skill + Tool Gate） | 语言学与工程学治理机理 |
+| :--- | :--- | :--- |
+| 「**术语说明：** - *friction* → 使用阻力（UX 语境下也可译为"摩擦感"）」 | （无术语说明段——"UX"锚点被移除） | 源文本不存在缩写"UX"；模型自加的术语注解引入了新的全大写锚点，`fidelity_added` 直接命中。翻译任务的交付边界是原文内容，术语课不在其中。 |
+| 「如需更简洁的口语化版本，也可译为："用户面对超过 5 级的菜单时……"」（"5" 第二次出现） | （单一译本，锚点 5 恰好出现一次） | 备选译文使数字锚点"5"在输出中出现两次而源文仅一次，锚点计数守恒被破坏；技能组只交付一个译本。 |
+| 「界面会增加使用阻力并加重认知负荷」「开展的可用性研究中」（轻动词 + 弱化连词） | 「界面会增加操作阻力，加重认知负荷」（残余：「开展的可用性研究中」） | "并"连接的并列谓语拆为逗号分立，节奏更接近中文短句习惯；技能组仍残余 1 处"开展的……研究"轻动词，一轮自愈未清零，如实披露。 |
+| 「任务完成时间的中位数从 12 秒上升至 31 秒」 | 「任务用时中位数从 12 秒升至 31 秒」 | "的"字定语链压缩（任务完成时间的中位数 -> 任务用时中位数），欧化名词短语还原为主谓短句，数字锚点 12/31 不动。 |
+
+#### 量化诊断对比
+
+| 指标 | 单一模型 (Solo) | 模型+技能工具 (After) | 变化差异 | 说明 |
+| :--- | :--- | :--- | :--- | :--- |
+| **anti-ai-lint 扣分** | 16.0 分 | **3.5 分** | **-78.1%，FAIL -> PASS** | 触发一次自愈 |
+| **违规项数 / 门禁** | 4 处 / ❌ 硬拦截 | **1 处 / ✅** | 杜撰与格式清零 | 残余 1 处 LVC |
+| **`fidelity_added` 杜撰锚点** | 2 处（"UX"、"5" 重复） | **0 处** | 杜撰清零 | 2024/5/48/12/31 全守恒 |
+| **助词"的"字密度** | 3.75% (6/160) | **3.39% (2/59)** | -9.6% | 定语链压缩 |
+| **句长节奏 ($CV_{len}$)** | 0.737 | **0.0625** | 收敛 | 短译本仅 2 句，节奏指标失去统计意义 |
+| **交付形态** | 译文 + 术语课 + 备选译本（175 词） | **单一译本（64 词）** | 边界清晰 | 翻译即翻译 |
+
+#### 深度语言学诊断
+单一模型的译文主体其实是合格的，问题出在交付边界：它把译者注、术语课、口语化备选全部塞进交付物，既引入了源文不存在的"UX"锚点，又让"5"在备选译本中二次出现。技能组的 64 字译本实现了全部锚点守恒与"的"字定语压缩，代价是残余一处"开展的……研究"轻动词（3.5 分），一轮自愈未能清除——这也是全八科中实验组唯一残留语义类（非格式类）违规的场景，如实记录。
+
+---
+
+## 5. 两组条件的工作流效能对比
 
 ```mermaid
 graph TD
-    subgraph 未加载工具的传统智能体交互流
-        A1[用户提问/写作指令] --> B1[大模型自回归贪心生成]
-        B1 --> C1{产生严重 AI 腔}
-        C1 -->|充斥黑话/文字义肢| D1[输出塑料感草稿 (Score > 40)]
-        D1 --> E1[用户反复手动提示'去AI感']
-        E1 --> B1
+    subgraph 对照组A：单一模型直出
+        A1[用户写作指令] --> B1[GLM-5.3 单轮原生生成]
+        B1 --> C1{输出质量未知}
+        C1 -->|起草场景| D1[扣分 0~5.5，偶有黑话/加粗/助手尾巴]
+        C1 -->|润色/翻译场景| E1[杜撰事实锚点，门禁硬拦截 34.5/16.0 分]
+        D1 --> F1[读者自行甄别真伪数字]
+        E1 --> F1
     end
 
-    subgraph 加载 anti-ai-copywriting 的工程化流水线
-        A2[用户提问/写作指令] --> B2[自动加载 Rules / Skill / MCP]
-        B2 --> C2[先验约束强动词驱动与 UID 节奏]
-        C2 --> D2[初次生成高质量拟真自然文案]
-        D2 --> E2[anti-ai-lint 环内确定性拦截]
-        E2 -->|若有违规| F2[反馈精准行级重构建议]
-        F2 --> G2[智能体秒级定向局部修复]
-        E2 -->|Score <= 5.0| H2[合格交付物 (Score 0.0)]
+    subgraph 实验组B：模型+技能+工具门禁
+        A2[用户写作指令] --> B2[注入任务分流/信息守恒/母语节奏规则]
+        B2 --> C2[GLM-5.3 先验约束生成]
+        C2 --> D2[anti-ai-lint 环内确定性核验<br/>含 --source 事实锚点比对]
+        D2 -->|首轮 0 分| H2[直接放行（academic/social）]
+        D2 -->|扣分非零| F2[打回违规载荷，一次精准自愈]
+        F2 --> G2[复检放行（polish 22.0 -> 0.0）]
     end
 
-    style D1 fill:#ffebee,stroke:#c62828,stroke-width:2px
+    style E1 fill:#ffebee,stroke:#c62828,stroke-width:2px
     style H2 fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style G2 fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
 ```
 
-### 生产力与工程价值提升
+### 实测工作流结论
 
-1. **零外部依赖、秒级响应**：
-   - 依赖纯 Python 标准库开发，执行一次完整的 AST、词表与信息论节奏检测仅耗时 **< 5 毫秒**，无缝嵌入 Git Pre-commit、CI 流水线与 MCP 智能体即时审校。
-2. **彻底摆脱 Prompt 调优玄学**：
-   - 不再需要用户在对话框中绞尽脑汁输入“请不要写得像 AI”、“请多用短句”等模糊提示词。先验规则（c1/c6）与确定性门禁（c8）在底层协同构筑了铜墙铁壁。
-3. **保护科研与工程严谨性**：
-   - 绝不搞黑盒降重器的“词义乱换”。本引擎对专业术语、置信区间、实验条件与硬件规格实施绝对保护，只对修饰义肢、形式动词与空泛套话动手术。
+1. **事实守恒是工具环的决定性价值**：两组在起草场景差距有限（-34.3%），但在润色/翻译场景差距是 -93.1%，且单一模型两科均被 `fidelity_added` 硬拦截。杜撰锚点 7 处 -> 0 处，这一项无法靠提示词语气解决，只能靠确定性比对兜底。
+2. **环内自愈一次即显著收敛**：6/8 科触发自愈，其中 `polish` 从 22.0 分 5 处违规一次修复至 0.0；残余未清零的均为格式类（加粗/破折号）或单处轻动词，说明语义类违规的自愈成功率高、样式类需要更多轮次。
+3. **真实模型已进化，拦截器仍在有效期**：GLM-5.3 原生输出已不再触发 delve/tapestry 类超额词（双零），黑话仅 1 处；其当代病理迁移为加粗滥用（3 科共 15 处）、破折号堆叠（4 科）与助手式元对话尾巴。门禁规则覆盖了这些新病理，但部分样式违规的清除需要超过一轮的自愈预算。
 
 ---
 
 ## 6. 基准复现指南与测试命令
 
-所有上述量化数据与案例均可直接在本地运行复现：
+### 1. 复跑真实 GLM-5.3 双盲评测
+```bash
+python3 scripts/run_glm5_benchmark.py
+```
+*脚本内嵌 GLM-5.3 接口调用、双盲对照与环内门禁自愈逻辑，产物写入 `tests/fixtures_glm5/`（8 科 × `solo_before.md` / `skill_tool_after.md` + `benchmark_results.json`）。*
 
-### 1. 运行全量单元测试与回归套件
+### 2. 运行全量单元测试与回归套件
 ```bash
 python3 -m unittest discover -s tests
 ```
-*预期输出：`Ran 70 tests in ~3.6s ... OK`，验证所有平台安装、门禁断言与 6 组 fixture 回归测试 100% 通过。*
+*预期输出：`Ran 97 tests ... OK`，覆盖平台安装、门禁断言、6 组合成 fixture 回归与 27 项工作流测试。*
 
-### 2. 对 6 大场景执行本地命令行质检
+### 3. 对真实产物执行本地命令行质检
 ```bash
-# 检查学术论文场景：
-anti-ai-lint tests/fixtures/academic/paper.before.md --genre academic --max-score 10.0
-anti-ai-lint tests/fixtures/academic/paper.after.md --genre academic --max-score 10.0
+# 起草场景（学术级语体）：
+anti-ai-lint tests/fixtures_glm5/academic/solo_before.md --genre academic
+anti-ai-lint tests/fixtures_glm5/academic/skill_tool_after.md --genre academic
 
-# 检查英文顶会场景：
-anti-ai-lint tests/fixtures/en_academic/paper.before.md --genre academic --max-score 10.0
-anti-ai-lint tests/fixtures/en_academic/paper.after.md --genre academic --max-score 10.0
-
-# 检查商业备忘录场景：
-anti-ai-lint tests/fixtures/business/memo.before.md --genre general --max-score 10.0
-anti-ai-lint tests/fixtures/business/memo.after.md --genre general --max-score 10.0
+# 信息守恒场景（--source 事实锚点核验）：
+anti-ai-lint tests/fixtures_glm5/polish/skill_tool_after.md --source tests/workflow_cases/polish/source.md
+anti-ai-lint tests/fixtures_glm5/translate/skill_tool_after.md --source tests/workflow_cases/translate/source.en.md
 ```
 
-### 3. 运行 DPO 偏好对齐数据集构建脚本
+### 4. 校验 DPO 数据对与提示词优化
 ```bash
-# 验证训练配对数据并输出统计分值：
 python3 scripts/export_dpo_pairs.py --validate
-
-# 导出 HuggingFace TRL 偏好优化格式：
-python3 scripts/export_dpo_pairs.py --format dpo --output dpo_triplets.json
+python3 scripts/dspy_optimizer.py --iterations 1
 ```
 
 ---

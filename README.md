@@ -31,29 +31,31 @@ Typical AI text tools fall into two categories: **post-hoc detectors** that scor
 
 ---
 
-## 2. Empirical Before/After Benchmark & Case Studies
+## 2. Real GLM-5.3 Benchmark: Solo Model vs. Model + Skill + Tool Gate
 
 > [!NOTE]
-> For the comprehensive benchmark report, mathematical derivations, in-depth linguistic diagnoses across all 6 scenarios, and CLI reproduction commands, please consult: **[Full Benchmark & Evaluation Report (docs/BENCHMARK_REPORT.md)](docs/BENCHMARK_REPORT.md)**.
+> For the comprehensive benchmark report, mathematical derivations, in-depth linguistic diagnoses across all 8 subjects, and CLI reproduction commands, please consult: **[Full Benchmark & Evaluation Report (docs/BENCHMARK_REPORT.md)](docs/BENCHMARK_REPORT.md)**.
 
 > [!IMPORTANT]
-> **How to read these numbers.** The "before" and "after" texts in `tests/fixtures/` are **hand-written exemplars**, not measured outputs of any model. "Before" deliberately packs the typical AI tropes. "After" is a rewrite that follows the rules. The table therefore shows that the linter separates the two kinds of text reproducibly. It is **not** an estimate of how much a given LLM improves after loading the skill. To measure that for your model, run the same prompts with and without the skill and lint both outputs (`anti-ai-lint out.md --format json`).
+> **Data provenance.** This table is measured output of real end-to-end inference on GLM-5.3 (evaluation date 2026-10-24) under a dual-blind protocol: "Solo Model (native generation)" vs. "Model + anti-ai-copywriting skill + anti-ai-lint deterministic gate (with one in-loop remediation pass)". Raw generations and the summary table are persisted under `tests/fixtures_glm5/` and reproducible via `python3 scripts/run_glm5_benchmark.py`. The hand-written exemplars in `tests/fixtures/` remain for deterministic regression tests and are not part of these statistics.
 
-The 6 bilingual fixture pairs in `tests/fixtures/` (Academic Abstract, Business Memo, English Academic Paper, Research Grant Proposal, PopSci Column, and Consumer Tech Review) score as follows:
+The 8 subjects (6 drafting genres + 2 information-conservation workflows) score as follows:
 
-| Scenario / Corpus | Genre Mode | Penalty (Before) | Penalty (After) | Score Delta | Violations Count | Particle "的" Density | Gate Verdict |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Academic Abstract** (`academic`) | Academic | 61.5 pts | **0.0 pts** | **-100.0%** | 15 -> **0** | 5.85% -> **3.12%** | ❌ FAIL -> **✅ PASS** |
-| **Business Memo** (`business`) | General | 51.5 pts | **0.0 pts** | **-100.0%** | 13 -> **0** | 5.88% -> **1.75%** | ❌ FAIL -> **✅ PASS** |
-| **English Academic Paper** (`en_academic`) | Academic | 55.5 pts | **0.0 pts** | **-100.0%** | 17 -> **0** | (Nature tropes zeroed) | ❌ FAIL -> **✅ PASS** |
-| **Research Grant Proposal** (`grant`) | Academic | 39.5 pts | **0.0 pts** | **-100.0%** | 10 -> **0** | 3.47% -> **0.55%** | ❌ FAIL -> **✅ PASS** |
-| **PopSci Column** (`popsci`) | General | 47.0 pts | **0.0 pts** | **-100.0%** | 12 -> **0** | 6.06% -> **1.97%** | ❌ FAIL -> **✅ PASS** |
-| **Tech Review** (`social`) | General | 41.0 pts | **0.0 pts** | **-100.0%** | 10 -> **0** | 7.09% -> **1.74%** | ❌ FAIL -> **✅ PASS** |
-| **Macro Average** | - | **49.3 pts** | **0.0 pts** | **-100.0%** | **12.8 -> 0** | **5.67% -> 1.83%** | **0% -> 100% Pass** |
+| Scenario / Corpus | Genre Mode | Solo Penalty | Model+Skill+Tool | Score Delta | Violations Count | Gate Verdict |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Academic Abstract** (`academic`) | Academic | 4.0 pts | **0.0 pts** | **-100.0%** | 1 -> **0** | ✅ -> **✅** |
+| **Business Memo** (`business`) | General | 2.5 pts | **2.5 pts** | Flat (residual style) | 1 -> **1** (invented metrics -> 【待补】placeholders) | ✅ -> **✅** |
+| **English Academic Paper** (`en_academic`) | Academic | 3.0 pts | **3.0 pts** | Flat (Nature tropes double-zero) | 1 -> **1** | ✅ -> **✅** |
+| **Research Grant Proposal** (`grant`) | Academic | 5.5 pts | **3.0 pts** | **-45.5%** | 2 -> **1** | ✅ -> **✅** |
+| **PopSci Column** (`popsci`) | General | 0.0 pts | 3.0 pts | Counter-example (disclosed) | 0 -> 1 | ✅ -> **✅** |
+| **Tech Review** (`social`) | General | 2.5 pts | **0.0 pts** | **-100.0%** | 1 -> **0** (fabricated experience -> material-request protocol) | ✅ -> **✅** |
+| **Incident Polish** (`polish`, conservation) | General + `--source` | 34.5 pts | **0.0 pts** | **-100.0%** | 8 (5 fabricated facts) -> **0** | ❌ hard FAIL -> **✅ PASS** |
+| **EN->ZH Translation** (`translate`, conservation) | General + `--source` | 16.0 pts | **3.5 pts** | **-78.1%** | 4 (2 fabricated anchors) -> **1** | ❌ hard FAIL -> **✅ PASS** |
+| **Macro Average** (8 subjects) | - | **8.50 pts** | **1.88 pts** | **-77.9%** | **2.25 -> 0.62 (-72.2%)** | **75.0% -> 100% Pass** |
 
-- **100% Penalty & Violation Elimination**: Completely purges AI cliches, corporate buzzwords, and hollow marketing hyperbole.
-- **-67.7% Particle Clumping Reduction**: De-nominalizes heavy modifiers to restore active predicate verbs.
-- **Broken Monotone Cadence**: Enforces natural cadence and rhythmic variation ($CV_{len} \ge 0.28$) with sliding-window lexical richness (MATTR $w=50$).
+- **Fabricated fact anchors 7 -> 0**: the solo model self-computed a "35.7% reduction" in polishing and added a "UX" acronym in translation — both hard-blocked by `fidelity_added`. The skill + gate arm conserves every number, model code, and acronym at 100%; the conservation subset mean drops 25.25 -> 1.75 (-93.1%).
+- **Gate pass rate 75.0% -> 100%**: the drafting margin is narrower (-34.3%) — real GLM-5.3's residual pathologies have migrated to bold abuse, em-dash stacking, and assistant-style meta chatter. One in-loop remediation pass clears semantic-class violations; style-class needs more rounds.
+- **Counter-example disclosed**: in popsci the solo model natively scored 0 violations and beat the skill arm (3.0). The gate is a floor guarantee and conservation backstop, not a promise of winning every scenario.
 
 ---
 

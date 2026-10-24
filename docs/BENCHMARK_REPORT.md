@@ -686,7 +686,7 @@ python3 scripts/run_glm5_benchmark.py
 ```bash
 python3 -m unittest discover -s tests
 ```
-*Expected: `Ran 97 tests ... OK`, covering platform install, gate assertions, the 6 synthetic fixture regressions, and 27 workflow tests.*
+*Expected: `Ran 97 tests ... OK`, covering platform install, gate assertions, 8-subject empirical benchmark regressions, and 27 workflow tests.*
 
 ### 3. Inspect real artifacts via CLI
 ```bash

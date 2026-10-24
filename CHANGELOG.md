@@ -39,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Replaced demonstration benchmark reports with real GLM-5.3 measurements**:
   - Rewrote `docs/BENCHMARK_REPORT.zh-CN.md` and `docs/BENCHMARK_REPORT.md` end to end: all scoreboards, the full 8-subject quantitative matrix, and all side-by-side case studies now quote verbatim GLM-5.3 generations from `tests/fixtures_glm5/`, including honest disclosures (residual style violations, one popsci counter-example where the solo model scored 0.0).
-  - Updated `README.zh-CN.md` and `README.md` Section 2 tables and data-provenance notes to the same real measurements; the hand-written exemplars in `tests/fixtures/` remain for deterministic regression tests.
+  - Updated `README.zh-CN.md` and `README.md` Section 2 tables and data-provenance notes to the same real measurements. Purged all legacy synthetic mock fixtures (`tests/fixtures/`) and aligned CI, DPO exporters, DSPy optimizers, and regression test suites to strictly rely on genuine empirical model outputs (`tests/fixtures_glm5/`).
 
 ## [0.4.0] - 2026-10-24
 

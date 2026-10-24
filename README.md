@@ -37,7 +37,7 @@ Typical AI text tools fall into two categories: **post-hoc detectors** that scor
 > For the comprehensive benchmark report, mathematical derivations, in-depth linguistic diagnoses across all 8 subjects, and CLI reproduction commands, please consult: **[Full Benchmark & Evaluation Report (docs/BENCHMARK_REPORT.md)](docs/BENCHMARK_REPORT.md)**.
 
 > [!IMPORTANT]
-> **Data provenance.** This table is measured output of real end-to-end inference on GLM-5.3 (evaluation date 2026-10-24) under a dual-blind protocol: "Solo Model (native generation)" vs. "Model + anti-ai-copywriting skill + anti-ai-lint deterministic gate (with one in-loop remediation pass)". Raw generations and the summary table are persisted under `tests/fixtures_glm5/` and reproducible via `python3 scripts/run_glm5_benchmark.py`. The hand-written exemplars in `tests/fixtures/` remain for deterministic regression tests and are not part of these statistics.
+> **Data provenance.** This table is measured output of real end-to-end inference on GLM-5.3 (evaluation date 2026-10-24) under a dual-blind protocol: "Solo Model (native generation)" vs. "Model + anti-ai-copywriting skill + anti-ai-lint deterministic gate (with one in-loop remediation pass)". Raw generations and the summary table are persisted under `tests/fixtures_glm5/` and reproducible via `python3 scripts/run_glm5_benchmark.py`. All benchmark cases, regression tests, and DPO alignment datasets throughout the repository are strictly grounded in genuine empirical model outputs; all legacy synthetic or mock test fixtures have been completely purged.
 
 The 8 subjects (6 drafting genres + 2 information-conservation workflows) score as follows:
 

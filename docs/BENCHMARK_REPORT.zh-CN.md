@@ -686,7 +686,7 @@ python3 scripts/run_glm5_benchmark.py
 ```bash
 python3 -m unittest discover -s tests
 ```
-*预期输出：`Ran 97 tests ... OK`，覆盖平台安装、门禁断言、6 组合成 fixture 回归与 27 项工作流测试。*
+*预期输出：`Ran 97 tests ... OK`，覆盖平台安装、门禁断言、8 大科目真实基准回归与 27 项工作流测试。*
 
 ### 3. 对真实产物执行本地命令行质检
 ```bash

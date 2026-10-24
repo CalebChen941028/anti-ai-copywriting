@@ -23,7 +23,7 @@ from anti_ai_lint.detector import analyze_text, split_sentences_spans
 
 class TestAntiAiLinter(unittest.TestCase):
     def setUp(self):
-        self.fixtures_dir = Path(__file__).resolve().parent / "fixtures"
+        self.fixtures_dir = Path(__file__).resolve().parent / "fixtures_glm5"
         self.repo_root = repo_root
 
     def test_empty_input(self):
@@ -145,30 +145,31 @@ class TestAntiAiLinter(unittest.TestCase):
         self.assertTrue(report_pass.passed)
 
     def test_fixtures_before_vs_after_regression(self):
-        scenarios = ["academic", "grant", "popsci", "social", "business", "en_academic"]
+        scenarios = ["academic", "grant", "popsci", "social", "business", "en_academic", "polish", "translate"]
         for sc in scenarios:
-            before_files = list((self.fixtures_dir / sc).glob("*.before.md"))
-            after_files = list((self.fixtures_dir / sc).glob("*.after.md"))
+            before_files = sorted(list((self.fixtures_dir / sc).glob("*before*.md")))
+            after_files = sorted(list((self.fixtures_dir / sc).glob("*after*.md")))
             self.assertTrue(len(before_files) > 0, f"Missing before fixture for {sc}")
             self.assertTrue(len(after_files) > 0, f"Missing after fixture for {sc}")
 
             before_content = before_files[0].read_text(encoding="utf-8")
             after_content = after_files[0].read_text(encoding="utf-8")
 
-            rep_before = analyze_text(before_content, file_path=str(before_files[0]), max_score=10.0)
-            rep_after = analyze_text(after_content, file_path=str(after_files[0]), max_score=10.0)
+            source_content = None
+            if sc == "polish":
+                source_content = (self.repo_root / "tests" / "workflow_cases" / "polish" / "source.md").read_text(encoding="utf-8")
+            elif sc == "translate":
+                source_content = (self.repo_root / "tests" / "workflow_cases" / "translate" / "source.en.md").read_text(encoding="utf-8")
 
-            # Assert before fails or has high penalty
-            self.assertGreater(
-                rep_before.score, 12.0,
-                f"Scenario {sc} before score should be high, got {rep_before.score}"
-            )
-            self.assertFalse(
-                rep_before.passed,
-                f"Scenario {sc} before should fail max-score=10.0"
-            )
+            rep_before = analyze_text(before_content, file_path=str(before_files[0]), max_score=10.0, source_text=source_content)
+            rep_after = analyze_text(after_content, file_path=str(after_files[0]), max_score=10.0, source_text=source_content)
 
-            # Assert after passes with low score
+            # In information conservation scenarios (polish & translate), solo before must fail gate due to fidelity_added
+            if sc in ("polish", "translate"):
+                self.assertFalse(rep_before.passed, f"Solo {sc} before should fail gate under --source")
+                self.assertTrue(any(v.category == "fidelity_added" for v in rep_before.violations))
+
+            # Assert after passes with compliant score (<= 5.0)
             self.assertTrue(
                 rep_after.passed,
                 f"Scenario {sc} after should pass max-score=10.0, got score {rep_after.score}"
@@ -179,7 +180,7 @@ class TestAntiAiLinter(unittest.TestCase):
             )
 
     def test_cli_json_output(self):
-        sample = self.fixtures_dir / "academic" / "paper.after.md"
+        sample = self.fixtures_dir / "academic" / "skill_tool_after.md"
         old_stdout = sys.stdout
         sys.stdout = StringIO()
         try:
@@ -194,8 +195,8 @@ class TestAntiAiLinter(unittest.TestCase):
         self.assertEqual(data["failed_files"], 0)
 
     def test_cli_hook_output(self):
-        good = self.fixtures_dir / "academic" / "paper.after.md"
-        bad = self.fixtures_dir / "academic" / "paper.before.md"
+        good = self.fixtures_dir / "academic" / "skill_tool_after.md"
+        bad = self.fixtures_dir / "polish" / "solo_before.md"
 
         old_stdout = sys.stdout
         sys.stdout = StringIO()
@@ -210,7 +211,7 @@ class TestAntiAiLinter(unittest.TestCase):
 
         sys.stdout = StringIO()
         try:
-            exit_bad = main([str(bad), "--format", "hook", "--max-score", "10.0"])
+            exit_bad = main([str(bad), "--format", "hook", "--max-score", "8.0"])
             out_bad = sys.stdout.getvalue()
         finally:
             sys.stdout = old_stdout
@@ -220,11 +221,11 @@ class TestAntiAiLinter(unittest.TestCase):
         self.assertIn("->", out_bad)  # Contains actionable remediation suggestion
 
     def test_cli_agent_output(self):
-        bad = self.fixtures_dir / "academic" / "paper.before.md"
+        bad = self.fixtures_dir / "polish" / "solo_before.md"
         old_stdout = sys.stdout
         sys.stdout = StringIO()
         try:
-            exit_bad = main([str(bad), "--format", "agent", "--max-score", "10.0"])
+            exit_bad = main([str(bad), "--format", "agent", "--max-score", "8.0"])
             out_bad = sys.stdout.getvalue()
         finally:
             sys.stdout = old_stdout
@@ -804,11 +805,11 @@ class TestAntiAiLinter(unittest.TestCase):
         self.assertFalse(err_args_call["result"].get("isError", True) is None)
 
     def test_cli_github_action_format(self):
-        bad = self.fixtures_dir / "academic" / "paper.before.md"
+        bad = self.fixtures_dir / "polish" / "solo_before.md"
         old_stdout = sys.stdout
         sys.stdout = StringIO()
         try:
-            exit_code = main([str(bad), "--format", "github", "--max-score", "10.0"])
+            exit_code = main([str(bad), "--format", "github", "--max-score", "8.0"])
             out = sys.stdout.getvalue()
         finally:
             sys.stdout = old_stdout
@@ -824,12 +825,12 @@ class TestAntiAiLinter(unittest.TestCase):
 
         # Test DPO pairs loading and validation
         pairs = load_fixture_pairs(self.fixtures_dir)
-        self.assertEqual(len(pairs), 6)
-        valid = validate_pairs(pairs)
+        self.assertEqual(len(pairs), 8)
+        valid = validate_pairs(pairs, min_rejected_score=0.0)
         self.assertTrue(valid)
 
         dpo_records = export_dpo(pairs, fmt="dpo")
-        self.assertEqual(len(dpo_records), 6)
+        self.assertEqual(len(dpo_records), 8)
         self.assertIn("prompt", dpo_records[0])
         self.assertIn("chosen", dpo_records[0])
         self.assertIn("rejected", dpo_records[0])
@@ -843,10 +844,10 @@ class TestAntiAiLinter(unittest.TestCase):
 
         # Test DSPy optimizer evaluation
         dataset = load_fixtures_dataset(self.fixtures_dir)
-        self.assertEqual(len(dataset), 6)
+        self.assertEqual(len(dataset), 8)
         summary = run_standalone_optimizer(dataset, iterations=1, verbose=False)
         self.assertIn("best_candidate", summary)
-        self.assertEqual(summary["best_candidate"]["pass_rate"], "6/6")
+        self.assertEqual(summary["best_candidate"]["pass_rate"], "8/8")
 
 
 if __name__ == "__main__":

@@ -37,7 +37,7 @@
 > 完整 8 大科目实测案例详析、指标推导、语言学病理诊断与复现指南请参阅：**[全量实测对比与基准评测报告 (docs/BENCHMARK_REPORT.zh-CN.md)](docs/BENCHMARK_REPORT.zh-CN.md)**。
 
 > [!IMPORTANT]
-> **数据来源声明**：本表为真实 GLM-5.3 大模型端到端推理的**双盲对照实测数据**（评测日期 2026-10-24），对比组为「单一模型原生生成」vs.「模型 + anti-ai-copywriting 技能 + anti-ai-lint 质检门禁（含一次环内自愈）」。原始生成文本与统计总表持久化于 `tests/fixtures_glm5/`，由 `scripts/run_glm5_benchmark.py` 一键复现。`tests/fixtures/` 下的人工构造样例仍用于确定性回归测试，不参与本表统计。
+> **数据来源声明**：本表为真实 GLM-5.3 大模型端到端推理的**双盲对照实测数据**（评测日期 2026-10-24），对比组为「单一模型原生生成」vs.「模型 + anti-ai-copywriting 技能 + anti-ai-lint 质检门禁（含一次环内自愈）」。全部原始生成文本与统计总表持久化于 `tests/fixtures_glm5/`，由 `scripts/run_glm5_benchmark.py` 一键复现。仓库中全部评测基准、回归测试与 DPO 数据集已彻底统一为真实端到端生成产物，已全量清除所有旧有模拟与人工构造样例。
 
 基于同一组提示词对 GLM-5.3 的 8 大科目（6 大起草场景 + 2 大信息守恒场景）实测对比如下：
 

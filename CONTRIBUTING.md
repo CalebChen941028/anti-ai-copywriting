@@ -10,7 +10,7 @@ Thank you for contributing to `anti-ai-copywriting`!
 
 ### Guidelines
 1. **Zero External Dependencies**: The core linter in `lint/anti_ai_lint/` must rely strictly on the Python standard library.
-2. **Regression Fixtures**: If you propose a new forbidden trope or syntax pattern, include corresponding `.before.md` and `.after.md` pairs under `tests/fixtures/`.
+2. **Regression Fixtures**: If you propose a new forbidden trope or syntax pattern, include corresponding before and after test cases under `tests/fixtures_glm5/` or `tests/workflow_cases/`.
 3. **Open Source Compliance**:
    - Ensure all source files include SPDX license headers (`SPDX-License-Identifier: MIT`).
    - Do not commit proprietary code, credentials, API keys, or temporary files.
@@ -29,7 +29,7 @@ Thank you for contributing to `anti-ai-copywriting`!
 
 ### 贡献准则
 1. **零第三方依赖**：`lint/anti_ai_lint/` 下的检查器代码必须严格基于 Python 标准库开发。
-2. **回归样例**：新增禁用词或句法检测模式时，请在 `tests/fixtures/` 对应场景中补充 `.before.md` 与 `.after.md` 对照样本。
+2. **回归用例**：新增禁用词或句法检测模式时，请在 `tests/fixtures_glm5/` 或 `tests/workflow_cases/` 对应场景中补充测试用例。
 3. **开源合规要求**：
    - 所有源文件需包含 SPDX 许可证标识（`SPDX-License-Identifier: MIT`）。
    - 严禁提交商业保密代码、凭证、密钥或临时生成文件。

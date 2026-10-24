@@ -107,8 +107,8 @@ def load_fixtures_dataset(fixtures_dir: Path) -> List[Dict[str, str]]:
     for sc_dir in sorted(fixtures_dir.iterdir()):
         if not sc_dir.is_dir():
             continue
-        befores = sorted(sc_dir.glob("*.before.md"))
-        afters = sorted(sc_dir.glob("*.after.md"))
+        befores = sorted(list(set(list(sc_dir.glob("*.before.md")) + list(sc_dir.glob("*before*.md")))))
+        afters = sorted(list(set(list(sc_dir.glob("*.after.md")) + list(sc_dir.glob("*after*.md")))))
         if befores and afters:
             b_text = befores[0].read_text("utf-8").strip()
             a_text = afters[0].read_text("utf-8").strip()
@@ -172,7 +172,7 @@ def run_standalone_optimizer(
 
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Optimize natural copywriting prompts with DSPy teleprompter concepts.")
-    parser.add_argument("--fixtures-dir", type=str, default=str(_repo_root / "tests" / "fixtures"), help="Path to evaluation fixtures.")
+    parser.add_argument("--fixtures-dir", type=str, default=str(_repo_root / "tests" / "fixtures_glm5"), help="Path to evaluation fixtures.")
     parser.add_argument("--iterations", type=int, default=3, help="Optimization rounds/iterations.")
     parser.add_argument("--output", "-o", type=str, default=None, help="Save evaluation report to JSON file.")
 

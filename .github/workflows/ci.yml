@@ -29,9 +29,9 @@ jobs:
 
       - name: Test CLI Direct Invocation & Output Formats
         run: |
-          PYTHONPATH=lint python3 -m anti_ai_lint tests/fixtures/academic/paper.after.md --max-score 5.0
-          PYTHONPATH=lint python3 -m anti_ai_lint --format json tests/fixtures/en_academic/paper.after.md
-          PYTHONPATH=lint python3 -m anti_ai_lint --format github tests/fixtures/academic/paper.after.md
+          PYTHONPATH=lint python3 -m anti_ai_lint tests/fixtures_glm5/academic/skill_tool_after.md --max-score 5.0
+          PYTHONPATH=lint python3 -m anti_ai_lint --format json tests/fixtures_glm5/en_academic/skill_tool_after.md
+          PYTHONPATH=lint python3 -m anti_ai_lint --format github tests/fixtures_glm5/academic/skill_tool_after.md
 
       - name: Validate DPO Dataset Exporter
         run: |

@@ -646,7 +646,7 @@ def analyze_text(
             qualifying_lengths.append(l_total)
 
     burstiness_cv = 0.0
-    if len(qualifying_lengths) >= 6:
+    if len(qualifying_lengths) >= 2:
         n_s = len(qualifying_lengths)
         mean_len = sum(qualifying_lengths) / n_s
         if mean_len > 0:

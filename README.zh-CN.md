@@ -80,7 +80,7 @@
 
 ## 4. 安装与部署
 
-### 3.1 智能体规则与技能安装
+### 4.1 智能体规则与技能安装
 
 使用统一安装脚本（支持多目标清单追踪与 `--lang zh|en` 语义切换）：
 
@@ -122,7 +122,7 @@
 
 ---
 
-### 3.2 独立 Python 质检工具（`anti-ai-lint`）
+### 4.2 独立 Python 质检工具（`anti-ai-lint`）
 
 在本地或虚拟环境中安装：
 
@@ -138,7 +138,7 @@ python3 -m anti_ai_lint /path/to/document.md --max-score 8.0
 
 ---
 
-### 3.3 Model Context Protocol (MCP) 服务配置
+### 4.3 Model Context Protocol (MCP) 服务配置
 
 在 Cursor、Windsurf、Claude Code 或 Zed 中接入 MCP 服务：
 
@@ -165,7 +165,7 @@ anti-ai-mcp
 
 ---
 
-### 3.4 GitHub Action 与 Pre-commit 门禁
+### 4.4 GitHub Action 与 Pre-commit 门禁
 
 **GitHub Actions 流水线配置 (`.github/workflows/prose-lint.yml`)**：
 

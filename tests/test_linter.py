@@ -574,6 +574,16 @@ class TestAntiAiLinter(unittest.TestCase):
         categories_short = [v.category for v in rep_short.violations]
         self.assertNotIn("rhythmic_monotony", categories_short)
 
+        # Varied text with fewer than 6 sentences: computes valid CV without triggering rhythmic_monotony
+        short_varied = (
+            "短句斩截。"
+            "这是一个为了拉开句子长度变异系数而专门构造的相对更长一些的测试句子。"
+            "第三句中等长度。"
+        )
+        rep_short_var = analyze_text(short_varied)
+        self.assertGreater(rep_short_var.metrics.burstiness_cv, 0.20)
+        self.assertNotIn("rhythmic_monotony", [v.category for v in rep_short_var.violations])
+
     def test_mattr_lexical_richness_metric(self):
         # Empty text
         rep_empty = analyze_text("")

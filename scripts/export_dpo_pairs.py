@@ -200,9 +200,13 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 1
 
     valid = validate_pairs(pairs, verbose=True)
-    if args.validate and not valid:
+    if not valid:
         sys.stderr.write("Validation failed on one or more fixture pairs.\n")
         return 1
+
+    if args.validate and not args.output:
+        print(f"All {len(pairs)} preference pairs validated successfully.")
+        return 0
 
     records = export_dpo(pairs, output_path=args.output, fmt=args.format)
     if not args.output:

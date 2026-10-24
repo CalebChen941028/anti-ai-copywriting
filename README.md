@@ -79,7 +79,7 @@ Evaluated on the repository's 6 standardized bilingual test scenarios in `tests/
 
 ## 4. Installation & Deployment
 
-### 3.1 Agent Skill & Rules Integration
+### 4.1 Agent Skill & Rules Integration
 
 Install into your target platform using the unified installer with language selection (`--lang en|zh`):
 
@@ -121,7 +121,7 @@ For detailed guides, see [Agent Adapters & Integration Guides](docs/adapters/REA
 
 ---
 
-### 3.2 Standalone Python Linter (`anti-ai-lint`)
+### 4.2 Standalone Python Linter (`anti-ai-lint`)
 
 Install locally or in your virtual environment:
 
@@ -137,7 +137,7 @@ python3 -m anti_ai_lint /path/to/document.md --max-score 8.0
 
 ---
 
-### 3.3 Model Context Protocol (MCP) Server
+### 4.3 Model Context Protocol (MCP) Server
 
 To run the MCP server for Cursor, Windsurf, Claude Code, or Zed:
 
@@ -164,7 +164,7 @@ Add to `.cursor/mcp.json` or Cline `cline_mcp_settings.json`:
 
 ---
 
-### 3.4 GitHub Action & Pre-Commit Hook
+### 4.4 GitHub Action & Pre-Commit Hook
 
 **GitHub Actions Workflow (`.github/workflows/prose-lint.yml`)**:
 

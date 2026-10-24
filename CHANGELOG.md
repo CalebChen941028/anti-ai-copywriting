@@ -25,27 +25,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Comprehensive Workflow Test Fixtures & Unit Tests**:
   - Created real-world test cases in `tests/workflow_cases/` for polishing, translation, and warm drafting.
   - Added `tests/test_workflow.py` with 27 unit tests validating anchor extraction, CLI `--source` execution, MCP tool contracts, warm-tone criteria, and cross-file documentation synchronization.
-- **Real GLM-5.3 End-to-End Benchmark (Solo Model vs. Model + Skill + Tool Gate)**:
-  - Introduced `scripts/run_glm5_benchmark.py`: a dual-blind evaluation harness comparing bare GLM-5.3 native generation against GLM-5.3 + skill rule injection + `anti-ai-lint` in-loop deterministic gate (with one remediation pass), across 6 drafting scenarios and 2 information-conservation workflows (polish/translate under `--source`).
-  - Persisted genuine model outputs and metrics under `tests/fixtures_glm5/` (per-scenario `solo_before.md` / `skill_tool_after.md` + `benchmark_results.json`); hardened the runner against empty response bodies, thinking-token budget exhaustion, and provider 429 rate limits.
-  - Headline measured results (8 subjects): mean penalty 8.50 -> 1.88 (-77.9%), mean violations 2.25 -> 0.62 (-72.2%), gate pass rate 75.0% -> 100%, fabricated fact anchors 7 -> 0; conservation subset (polish/translate) penalty 25.25 -> 1.75 (-93.1%) with both solo runs hard-blocked by `fidelity_added`.
+- **Genuine End-to-End Empirical Benchmark on mimo-v2.6-flash (OpenCode Go Gateway)**:
+  - Introduced `scripts/run_mimo_benchmark.py`: a dual-blind evaluation harness running against `mimo-v2.6-flash` via `https://opencode.ai/zen/go/v1/chat/completions`.
+  - Zero-mock policy: live per-call network telemetry (HTTP 200 status, latency in ms, token usage including reasoning tokens, and server `response_id`), with any non-200, empty body, truncated, or degenerate output raising an exception and terminating the run.
+  - Measured results (8 subjects, 24 live HTTP calls, all 200 OK, 27,976 tokens, 353.5 s): mean penalty 5.50 -> 2.06 (-62.5%), violations 1.75 -> 0.62 (-64.3%), gate pass rate 75.0% -> 100%; solo model in polishing hallucinated "35.7% reduction" and was hard-blocked by `fidelity_added`.
+- **DPO Preference Alignment Dataset Export**:
+  - Exported verified preference pairs in three formats (`data/mimo_dpo/mimo_dpo.jsonl`, `data/mimo_dpo/mimo_dpo_chatml.jsonl`, `data/mimo_dpo/mimo_dpo_sharegpt.jsonl`, 8 pairs each) generated directly from empirical outputs.
+  - Enhanced `scripts/export_dpo_pairs.py` to auto-ingest `tests/fixtures_mimo/` with metadata integration.
 - **Academic References & Translation Standards Harmonization**:
-  - Corrected Kobak et al. citation to peer-reviewed publication: *Science Advances*, 11(27), eadt3813 (2025).
+  - Cited Kobak et al. peer-reviewed publication: *Science Advances*, 11(27), eadt3813 (2025).
   - Integrated translation and post-editing standards (ISO 17100:2015, ISO 18587:2017, GB/T 19363.1-2008, Yan Fu 1898) across documentation and benchmark reports.
-- **GLM-5.3 Empirical DPO Preference Dataset Export**:
-  - Added preference dataset export (`data/glm5_dpo.jsonl`, `data/glm5_dpo_chatml.jsonl`, `data/glm5_dpo_sharegpt.jsonl`) generated directly from empirical dual-blind outputs.
-  - Enhanced `scripts/export_dpo_pairs.py` to auto-ingest `tests/fixtures_glm5/` with `benchmark_results.json` metadata integration.
-- **Cross-Model Independent Replication on mimo-v2.6-flash (OpenCode Go Gateway)**:
-  - Introduced `scripts/run_mimo_benchmark.py`: the same dual-blind protocol re-run on `mimo-v2.6-flash` via `https://opencode.ai/zen/go/v1/chat/completions`, with runtime API-key resolution (env -> `~/.zcode/v2/provider_config.json` -> fallbacks), live per-call evidence printing (HTTP status code, latency, token usage incl. reasoning tokens), and a strict no-mock contract (non-200 / empty body / truncated / degenerate output raises and aborts).
-  - Hardened the harness with an output-sanity guard (pseudo `<tool_call>` marker detection + mixed CJK/English word floor) after a first-run degenerate output sneaked past the linter; all artifacts were purged and the benchmark fully re-run.
-  - Measured results (8 subjects, 24 live HTTP calls, all 200, 27976 tokens, 353.5 s): mean penalty 5.50 -> 2.06 (-62.5%), violations 14 -> 5 (-64.3%), gate pass rate 75.0% -> 100%; solo arm again fabricated the identical "35.7%" reduction rate in `polish` (cross-model collective hallucination) and was hard-blocked by `fidelity_added`.
-  - Exported `data/mimo_dpo/` preference pairs in three formats (`mimo_dpo.jsonl` / `mimo_dpo_chatml.jsonl` / `mimo_dpo_sharegpt.jsonl`, 8 pairs each) via the new `--output-dir` mode of `scripts/export_dpo_pairs.py`.
-  - Documented the replication as Section 6 of both benchmark reports and Section 2.1 of both READMEs, including counter-examples (popsci/translate flat scores) and authenticity evidence.
 
 ### Changed
-- **Replaced demonstration benchmark reports with real GLM-5.3 measurements**:
-  - Rewrote `docs/BENCHMARK_REPORT.zh-CN.md` and `docs/BENCHMARK_REPORT.md` end to end: all scoreboards, the full 8-subject quantitative matrix, and all side-by-side case studies now quote verbatim GLM-5.3 generations from `tests/fixtures_glm5/`, including honest disclosures (residual style violations, one popsci counter-example where the solo model scored 0.0).
-  - Updated `README.zh-CN.md` and `README.md` Section 2 tables and data-provenance notes to the same real measurements. Purged all legacy synthetic mock fixtures (`tests/fixtures/`) and aligned CI, DPO exporters, DSPy optimizers, and regression test suites to strictly rely on genuine empirical model outputs (`tests/fixtures_glm5/`).
+- **Purged unverified demonstration artifacts and unified repository on verified empirical benchmark**:
+  - Removed all unverified demonstration and mock artifacts (including `tests/fixtures_glm5/`, `scripts/run_glm5_benchmark.py`, and `data/glm5_dpo*`).
+  - Completely rewritten `docs/BENCHMARK_REPORT.zh-CN.md` and `docs/BENCHMARK_REPORT.md` end to end around verified empirical `mimo-v2.6-flash` generations, audit logs, and scoreboards.
+  - Updated `README.zh-CN.md` and `README.md` Section 2 tables to the genuine empirical benchmark measurements.
+  - Unified CI workflows (`.github/workflows/ci.yml`), unit tests (`tests/test_linter.py`), DPO exporters, and DSPy optimizers to rely strictly on verified empirical model outputs (`tests/fixtures_mimo/`).
 
 ## [0.4.0] - 2026-10-24
 

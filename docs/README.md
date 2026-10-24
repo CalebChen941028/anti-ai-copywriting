@@ -8,7 +8,7 @@ Welcome to the documentation for **anti-ai-copywriting**, the bilingual natural 
 
 ## Documentation Structure
 
-- **[Empirical Benchmark & Evaluation Report](BENCHMARK_REPORT.md)** ([中文](BENCHMARK_REPORT.zh-CN.md)): Measured output from real end-to-end inference on Zhipu GLM-5.3 under a dual-blind protocol ("Solo Model" vs. "Model + Skill + Tool Gate") across 8 core subjects (Academic, Business, English Academic, Grant, PopSci, Social Reviews, and information-conserving Polishing and Translation under `--source`).
+- **[Empirical Benchmark & Evaluation Report](BENCHMARK_REPORT.md)** ([中文](BENCHMARK_REPORT.zh-CN.md)): Measured output from real end-to-end inference on mimo-v2.6-flash under a dual-blind protocol ("Solo Model" vs. "Model + Skill + Tool Gate") across 8 core subjects (Academic, Business, English Academic, Grant, PopSci, Social Reviews, and information-conserving Polishing and Translation under `--source`).
 - **[Agent Adapters & Integration Matrix](adapters/README.md)** ([中文](adapters/README.zh-CN.md)): Platform-specific setup guides for:
   - [Codex Adapter](adapters/codex.md) ([中文](adapters/codex.zh-CN.md))
   - [Claude Code Adapter](adapters/claude-code.md) ([中文](adapters/claude-code.zh-CN.md))

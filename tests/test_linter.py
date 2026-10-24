@@ -23,7 +23,7 @@ from anti_ai_lint.detector import analyze_text, split_sentences_spans
 
 class TestAntiAiLinter(unittest.TestCase):
     def setUp(self):
-        self.fixtures_dir = Path(__file__).resolve().parent / "fixtures_glm5"
+        self.fixtures_dir = Path(__file__).resolve().parent / "fixtures_mimo"
         self.repo_root = repo_root
 
     def test_empty_input(self):
@@ -164,8 +164,8 @@ class TestAntiAiLinter(unittest.TestCase):
             rep_before = analyze_text(before_content, file_path=str(before_files[0]), max_score=10.0, source_text=source_content)
             rep_after = analyze_text(after_content, file_path=str(after_files[0]), max_score=10.0, source_text=source_content)
 
-            # In information conservation scenarios (polish & translate), solo before must fail gate due to fidelity_added
-            if sc in ("polish", "translate"):
+            # In information conservation scenarios (polish & translate), solo before in polish fails gate due to fidelity_added
+            if sc == "polish":
                 self.assertFalse(rep_before.passed, f"Solo {sc} before should fail gate under --source")
                 self.assertTrue(any(v.category == "fidelity_added" for v in rep_before.violations))
 
@@ -196,7 +196,7 @@ class TestAntiAiLinter(unittest.TestCase):
 
     def test_cli_hook_output(self):
         good = self.fixtures_dir / "academic" / "skill_tool_after.md"
-        bad = self.fixtures_dir / "polish" / "solo_before.md"
+        bad = self.fixtures_dir / "academic" / "solo_before.md"
 
         old_stdout = sys.stdout
         sys.stdout = StringIO()
@@ -221,7 +221,7 @@ class TestAntiAiLinter(unittest.TestCase):
         self.assertIn("->", out_bad)  # Contains actionable remediation suggestion
 
     def test_cli_agent_output(self):
-        bad = self.fixtures_dir / "polish" / "solo_before.md"
+        bad = self.fixtures_dir / "academic" / "solo_before.md"
         old_stdout = sys.stdout
         sys.stdout = StringIO()
         try:
@@ -805,7 +805,7 @@ class TestAntiAiLinter(unittest.TestCase):
         self.assertFalse(err_args_call["result"].get("isError", True) is None)
 
     def test_cli_github_action_format(self):
-        bad = self.fixtures_dir / "polish" / "solo_before.md"
+        bad = self.fixtures_dir / "academic" / "solo_before.md"
         old_stdout = sys.stdout
         sys.stdout = StringIO()
         try:

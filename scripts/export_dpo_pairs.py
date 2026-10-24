@@ -205,7 +205,7 @@ def export_dpo(
 
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Export validated DPO preference pairs for de-AI fine-tuning.")
-    parser.add_argument("--fixtures-dir", type=str, default=str(_repo_root / "tests" / "fixtures_glm5"), help="Path to fixtures directory.")
+    parser.add_argument("--fixtures-dir", type=str, default=str(_repo_root / "tests" / "fixtures_mimo"), help="Path to fixtures directory.")
     parser.add_argument("--output", "-o", type=str, default=None, help="Output JSONL filepath.")
     parser.add_argument("--output-dir", type=str, default=None,
                         help="Export all three formats (dpo, chatml, sharegpt) as <stem>_dpo*.jsonl into this directory.")

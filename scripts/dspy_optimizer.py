@@ -172,7 +172,7 @@ def run_standalone_optimizer(
 
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Optimize natural copywriting prompts with DSPy teleprompter concepts.")
-    parser.add_argument("--fixtures-dir", type=str, default=str(_repo_root / "tests" / "fixtures_glm5"), help="Path to evaluation fixtures.")
+    parser.add_argument("--fixtures-dir", type=str, default=str(_repo_root / "tests" / "fixtures_mimo"), help="Path to evaluation fixtures.")
     parser.add_argument("--iterations", type=int, default=3, help="Optimization rounds/iterations.")
     parser.add_argument("--output", "-o", type=str, default=None, help="Save evaluation report to JSON file.")
 

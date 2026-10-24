@@ -625,12 +625,19 @@ class TestAntiAiLinter(unittest.TestCase):
         self.assertEqual(robust_v[0].penalty, 2.0)
 
     def test_chinese_light_verb_constructions_expanded(self):
-        # Test various light verbs and nominalized action targets
+        # Test various light verbs and nominalized action targets including proposal examples
         samples = [
             "课题组对该系统开展了深入的分析与对比。",
             "我们展开了全面的调研并提交总结报告。",
             "专家组对该项目予以系统评估。",
             "各部门必须对安全隐患加以科学整改。",
+            "针对该系统展开了全面的性能测评。",
+            "团队展开了全面的安全排查。",
+            "对数据进行了进一步分析。",
+            "课题组对数据进行了深入而全面的调研。",
+            "专家组给予了充分的评估。",
+            "作出了实质性整改。",
+            "进行了代码审校并记录日志。",
         ]
         for s in samples:
             rep = analyze_text(s)
@@ -638,6 +645,16 @@ class TestAntiAiLinter(unittest.TestCase):
             self.assertTrue(len(pats) >= 1, f"Failed to detect expanded LVC in: {s}")
             self.assertEqual(pats[0].penalty, 3.5)
             self.assertIn("还原为直接动作强动词", pats[0].suggestion)
+
+    def test_mattr_stress_100k_words(self):
+        # Stress test MATTR calculation on 100k tokens
+        tokens = ["word" + str(i % 500) for i in range(100000)]
+        big_text = " ".join(tokens)
+        rep = analyze_text(big_text)
+        self.assertGreater(rep.metrics.mattr, 0.0)
+        self.assertLessEqual(rep.metrics.mattr, 1.0)
+        # Verify 50 tokens with identical repeating cycle has MATTR 1.0
+        self.assertEqual(rep.metrics.mattr, 1.0)
 
     def test_mcp_server_jsonrpc_protocol(self):
         from anti_ai_lint.mcp_server import process_jsonrpc_message
@@ -684,7 +701,7 @@ class TestAntiAiLinter(unittest.TestCase):
         lint_payload = json.loads(call_lint["result"]["content"][0]["text"])
         self.assertTrue(lint_payload["passed"])
 
-        # 5. tools/call -> remediate_violation
+        # 5. tools/call -> remediate_violation (Chinese buzzword)
         call_rem = process_jsonrpc_message({
             "jsonrpc": "2.0",
             "id": 5,
@@ -701,7 +718,25 @@ class TestAntiAiLinter(unittest.TestCase):
         self.assertFalse(call_rem["result"]["isError"])
         self.assertIn("支持", call_rem["result"]["content"][0]["text"])
 
-        # 6. tools/call -> get_style_contract
+        # 6. tools/call -> remediate_violation (Chinese LVC text)
+        call_rem_lvc = process_jsonrpc_message({
+            "jsonrpc": "2.0",
+            "id": 51,
+            "method": "tools/call",
+            "params": {
+                "name": "remediate_violation",
+                "arguments": {
+                    "category": "formulaic_pattern",
+                    "match_text": "展开了全面的性能测评",
+                    "context": "针对该系统展开了全面的性能测评",
+                },
+            },
+        })
+        self.assertFalse(call_rem_lvc["result"]["isError"])
+        self.assertIn("文字义肢", call_rem_lvc["result"]["content"][0]["text"])
+        self.assertIn("全面测评系统性能", call_rem_lvc["result"]["content"][0]["text"])
+
+        # 7. tools/call -> get_style_contract
         call_contract = process_jsonrpc_message({
             "jsonrpc": "2.0",
             "id": 6,
@@ -713,13 +748,50 @@ class TestAntiAiLinter(unittest.TestCase):
         })
         self.assertIn("学术专业语态公理", call_contract["result"]["content"][0]["text"])
 
-        # 7. Invalid method returns -32601
+        # 8. Invalid method returns -32601
         err_resp = process_jsonrpc_message({
             "jsonrpc": "2.0",
             "id": 99,
             "method": "non_existent_method",
         })
         self.assertEqual(err_resp["error"]["code"], -32601)
+
+        # 9. Non-dict request returns -32600 without raising unhandled exception
+        err_non_dict = process_jsonrpc_message("not a dict request")
+        self.assertEqual(err_non_dict["error"]["code"], -32600)
+
+        err_primitive = process_jsonrpc_message(12345)
+        self.assertEqual(err_primitive["error"]["code"], -32600)
+
+        # 10. Empty batch returns -32600
+        err_empty_batch = process_jsonrpc_message([])
+        self.assertEqual(err_empty_batch["error"]["code"], -32600)
+
+        # 11. Valid batch request returns list of responses
+        batch_resp = process_jsonrpc_message([
+            {"jsonrpc": "2.0", "id": 101, "method": "ping"},
+            {"jsonrpc": "2.0", "id": 102, "method": "ping"},
+        ])
+        self.assertIsInstance(batch_resp, list)
+        self.assertEqual(len(batch_resp), 2)
+        self.assertEqual(batch_resp[0]["id"], 101)
+        self.assertEqual(batch_resp[1]["id"], 102)
+
+        # 12. Tool call with invalid arguments gracefully returns tool error
+        err_args_call = process_jsonrpc_message({
+            "jsonrpc": "2.0",
+            "id": 103,
+            "method": "tools/call",
+            "params": {
+                "name": "lint_prose",
+                "arguments": {
+                    "text": "sample text",
+                    "max_score": "not_a_valid_number",
+                },
+            },
+        })
+        self.assertEqual(err_args_call["id"], 103)
+        self.assertFalse(err_args_call["result"].get("isError", True) is None)
 
     def test_cli_github_action_format(self):
         bad = self.fixtures_dir / "academic" / "paper.before.md"

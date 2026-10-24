@@ -145,8 +145,10 @@ def get_remediation_suggestion(category: str, match_text: str, context: str = ""
     if match_text.lower() in en_buzz_map:
         return en_buzz_map[match_text.lower()]
 
-    if "轻动词" in match_text or "弱动词" in match_text:
-        return "消除轻动词与动作名物化（文字义肢）：将「进行/开展/展开等形式动词 + 抽象名词」还原为直接动作强动词（例如：将「进行深入分析」重构为「深入分析」）"
+    zh_lvc_verbs = ("进行", "开展", "展开", "作出", "予以", "给以", "给予", "加以", "具有", "得到", "受到", "作", "做", "致以")
+    if "轻动词" in match_text or "弱动词" in match_text or any(v in match_text for v in zh_lvc_verbs) or any(v in context for v in zh_lvc_verbs):
+        clean_target = match_text if any(v in match_text for v in zh_lvc_verbs) else (context[:25] if context else match_text)
+        return f"消除轻动词与动作名物化（文字义肢）：将「{clean_target}」等形式动词搭配还原为直接动作强动词（例如：将「展开全面的性能测评」重构为「全面测评系统性能」；将「进行深入分析」重构为「深入分析」）"
 
     if any(k in match_text for k in ("如表", "表中", "Table", "Figure", "表格")):
         return "学术呈现规范：数值结果单独成句紧贴解释，避免套话引出表格（如‘如表所示’或‘As shown in Table’）"
@@ -213,7 +215,7 @@ def _load_default_wordlists() -> tuple[dict[str, Any], dict[str, Any]]:
                 {"pattern": "不仅体现在.{1,40}更体现在", "name": "不仅体现在……更体现在……公式化排比", "penalty": 4},
                 {"pattern": "不是.{1,30}而是(质的飞跃|协作模式的重塑|根本性的变革|跨越式的发展)", "name": "无实质对立面的伪对比煽情", "penalty": 4},
                 {"pattern": "从[^。！？\\n]{1,30}到[^。！？\\n]{1,30}的(质变|飞跃|跨越)", "name": "虚假范围递进", "penalty": 4},
-                {"pattern": "(进行|开展|展开|作出|予以|给以|加以|具有|得到|受到|作|做|致以)[了的]?(详细|深入|系统|全面|实质|重要|科学|持续)?[了的]?(分析|探讨|调研|考察|评估|审校|整改|梳理|阐述|测查|优化|迭代|部署|排查|总结|研究)", "name": "轻动词名物化搭配(文字义肢)", "penalty": 3.5},
+                {"pattern": "(进行|开展|展开|作出|予以|给以|给予|加以|具有|得到|受到|作|做|致以)[了的]?(?:[^，。！？；\\n]{0,8}?)[了的之]?(分析|探讨|调研|考察|评估|测评|审校|整改|梳理|阐述|测查|优化|迭代|部署|排查|总结|研究|复盘)", "name": "轻动词名物化搭配(文字义肢)", "penalty": 3.5},
                 {"pattern": "(如表所示|从表中可以看出|结果如表.{1,10}所示)", "name": "套话表格陈述", "penalty": 3},
                 {"pattern": "拟通过.{1,40}从而.{1,40}进而", "name": "“拟通过……从而……进而……”套链", "penalty": 3}
             ],
@@ -665,8 +667,22 @@ def analyze_text(
         mattr = round(len(set(token_matches)) / total_tokens, 4)
     else:
         num_windows = total_tokens - window_size + 1
-        ttr_sum = sum(len(set(token_matches[i : i + window_size])) / window_size for i in range(num_windows))
-        mattr = round(ttr_sum / num_windows, 4)
+        window_counts: Dict[str, int] = {}
+        for tok in token_matches[:window_size]:
+            window_counts[tok] = window_counts.get(tok, 0) + 1
+        distinct_sum = len(window_counts)
+
+        for i in range(num_windows - 1):
+            out_tok = token_matches[i]
+            in_tok = token_matches[i + window_size]
+            if window_counts[out_tok] == 1:
+                del window_counts[out_tok]
+            else:
+                window_counts[out_tok] -= 1
+            window_counts[in_tok] = window_counts.get(in_tok, 0) + 1
+            distinct_sum += len(window_counts)
+
+        mattr = round((distinct_sum / window_size) / num_windows, 4)
 
     metrics = TextMetrics(
         total_chars=total_chars,

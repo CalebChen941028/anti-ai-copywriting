@@ -39,8 +39,8 @@
     - **Tier A（中高跃升，扣 3.5 分）**：`realm`, `realm of`, `intricate`, `pivotal role`, `pivotal`, `beacon of`, `commendable`, `foster`, `navigating complexities`, `unwavering`。
     - **Tier B（高频通用，扣 2.0 分）**：`comprehensive`, `robust`, `leverage`, `utilize`, `seamless integration`, `seamless`, `seamlessly`, `multifaceted`, `myriad`, `revolutionize`。
 - **汉语形式动词/轻动词结构（Light Verb Constructions, LVC）闭集**：
-  - 朱德熙现代汉语形式动词闭集：`进行|开展|展开|作出|予以|给以|加以|具有|得到|受到|作|做|致以`。
-  - 名物化动作靶点扩充：`分析|探讨|调研|考察|评估|审校|整改|梳理|阐述|测查|优化|迭代|部署|排查|总结|研究`。
+  - 朱德熙现代汉语形式动词闭集：`进行|开展|展开|作出|予以|给以|给予|加以|具有|得到|受到|作|做|致以`。
+  - 名物化动作靶点扩充：`分析|探讨|调研|考察|评估|测评|审校|整改|梳理|阐述|测查|优化|迭代|部署|排查|总结|研究|复盘`。
   - 自动提供动作名词去名物化复原规则（如将“针对系统展开了全面的性能测评”精简为“全面测评了系统性能”）。
 - **Model Context Protocol (MCP) 原生工具服务**：
   - 零外部依赖的纯标准库 JSON-RPC 2.0 stdio MCP 服务（`anti-ai-mcp` 或 `python3 -m anti_ai_lint.mcp_server`）。

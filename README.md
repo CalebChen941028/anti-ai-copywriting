@@ -39,7 +39,7 @@ Most existing AI text tools operate as **post-hoc punitive detectors** or **dest
     - **Tier A (3.5)**: `realm`, `realm of`, `intricate`, `pivotal role`, `pivotal`, `beacon of`, `commendable`, `foster`, `navigating complexities`, `unwavering`.
     - **Tier B (2.0)**: `comprehensive`, `robust`, `leverage`, `utilize`, `seamless integration`, `seamless`, `seamlessly`, `multifaceted`, `myriad`, `revolutionize`.
 - **Chinese Light Verb Constructions (LVC / 文字义肢) Closed Set**:
-  - Closed set of light verbs (`进行|开展|展开|作出|予以|给以|加以|具有|得到|受到|作|做|致以`) paired with 16 nominalized action targets (`分析|探讨|调研|考察|评估|审校|整改|梳理|阐述|测查|优化|迭代|部署|排查|总结|研究`).
+  - Closed set of light verbs (`进行|开展|展开|作出|予以|给以|给予|加以|具有|得到|受到|作|做|致以`) paired with nominalized action targets (`分析|探讨|调研|考察|评估|测评|审校|整改|梳理|阐述|测查|优化|迭代|部署|排查|总结|研究|复盘`).
   - Provides actionable de-nominalization rewrite guidelines.
 - **Model Context Protocol (MCP) Server**:
   - Zero-dependency JSON-RPC 2.0 stdio MCP server (`anti-ai-mcp` or `python3 -m anti_ai_lint.mcp_server`).

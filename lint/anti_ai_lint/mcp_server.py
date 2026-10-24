@@ -164,95 +164,116 @@ TOOLS_SPEC = [
 
 
 def handle_tool_call(name: str, args: Dict[str, Any]) -> Dict[str, Any]:
-    if name == "lint_prose":
-        text = args.get("text")
-        file_path = args.get("file_path")
-        if not text and file_path:
-            p = Path(file_path)
-            if not p.is_file():
-                return {
-                    "content": [{"type": "text", "text": f"Error: file not found: {file_path}"}],
-                    "isError": True,
-                }
+    try:
+        if name == "lint_prose":
+            text = args.get("text")
+            file_path = args.get("file_path")
+            if not text and file_path:
+                p = Path(file_path)
+                if not p.is_file():
+                    return {
+                        "content": [{"type": "text", "text": f"Error: file not found: {file_path}"}],
+                        "isError": True,
+                    }
+                try:
+                    text = p.read_text(encoding="utf-8", errors="replace")
+                except OSError as err:
+                    return {
+                        "content": [{"type": "text", "text": f"Error reading file {file_path}: {err}"}],
+                        "isError": True,
+                    }
+            elif text is None:
+                text = ""
+
+            genre = str(args.get("genre", "general")).strip().lower()
             try:
-                text = p.read_text(encoding="utf-8", errors="replace")
-            except OSError as err:
-                return {
-                    "content": [{"type": "text", "text": f"Error reading file {file_path}: {err}"}],
-                    "isError": True,
-                }
-        elif text is None:
-            text = ""
+                max_score = float(args.get("max_score", 10.0))
+            except (ValueError, TypeError):
+                max_score = 10.0
 
-        genre = args.get("genre", "general")
-        max_score = float(args.get("max_score", 10.0))
-        max_norm = args.get("max_normalized_score")
-        if max_norm is not None:
-            max_norm = float(max_norm)
+            max_norm = args.get("max_normalized_score")
+            if max_norm is not None:
+                try:
+                    max_norm = float(max_norm)
+                except (ValueError, TypeError):
+                    max_norm = None
 
-        report = analyze_text(
-            text=text,
-            file_path=file_path,
-            max_score=max_score,
-            max_normalized_score=max_norm,
-            genre=genre,
-        )
-        data = report.to_dict()
+            report = analyze_text(
+                text=text,
+                file_path=file_path,
+                max_score=max_score,
+                max_normalized_score=max_norm,
+                genre=genre,
+            )
+            data = report.to_dict()
+            return {
+                "content": [
+                    {
+                        "type": "text",
+                        "text": json.dumps(data, ensure_ascii=False, indent=2),
+                    }
+                ],
+                "isError": not report.passed,
+            }
+
+        elif name == "remediate_violation":
+            category = str(args.get("category", "") or "")
+            match_text = str(args.get("match_text", "") or "")
+            context = str(args.get("context", "") or "")
+            suggestion = get_remediation_suggestion(category, match_text, context)
+            result_payload = {
+                "category": category,
+                "match_text": match_text,
+                "suggestion": suggestion,
+            }
+            return {
+                "content": [
+                    {
+                        "type": "text",
+                        "text": json.dumps(result_payload, ensure_ascii=False, indent=2),
+                    }
+                ],
+                "isError": False,
+            }
+
+        elif name == "get_style_contract":
+            genre = str(args.get("genre") or "general").strip().lower()
+            lang = str(args.get("lang") or "zh").strip().lower()
+            if lang not in STYLE_CONTRACTS:
+                lang = "zh"
+            if genre not in STYLE_CONTRACTS[lang]:
+                genre = "general"
+            contract_text = STYLE_CONTRACTS[lang][genre]
+            return {
+                "content": [{"type": "text", "text": contract_text}],
+                "isError": False,
+            }
+
+        else:
+            return {
+                "content": [{"type": "text", "text": f"Error: unknown tool '{name}'"}],
+                "isError": True,
+            }
+    except Exception as err:
         return {
-            "content": [
-                {
-                    "type": "text",
-                    "text": json.dumps(data, ensure_ascii=False, indent=2),
-                }
-            ],
-            "isError": not report.passed,
-        }
-
-    elif name == "remediate_violation":
-        category = args.get("category", "")
-        match_text = args.get("match_text", "")
-        context = args.get("context", "")
-        suggestion = get_remediation_suggestion(category, match_text, context)
-        result_payload = {
-            "category": category,
-            "match_text": match_text,
-            "suggestion": suggestion,
-        }
-        return {
-            "content": [
-                {
-                    "type": "text",
-                    "text": json.dumps(result_payload, ensure_ascii=False, indent=2),
-                }
-            ],
-            "isError": False,
-        }
-
-    elif name == "get_style_contract":
-        genre = (args.get("genre") or "general").strip().lower()
-        lang = (args.get("lang") or "zh").strip().lower()
-        if lang not in STYLE_CONTRACTS:
-            lang = "zh"
-        if genre not in STYLE_CONTRACTS[lang]:
-            genre = "general"
-        contract_text = STYLE_CONTRACTS[lang][genre]
-        return {
-            "content": [{"type": "text", "text": contract_text}],
-            "isError": False,
-        }
-
-    else:
-        return {
-            "content": [{"type": "text", "text": f"Error: unknown tool '{name}'"}],
+            "content": [{"type": "text", "text": f"Internal tool execution error: {err}"}],
             "isError": True,
         }
 
 
-def process_jsonrpc_message(msg: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """Process a single incoming JSON-RPC 2.0 message."""
+def _process_single_message(msg: Any) -> Optional[Dict[str, Any]]:
+    if not isinstance(msg, dict):
+        return {
+            "jsonrpc": "2.0",
+            "id": None,
+            "error": {"code": -32600, "message": "Invalid Request: message must be an object"},
+        }
+
     msg_id = msg.get("id")
     method = msg.get("method")
-    params = msg.get("params", {})
+    params = msg.get("params") or {}
+    if not isinstance(params, dict):
+        params = {}
 
     if not method:
         if msg_id is not None:
@@ -299,6 +320,8 @@ def process_jsonrpc_message(msg: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     elif method == "tools/call":
         tool_name = params.get("name", "")
         tool_args = params.get("arguments", {})
+        if not isinstance(tool_args, dict):
+            tool_args = {}
         call_res = handle_tool_call(tool_name, tool_args)
         return {
             "jsonrpc": "2.0",
@@ -317,6 +340,24 @@ def process_jsonrpc_message(msg: Dict[str, Any]) -> Optional[Dict[str, Any]]:
                 },
             }
         return None
+
+
+def process_jsonrpc_message(msg: Any) -> Optional[Any]:
+    """Process incoming JSON-RPC 2.0 message (single object or batch array)."""
+    if isinstance(msg, list):
+        if not msg:
+            return {
+                "jsonrpc": "2.0",
+                "id": None,
+                "error": {"code": -32600, "message": "Invalid Request: empty batch"},
+            }
+        responses = []
+        for item in msg:
+            resp = _process_single_message(item)
+            if resp is not None:
+                responses.append(resp)
+        return responses if responses else None
+    return _process_single_message(msg)
 
 
 def run_mcp_server(
@@ -338,26 +379,38 @@ def run_mcp_server(
         except Exception:
             pass
 
-    for line in inp:
-        raw = line.strip()
-        if not raw:
-            continue
-        try:
-            req = json.loads(raw)
-        except Exception as err:
-            err_resp = {
-                "jsonrpc": "2.0",
-                "id": None,
-                "error": {"code": -32700, "message": f"Parse error: {err}"},
-            }
-            out.write(json.dumps(err_resp) + "\n")
-            out.flush()
-            continue
+    try:
+        for line in inp:
+            raw = line.strip()
+            if not raw:
+                continue
+            try:
+                req = json.loads(raw)
+            except Exception as err:
+                err_resp = {
+                    "jsonrpc": "2.0",
+                    "id": None,
+                    "error": {"code": -32700, "message": f"Parse error: {err}"},
+                }
+                out.write(json.dumps(err_resp) + "\n")
+                out.flush()
+                continue
 
-        resp = process_jsonrpc_message(req)
-        if resp is not None:
-            out.write(json.dumps(resp, ensure_ascii=False) + "\n")
-            out.flush()
+            try:
+                resp = process_jsonrpc_message(req)
+                if resp is not None:
+                    out.write(json.dumps(resp, ensure_ascii=False) + "\n")
+                    out.flush()
+            except Exception as loop_err:
+                err_resp = {
+                    "jsonrpc": "2.0",
+                    "id": None,
+                    "error": {"code": -32603, "message": f"Internal error: {loop_err}"},
+                }
+                out.write(json.dumps(err_resp) + "\n")
+                out.flush()
+    except (BrokenPipeError, KeyboardInterrupt):
+        return 0
 
     return 0
 

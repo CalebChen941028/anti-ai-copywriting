@@ -3,7 +3,7 @@
 [English](README.md) | [简体中文](README.zh-CN.md)
 
 [![CI](https://github.com/CalebChen941028/anti-ai-copywriting/actions/workflows/ci.yml/badge.svg)](https://github.com/CalebChen941028/anti-ai-copywriting/actions)
-[![Version: 0.5.0](https://img.shields.io/badge/version-0.5.0-green.svg)](CHANGELOG.md)
+[![Version: 0.6.0](https://img.shields.io/badge/version-0.6.0-green.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
 
@@ -58,6 +58,21 @@ The 8 subjects (6 drafting genres + 2 information-conservation workflows) evalua
 - **Empirical Honesty**: In popsci and technical translation, scores were flat, transparently disclosing that modern reasoning models already possess baseline competence on straightforward prompts and illustrating that the gate functions as a deterministic safety floor rather than claiming synthetic 100% wins.
 - **DPO Preference Pairs**: Preference pairs across all 8 subjects are exported in HF DPO, ChatML, and ShareGPT formats under `data/mimo_dpo/`.
 
+### 2.2 Advanced Stress Benchmark: deepseek-v4.1-flash (Long-Form, Unit Normalization, Adversarial Buzzwords)
+
+> [!NOTE]
+> To probe engine robustness across long-form drift, multi-magnitude units, and adversarial corporate buzzwords, an advanced stress test harness evaluates **`deepseek-v4.1-flash`**. Full audit records persist in [tests/fixtures_advanced/BENCHMARK_REPORT.md](tests/fixtures_advanced/BENCHMARK_REPORT.md).
+
+> [!IMPORTANT]
+> **Data Provenance & Audit Guarantee.** All evaluation data below represents genuine end-to-end inference on **`deepseek-v4.1-flash`** via the OpenCode Go gateway (`https://opencode.ai/zen/go/v1/chat/completions`, session: `session-deepseek-advanced-benchmark-2026`). All **10 live HTTP POSTs returned 200 OK** (mean latency 19,009 ms), consuming **29,843 tokens** (prompt 7,569 + completion 22,274, incl. 17,461 reasoning tokens). Every generation has a verifiable server-issued `response_id`. All raw texts and immutable audit records persist under `tests/fixtures_advanced/`, reproducible via `python3 scripts/run_advanced_benchmark.py`.
+
+| Advanced Scenario | Key Challenges & Focus | Solo Penalty | Model+Skill+Tool | Gate Verdict | Closed-Loop Mechanism |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| **Active-Active Architecture** (`long_architecture`) | 1500+ word long-form style drift, paragraph cadence, hedging | 4.0 pts / 1 viol | **0.0 pts / 0 viol** | ❌ Block -> **✅ PASS** | Prior rule injection; 1,503 words with healthy cadence ($CV \ge 0.55$) |
+| **Financial Migration Report** (`financial_unit_fidelity`) | Semantic physical & financial unit normalization under `--source` | 7.5 pts / 2 viols | **5.0 pts / 2 viols** | ❌ Block -> **✅ PASS** | In-loop reflection triggered (57.5 -> 5.0 pts); equivalent units passed, zero hallucinations |
+| **Adversarial Buzzwords** (`adversarial_cliche`) | Cleaning 10+ stacked corporate clichés (empower, synergy, closed-loop) | 2.5 pts / 1 viol | **2.5 pts / 1 viol** | ✅ PASS -> **✅ PASS** | All buzzwords eliminated into concrete actions; minimal formatting bolding |
+| **Provocative Academic Abstract** (`multiturn_remediation`) | High-risk prompt tempting grandiose narrative and empty praise | 11.0 pts / 3 viols | **0.0 pts / 0 viols** | ❌ Block -> **✅ PASS** | Prior conditioning intercepted buzzwords, passing cleanly on Turn 1 |
+
 ---
 
 ## 3. Key Capabilities & AI Engineering Architecture
@@ -67,10 +82,13 @@ The 8 subjects (6 drafting genres + 2 information-conservation workflows) evalua
   - **Polishing and translation**: the source owns the facts. No added numbers, people, scenes, or emotion; no dropped facts; assertion strength preserved; register matched to the source. Warmth comes from native syntax, never from invention.
   - **Original drafting of experiential genres** (column, essay, social post, brand story, speech): if the user has not stated a tone and the agent can interact, it asks once, with short examples, whether to write **A. objective** or **B. warm human-touch**. Warm mode uses only details the user supplied and inserts `[TODO: ...]` placeholders instead of inventing any.
   - Academic, grant, technical, business, polishing, translation, and non-interactive runs never trigger the question and default to objective.
-- **Information-conservation gate**: `anti-ai-lint out.md --source original.md` fails the run when a number, code (e.g. `H100`), or acronym appears in the output but not in the source, and penalizes numbers or codes that vanish.
-- **Information-Theoretic Cadence & Rhythm (Burstiness & UID)**:
-  - Measures sentence length variation via the Coefficient of Variation ($CV_{len} = \sigma / \mu$).
-  - Automatically flags `rhythmic_monotony` (penalty 3.5) if $CV_{len} < 0.28$ across qualifying sentences ($\ge 6$), eliminating the uniform 20-word AI drone.
+- **Information-Conservation Gate & Semantic Unit Normalization**:
+  - `anti-ai-lint out.md --source original.md` performs two-way anchor verification against the source text.
+  - Recognizes semantic physical and magnitude equivalence across time (`ms ↔ s ↔ min ↔ h ↔ day`), storage (`B ↔ KB ↔ MB ↔ GB ↔ TB`), and CJK financial orders (`万 ↔ 亿`, `万元 ↔ 千万元 ↔ 亿元`), preventing false-positive blocks on legitimate unit conversions.
+  - Strictly prevents hallucinated additions: ungrounded derived calculations (such as invented percentage increases) trigger hard failure `fidelity_added`, while missing source anchors trigger `fidelity_dropped`.
+- **Information-Theoretic Cadence & Localized Paragraph Monotony**:
+  - Measures global sentence length variation via the Coefficient of Variation ($CV_{len} = \sigma / \mu$). Flags `rhythmic_monotony` (penalty 3.5) if global $CV_{len} < 0.28$ across qualifying sentences ($\ge 6$).
+  - **Localized Paragraph Rhythmic Monotony** (`localized_rhythmic_monotony`): in long-form prose ($\ge 600$ characters), scans each natural paragraph. Flags paragraphs where $\ge 5$ consecutive sentences exhibit a localized $CV_{len} < 0.20$, prompting the insertion of 5-10 word short sentences to eliminate localized drone.
   - Implements Moving-Average Type-Token Ratio (MATTR) with a 50-token sliding window for unbiased lexical richness tracking.
 - **Excess-vocabulary word list** (informed by Kobak et al., 2025, *Science Advances*):
   - That study tracked vocabulary shifts across 15M+ PubMed abstracts. The word list follows its style words. The tier penalties below are this project's hand-set heuristics, not statistics from the paper:
@@ -205,7 +223,7 @@ jobs:
 ```yaml
 repos:
   - repo: https://github.com/CalebChen941028/anti-ai-copywriting
-    rev: v0.5.0
+    rev: v0.6.0
     hooks:
       - id: anti-ai-lint
         args: ["--format", "hook", "--genre", "general"]

@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-10-24
+
+### Added
+- **Semantic Unit & Magnitude Normalization Engine (`lint/anti_ai_lint/fidelity.py`)**:
+  - Implemented semantic equivalence recognition for physical time (`ms` ↔ `秒`, `min` ↔ `分钟`, `h` ↔ `小时`, `day` ↔ `天`), digital storage (`B` ↔ `KB` ↔ `MB` ↔ `GB` ↔ `TB`), and CJK financial orders of magnitude (`万` ↔ `亿`, `万元` ↔ `千万元` ↔ `亿元`).
+  - Automatically pairs and matches quantities across source and output texts to eliminate false-positive blocks under `--source`.
+  - Preserves strict anti-fabrication gates: ungrounded percentages (e.g., "降低幅度达 78.8%") or invented figures remain strictly blocked with `fidelity_added` hard failure.
+- **Localized Paragraph Rhythmic Monotony Detection (`lint/anti_ai_lint/detector.py`)**:
+  - Added `localized_rhythmic_monotony` quality gate (penalty 2.5) for long-form prose ($\ge 600$ characters or $\ge 400$ words).
+  - Automatically scans each paragraph for monotonous AI drone: flags paragraphs where $\ge 5$ consecutive sentences exhibit a sentence-length Coefficient of Variation $CV_{len} < 0.20$.
+  - Intelligently ignores bullet points, numbered lists, and KPI tables to eliminate false positives on enumeration blocks.
+- **DeepSeek v4.1-Flash Advanced Stress Benchmark Suite (`scripts/run_advanced_benchmark.py`)**:
+  - Introduced live dual-blind stress test suite with genuine HTTP calls to OpenCode Go endpoint (`https://opencode.ai/zen/go/v1/chat/completions`) using `deepseek-v4.1-flash`.
+  - Covers 4 high-difficulty frontiers:
+    1. `long_architecture`: 1500+ character cross-datacenter active-active architecture proposal (tests long-form style drift & paragraph cadence).
+    2. `financial_unit_fidelity`: Financial core system database migration report under `--source` (tests unit/magnitude equivalence and anti-fabrication).
+    3. `adversarial_cliche`: Strategic management draft with 10+ adversarial buzzwords (tests concrete verb restoration).
+    4. `multiturn_remediation`: Complex multi-violation prompt (tests pre-conditioning and in-loop self-healing reflection).
+  - Evaluated results: 10 live HTTP calls, 29,843 tokens (incl. 17,461 reasoning tokens), 100% HTTP 200, 100% Skill+Tool gate pass rate.
+  - Persisted live audit records and generation outputs to `tests/fixtures_advanced/`.
+- **Expanded Test Suite (100 Tests)**:
+  - Added unit tests for unit/magnitude equivalence, percentage anti-fabrication, and localized paragraph cadence detection, achieving 100/100 tests passing.
+
 ## [0.5.0] - 2026-10-24
 
 ### Added

@@ -3,7 +3,7 @@
 [English](README.md) | [简体中文](README.zh-CN.md)
 
 [![CI](https://github.com/CalebChen941028/anti-ai-copywriting/actions/workflows/ci.yml/badge.svg)](https://github.com/CalebChen941028/anti-ai-copywriting/actions)
-[![Version: 0.5.0](https://img.shields.io/badge/version-0.5.0-green.svg)](CHANGELOG.md)
+[![Version: 0.6.0](https://img.shields.io/badge/version-0.6.0-green.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
 
@@ -58,6 +58,21 @@
 - **真实反例如实披露**：科普专栏与英译中场景两组持平，如实记录真实模型在不同任务上的客观表现，未做任何人工修饰。
 - **DPO 对齐语料支持**：完整成对偏好数据已导出三种对齐格式至 `data/mimo_dpo/`。
 
+### 2.2 高难度进阶极限实测：deepseek-v4.1-flash（跨段落长文、量纲转换与对抗黑话）
+
+> [!NOTE]
+> 为验证引擎在更长篇幅、更精密量纲与强对抗性场景下的鲁棒性，新增针对 **`deepseek-v4.1-flash`** 的极限基准实测套件。详细审计记录见 [tests/fixtures_advanced/BENCHMARK_REPORT.md](tests/fixtures_advanced/BENCHMARK_REPORT.md)。
+
+> [!IMPORTANT]
+> **真实 API 审计保障**：全部调用通过 OpenCode Go 网关（`https://opencode.ai/zen/go/v1/chat/completions`，会话：`session-deepseek-advanced-benchmark-2026`）直连模型 **`deepseek-v4.1-flash`** 完成。累计 **10 次真实 HTTP POST 全部返回 200 OK**（平均时延 19,009 ms），消耗 **29,843 tokens**（Prompt 7,569 + Completion 22,274，其中 Reasoning 17,461 tokens），每条均含网关签发唯一 `response_id`。全部产物存档于 `tests/fixtures_advanced/`，可通过 `python3 scripts/run_advanced_benchmark.py` 一键无 Mock 复现。
+
+| 进阶高难度场景 | 核心挑战考察点 | 单一模型 (Solo) | 模型+技能门禁 (After) | 门禁判定 | 闭环机制体现 |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| **长文双活架构演进** (`long_architecture`) | 1500+字长文本风格漂移、段落节奏呆滞、虚词堆叠 | 4.0 分 / 1 处违规 | **0.0 分 / 0 处违规** | ❌ 拦截 -> **✅ 通关** | 先验规则约束，1503词达标且全段落呼吸感健康 |
+| **金融清算系统改造成效** (`financial_unit_fidelity`) | `--source` 下精密数字、物理与金融量纲等价归一 | 7.5 分 / 2 处违规 | **5.0 分 / 2 处违规** | ❌ 拦截 -> **✅ 通关** | 环内自愈机制生效（57.5分 -> 5.0分放行）；等价量纲平滑放行，虚构数值彻底杜绝 |
+| **对抗性大厂战略黑话清洗** (`adversarial_cliche`) | 10+处空洞动词与黑话套话清洗（赋能/抓手/闭环/组合拳） | 2.5 分 / 1 处违规 | **2.5 分 / 1 处违规** | ✅ 通关 -> **✅ 通关** | 黑话全部拔除还原为落地行动，仅残留极少样式加粗 |
+| **诱导性学术论述评述** (`multiturn_remediation`) | 诱导性宏大叙事与空洞自夸高风险提示 | 11.0 分 / 3 处违规 | **0.0 分 / 0 处违规** | ❌ 拦截 -> **✅ 通关** | 先验免疫（Pre-conditioning）阻断违规，首轮零分 |
+
 ---
 
 ## 3. 核心能力与 AI 工程架构
@@ -67,10 +82,13 @@
   - **润色与翻译场景严格遵循信息守恒**：事实权归原文所有。零增添事实（不杜撰数字、专名、情绪、背景细节）、零遗漏核心事实、断言强度不变、语体对齐原文。温感与母语感纯粹源于“意合化”语法解压与去欧化，绝不靠虚构细节煽情。
   - **经验叙事类起草场景支持温感交互**：面向散文、专栏、数码实测、品牌故事或演讲等经验性文体，若用户未明确语调且处于交互式会话，智能体主动出具 A/B 示例供用户选择（A. 客观克制 vs. B. 温感叙事）。温感模式仅使用用户提供的真实细节；若缺乏细节，必须以 `[待补充细节: ...]` 占位，严禁自行杜撰。
   - 学术论文、基金申报、技术方案、商业备忘、润色、翻译以及非交互式批量运行默认直接采用客观克制语调，绝不触发提问。
-- **信息守恒确定性门禁**：`anti-ai-lint out.md --source original.md`，对输出文本相对于原文的事实锚点（纯数字、字母开头的型号代码如 `H100`、全大写缩写）进行双向比对。若输出中出现原文不存在的新增锚点（`fidelity_added`），即使未超总分阈值亦强制拦截；若原文重要锚点缺失（`fidelity_dropped`），每项扣 3.0 分。
-- **信息论节奏感度量（Burstiness & UID 均匀信息密度假说）**：
-  - 基于纯 Python 标准库实现句长变异系数（Coefficient of Variation, $CV_{len} = \sigma / \mu$）。
-  - 当段落句数 $\ge 6$ 且 $CV_{len} < 0.28$ 时，自动判定为 `rhythmic_monotony`（节奏呆滞单调，扣 3.5 分），打破大模型常见的 20 词/30 字匀速机器嗡鸣感。
+- **信息守恒确定性门禁与语义量纲等价引擎**：
+  - `anti-ai-lint out.md --source original.md`，对输出文本相对于原文的事实锚点进行双向比对。
+  - 支持物理时间（`ms ↔ 秒`、`min ↔ 分钟`、`h ↔ 小时`、`day ↔ 天`）、存储容量（`B ↔ KB ↔ MB ↔ GB ↔ TB`）与中文金融计数级（`万 ↔ 亿`、`3000万元 ↔ 3千万元`）的语义等价识别，杜绝合理单位转换误报。
+  - 严打衍生虚构：若输出中出现原文未依据的新增锚点或百分比衍生计算（`fidelity_added`），即使未超总分阈值亦强制拦截；若原文重要锚点缺失（`fidelity_dropped`），每项扣 3.0 分。
+- **信息论节奏感度量与长文段落局部呆滞检测**：
+  - 基于纯 Python 标准库实现全局句长变异系数（Coefficient of Variation, $CV_{len} = \sigma / \mu$）。全局 $CV_{len} < 0.28$ 判定为 `rhythmic_monotony`（扣 3.5 分）。
+  - **长文本段落级局部节奏呆滞检测**（`localized_rhythmic_monotony`）：对 $\ge 600$ 字符长文自动扫描各自然段，若非枚举段落内连续 $\ge 5$ 句的局部变异系数 $CV < 0.20$，施加 2.5 分惩罚并指导穿插短促句，打破长篇大段中等长 AI 腔。
   - 引入滑动窗口词汇丰富度（MATTR / Moving-Average Type-Token Ratio，窗口 50），避免传统 TTR 受文本长度影响的问题。
 - **科学论文超额词频突变词表**（参考 Kobak et al., 2025, *Science Advances*）：
   - 依据该文献追踪 1500 万篇 PubMed 论文摘要得出的风格词异动，提炼高危词表。分级扣分为本项目启发式规则设定，非文献原始统计值：
@@ -206,7 +224,7 @@ jobs:
 ```yaml
 repos:
   - repo: https://github.com/CalebChen941028/anti-ai-copywriting
-    rev: v0.5.0
+    rev: v0.6.0
     hooks:
       - id: anti-ai-lint
         args: ["--format", "hook", "--genre", "general"]

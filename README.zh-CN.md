@@ -3,7 +3,7 @@
 [English](README.md) | [简体中文](README.zh-CN.md)
 
 [![CI](https://github.com/CalebChen941028/anti-ai-copywriting/actions/workflows/ci.yml/badge.svg)](https://github.com/CalebChen941028/anti-ai-copywriting/actions)
-[![Version: 0.8.0](https://img.shields.io/badge/version-0.8.0-green.svg)](CHANGELOG.md)
+[![Version: 0.9.0](https://img.shields.io/badge/version-0.9.0-green.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
 
@@ -242,7 +242,7 @@ jobs:
 ```yaml
 repos:
   - repo: https://github.com/CalebChen941028/anti-ai-copywriting
-    rev: v0.8.0
+    rev: v0.9.0
     hooks:
       - id: anti-ai-lint
         args: ["--format", "hook", "--genre", "general"]

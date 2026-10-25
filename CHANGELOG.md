@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-10-25
+
+### Added
+- **Triumphant Closer Detector (`triumphant_closer`, penalty 3.5 in `lint/anti_ai_lint/detector.py`)**:
+  - Flags and penalizes formulaic heroic or triumphant closures in conclusion paragraphs across both Chinese and English (e.g. 「这道坎才算真正迈过去」「为后续奠定了坚实基础」「画上了一个圆满的句号」「书写了浓墨重彩的一笔」; `a major victory for the team`, `poised for future/long-term success`, `paves the way for unprecedented growth`, `a powerful testament to what can be achieved`).
+- **Transition Crutch Detector (`transition_crutch`, penalty 2.5 in `lint/anti_ai_lint/detector.py`)**:
+  - Flags and penalizes clichéd problem-to-solution narrative transitions (e.g. 「解决思路其实并不复杂」「痛定思痛之后」「峰回路转的是」「经过一番周折」; `the solution was remarkably simple`, `with that hurdle behind us`, `taking a step back`, `armed with these insights`).
+- **Anti-LLM Discriminator Guidelines (Section 6 in `skill/anti-ai-copywriting/SKILL.md`)**:
+  - Formulated systematic anti-discriminator rules derived from live evaluation against commercial AI detectors (e.g., Zhuque).
+  - Explicitly bans the LLM 4-stage narrative arc (Background -> Crisis/Complication -> Epiphany/Clean Solution -> Triumphant Outlook).
+  - Enforces domain-specific epistemic tension (peer skepticism, methodology debate), genuine experimental trade-offs, and scholarly in-text paradigm citations (e.g., `(Boring, 1954)`).
+- **5th Human Gold Standard: Behavior Analysis & Experimental Psychology (`tests/fixtures_human_gold/human_gold_behavior_psychology_en.md`)**:
+  - Curated a 361-word excerpt from Murray Sidman (1960) and Edwin Boring (1954) on stimulus control, between-groups versus within-subject designs, and instrumentation opposition.
+  - Validated with 100% human score on modern commercial discriminators; passes automated lint with 0 violations, 0.0 penalty, $CV_{len} = 0.540, CV_{para} = 0.166$.
+- **Expanded Unit Test Suite**:
+  - Added unit test cases for triumphant closers, transition crutches, and clean negative cases in `tests/test_linter.py`, bringing the test suite to 110 tests (100% passing).
+
 ## [0.8.0] - 2026-10-25
 
 ### Added

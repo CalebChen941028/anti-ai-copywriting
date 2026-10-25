@@ -53,7 +53,7 @@ description: Guides Cursor agents to write natural, native-sounding prose free o
 globs: ["**/*.md", "**/*.markdown", "**/*.txt"]
 ---
 
-<!-- BEGIN anti-ai-copywriting v0.8.0 -->
+<!-- BEGIN anti-ai-copywriting v0.9.0 -->
 # Anti-AI Copywriting & Natural Voice Rules (Mandatory & Silent)
 
 Whenever drafting, editing, translating, or evaluating prose (academic papers, docs, columns, memos), follow these guidelines:
@@ -70,7 +70,7 @@ Whenever drafting, editing, translating, or evaluating prose (academic papers, d
 **Prompt Snippet**:
 
 ```markdown
-You are configured with Anti-AI Copywriting guidelines (v0.8.0). Whenever generating or polishing Chinese or English prose:
+You are configured with Anti-AI Copywriting guidelines (v0.9.0). Whenever generating or polishing Chinese or English prose:
 - Lead directly with facts, problems, or data; never use grand cliché openings ("随着...的发展", "In today's fast-paced world").
 - Eliminate passive nominalizations ("进行深入分析" -> "深入分析了"; "made an evaluation of" -> "evaluated").
 - In academic texts, purge stacked hedges ("可能或许试图") and defensive disclaimers; state empirical boundaries neutrally.
@@ -119,7 +119,7 @@ Feedback and critique are very welcome!
 - 匀速呆滞的句式节奏与方块段落（句长离散系数过低）
 - 润色或翻译时模型擅自编造数据（如擅自加一句“同比提升了 35.7%”）
 
-针对这些问题，我们开发了开源项目 anti-ai-copywriting (v0.8.0)：
+针对这些问题，我们开发了开源项目 anti-ai-copywriting (v0.9.0)：
 1. 前置规范与温感交互：明确起草、润色、翻译、评审四类任务；润色与翻译严守信息守恒公理（零新增、零误删、断言强度不变）；
 2. 确定性零依赖 Linter：纯 Python 标准库实现，支持学术/通用/白话三种语体门禁；
 3. 多前沿算法拦截：

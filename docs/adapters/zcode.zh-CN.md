@@ -22,7 +22,7 @@
 
 安装流程自动完成：
 1. 安装技能规范 `SKILL.md` 到 `~/.zcode/skills/anti-ai-copywriting/SKILL.md`（或工作区）。
-2. 在 `AGENTS.md` 中注入包含显式 `<auto_trigger>` 触发指令的限定标记块（`<!-- BEGIN anti-ai-copywriting v0.8.0 -->`）。
+2. 在 `AGENTS.md` 中注入包含显式 `<auto_trigger>` 触发指令的限定标记块（`<!-- BEGIN anti-ai-copywriting v0.9.0 -->`）。
 3. 在 `~/.local/share/anti-ai-copywriting/install-manifest.json` 中登记安装路径。
 
 ---

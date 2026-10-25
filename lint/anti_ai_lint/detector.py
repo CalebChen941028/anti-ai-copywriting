@@ -182,6 +182,8 @@ def get_remediation_suggestion(category: str, match_text: str, context: str = ""
         "english_sentence_head_stacking": f"Eliminate repetitive fronted discourse markers ('{match_text}'): vary sentence openings and integrate transitions smoothly",
         "paragraph_cadence_variance": "打破宏观段落块状对称（Paragraph Cadence）：大幅调整段落长短起伏（穿插单句成段的论述锚点与详实展开的长段落），消除AI特有的各段均匀等长方块感",
         "repetitive_sentence_starter": f"打破句首结构固化（Sentence Starter）：连续多句以「{match_text}」等相同句式开头，建议变换句式结构（如主宾倒装、动词前置、名词主干化或合并长短句）",
+        "triumphant_closer": "消除大团圆/英雄主义升华式收尾：删除煽情与自我感动结语，直接以客观事实边界、系统限制或后续待解疑问收束",
+        "transition_crutch": "消除说明文过渡拐杖句：删去铺垫式废话（如「解决思路其实并不复杂」），直接以具体工程/学术动作切入方案",
         "fidelity_added": "信息守恒：润色与翻译不得新增原文没有的数字、代号或细节；核对原文后删除，或还原原文数值",
         "fidelity_dropped": "信息守恒：核对是否误删原文事实；数字、型号、参数不得在润色或翻译中丢失",
     }
@@ -192,6 +194,33 @@ _INAPPROPRIATE_COLLOQUIALISMS = [
     "你猜怎么着", "说白了", "坦率地讲", "坦率地说", "老实讲", "老实说",
     "话说回来", "大伙儿", "老铁", "懂的都懂", "咱就是说", "谁能想到",
     "不得不承认的是", "无可厚非的是"
+]
+
+_TRIUMPHANT_CLOSER_PATTERNS = [
+    r"这道坎才算(?:真正)?迈过去",
+    r"打赢了这场(?:硬仗|攻坚战|战役)",
+    r"彻底消除(?:了)?.*?隐患",
+    r"为后续(?:的发展|业务发展|演进)?奠定(?:了)?坚实(?:的)?基础",
+    r"画上(?:了)?圆满(?:的)?句号",
+    r"这事才算(?:真正)?平息下来",
+    r"胜利闭幕",
+    r"交出了满意的答卷",
+    r"paved the way for (?:seamless|widespread|future)",
+    r"a (?:major|significant|resounding) victory for the team",
+    r"marked a turning point in our journey",
+    r"brought this critical chapter to a close",
+]
+
+_TRANSITION_CRUTCH_PATTERNS = [
+    r"解决思路其实并不复杂",
+    r"后来的解决办法很直接",
+    r"痛定思痛之后",
+    r"排查到最后才弄明白",
+    r"翻开.*?日志才发现不对劲",
+    r"经过深入排查(?:发现)?",
+    r"the solution was remarkably simple",
+    r"the path forward became clear",
+    r"after much soul-searching",
 ]
 
 
@@ -957,6 +986,44 @@ def analyze_text(
                     suggestion=get_remediation_suggestion("hedging_overuse", ", ".join(matched_hedges)),
                 )
             ))
+
+        # Check transition crutches (AI hallmark)
+        for crutch_pat in _TRANSITION_CRUTCH_PATTERNS:
+            m_crutch = re.search(crutch_pat, s_text, re.IGNORECASE)
+            if m_crutch:
+                raw_violations.append((
+                    s_start + m_crutch.start(),
+                    s_start + m_crutch.end(),
+                    LintViolation(
+                        category="transition_crutch",
+                        message=f"Found formulaic transition crutch: 「{m_crutch.group(0)}」",
+                        line=s_line,
+                        column=s_col + m_crutch.start(),
+                        context=s_text[:50],
+                        penalty=2.5,
+                        suggestion=get_remediation_suggestion("transition_crutch", m_crutch.group(0), s_text),
+                    )
+                ))
+                break
+
+        # Check triumphant/heroic closers (AI hallmark)
+        for tri_pat in _TRIUMPHANT_CLOSER_PATTERNS:
+            m_tri = re.search(tri_pat, s_text, re.IGNORECASE)
+            if m_tri:
+                raw_violations.append((
+                    s_start + m_tri.start(),
+                    s_start + m_tri.end(),
+                    LintViolation(
+                        category="triumphant_closer",
+                        message=f"Found triumphant/heroic cliché closer: 「{m_tri.group(0)}」",
+                        line=s_line,
+                        column=s_col + m_tri.start(),
+                        context=s_text[:50],
+                        penalty=3.5,
+                        suggestion=get_remediation_suggestion("triumphant_closer", m_tri.group(0), s_text),
+                    )
+                ))
+                break
 
         # Genre: Controlled Plain Layer (受控白话层)
         if genre == "plain":

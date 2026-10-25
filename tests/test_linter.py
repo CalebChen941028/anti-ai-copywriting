@@ -983,6 +983,36 @@ class TestAntiAiLinter(unittest.TestCase):
         self.assertIn("best_candidate", summary)
         self.assertEqual(summary["best_candidate"]["pass_rate"], "8/8")
 
+    def test_triumphant_closer_and_transition_crutches(self):
+        # Test Chinese triumphant closers
+        bad_closer_zh = "经过全体技术人员三天三夜的奋战，这道坎才算真正迈过去。"
+        rep_closer = analyze_text(bad_closer_zh)
+        self.assertIn("triumphant_closer", [v.category for v in rep_closer.violations])
+
+        # Test English triumphant closers
+        bad_closer_en = "This marked a major victory for the team and paved the way for seamless adoption."
+        rep_closer_en = analyze_text(bad_closer_en)
+        self.assertIn("triumphant_closer", [v.category for v in rep_closer_en.violations])
+
+        # Test Chinese transition crutches
+        bad_crutch_zh = "痛定思痛之后，开发团队发现解决思路其实并不复杂。"
+        rep_crutch = analyze_text(bad_crutch_zh)
+        self.assertIn("transition_crutch", [v.category for v in rep_crutch.violations])
+
+        # Test English transition crutches
+        bad_crutch_en = "After much soul-searching, the path forward became clear to the engineers."
+        rep_crutch_en = analyze_text(bad_crutch_en)
+        self.assertIn("transition_crutch", [v.category for v in rep_crutch_en.violations])
+
+        # Test clean objective conclusions without triumphant clichés
+        clean_conclusion = (
+            "The evaluation demonstrates that latency bounds remain stable under high concurrency. "
+            "These findings establish the operational limits of the current architecture."
+        )
+        rep_clean = analyze_text(clean_conclusion)
+        self.assertNotIn("triumphant_closer", [v.category for v in rep_clean.violations])
+        self.assertNotIn("transition_crutch", [v.category for v in rep_clean.violations])
+
 
 if __name__ == "__main__":
     unittest.main()

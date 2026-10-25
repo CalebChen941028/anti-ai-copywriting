@@ -8,7 +8,7 @@ TARGET="zcode"
 LANG_OPT="zh"
 DRY_RUN=false
 DEST=""
-VERSION="0.8.0"
+VERSION="0.9.0"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in

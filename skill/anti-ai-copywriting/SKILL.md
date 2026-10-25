@@ -217,3 +217,37 @@ Eliminate the telltale lexical markers of LLMs (calibrated against Kobak et al. 
 5. **场景与格式保真**：重塑正文完整保留原场景专业框架（学术报告章节架构、课题申报书既定条目完全保留）。
 6. **信息守恒校验（润色与翻译）**：对照原文逐项核对数字、专名、术语与限定语，确认没有新增或误删事实、没有改变断言强度；运行 `anti-ai-lint <输出文件> --source <原文文件>`。
 7. **真实性校验（原创起草）**：正文中的每个经历、数字、人物与引语都能追溯到用户提供的素材；追溯不到的一律删除或改为【待补：……】。
+8. **反大模型指纹校验**：检查是否含有“这道坎才算真正迈过去”等大团圆收尾，或“解决思路其实并不复杂”等过渡拐杖词；检查叙事是否陷入虚拟八股事故剧本。
+
+---
+
+## 6. 反大模型判别器高阶语义指纹规则 (Anti-LLM Discriminator Guidelines)
+
+现代基于大模型的 AIGC 判别器（如朱雀大模型、知网 AIGC）已经进化到“宏观语义指纹层”：即便微观词汇完全合规，只要文本命中大模型固有的叙事模板或缺乏真实认识论摩擦，依然会被判定为 AI。必须遵守以下高阶防御规则：
+
+### 6.1 封锁“AI 事故八股文剧本”
+- 🚫 **严禁采用标准四段论**：【提出危害 $\rightarrow$ 发生事故 $\rightarrow$ 传统方案失败 $\rightarrow$ 连夜改写逻辑 $\rightarrow$ 完美指标收官】。这是大语言模型在虚构技术经历时出现频率最高的宏观模版。
+- ✅ **真实工程叙事**：直接从具体的系统机制切入，陈述真实的物理约束、长期的技术债务演变或反直觉的折中决策，拒绝童话式的救火剧本。
+
+### 6.2 引入认识论摩擦（Epistemic Tension）与反直觉批判
+- **真实科研摩擦**：人类科研与技术攻坚必然伴随着同行的质疑、误解与仪器假象（例如：数据过于精准反而被同行怀疑是测量仪器电路故障；推论统计的均值往往掩盖了个体的离散突变）。
+- **深度的认识论批判**：敢于陈述两难代价与被主流忽视的局限，打破大模型习惯给出的“万能灵丹妙药”和“共识陈述”。
+
+### 6.3 严格实名引注与专业范式锚点
+- 在学术论述中，必须自然融入具体的学术史实名文献夹注（如 `(Boring, 1954)`、`(Lamport, 1998)`），以及高度细分的学科专属范式（如单被试设计、被试内对照、反转实验设计）。
+- 高信息熵的实名实体和专业术语是大模型判别器识别“人类一手文献”的核心放行信号。
+
+### 6.4 彻底掐掉大团圆胜利式收尾（Triumphant Closers）
+- 🚫 **严禁煽情与自我感动结语**：“`这道坎才算真正迈过去`”、“`打赢了这场硬仗`”、“`为后续发展奠定了坚实基础`”、“`交出了满意的答卷`”、“`a major victory for the team`”。
+- ✅ **冷峻学术/工程收束**：结尾直接停在具体的数据边界、未解的后续缺陷、或是系统对异常流量的妥协策略，不作多余升华。
+
+### 6.5 拔除过渡拐杖词（Transition Crutches）
+- 🚫 **严禁说明文经典拐杖**：“`解决思路其实并不复杂`”、“`后来的解决办法很直接`”、“`痛定思痛之后`”、“`排查到最后才弄明白`”、“`the solution was remarkably simple`”。
+- ✅ 直接以具体的工程动作或实证推导推进段落，删去所有铺垫式废话。
+
+### 6.6 English Summary of Section 6
+1. **Ban the Standard 4-Stage AI Narrative Arc**: Do not follow the clichéd sequence [theoretical danger $\rightarrow$ sudden outage $\rightarrow$ naive solution fails $\rightarrow$ overnight rewrite $\rightarrow$ triumphant metric victory]. Lead with structural constraints and operational tradeoffs.
+2. **Inject Epistemic Tension**: Real human research contains methodological controversy, peer skepticism (e.g., colleagues suspecting equipment error due to uncharacteristically clean data), and genuine counter-intuitive deductions.
+3. **Scholarly Anchors**: Anchor academic prose with specific citations (e.g. `(Boring, 1954)`) and precise paradigm terminology rather than broad generalities.
+4. **Eliminate Triumphant / Heroic Closers**: Remove all self-congratulatory conclusions ("marked a major victory for the team", "paved the way for seamless adoption"). Conclude soberly on operational boundaries or open questions.
+5. **Strip Transition Crutches**: Purge phrases like "the solution was remarkably simple" or "after much soul-searching"; transition directly into concrete actions.

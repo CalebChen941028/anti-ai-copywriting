@@ -22,7 +22,7 @@ Run the unified installer specifying the `claude` target:
 
 This command:
 1. Installs `SKILL.md` into `~/.claude/skills/anti-ai-copywriting/SKILL.md` (or your project directory).
-2. Injects bounded rule markers (`<!-- BEGIN anti-ai-copywriting v0.8.0 -->`) into `CLAUDE.md` with explicit `<auto_trigger>` directives.
+2. Injects bounded rule markers (`<!-- BEGIN anti-ai-copywriting v0.9.0 -->`) into `CLAUDE.md` with explicit `<auto_trigger>` directives.
 3. Records all installed files in `~/.local/share/anti-ai-copywriting/install-manifest.json` for rollback.
 
 ---
